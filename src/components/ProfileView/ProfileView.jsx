@@ -1,11 +1,16 @@
 import React, { useState, useContext } from 'react';
-import { User, Mail, Phone, Building, ShieldCheck, Download, Trash2, Edit2, Save, X, ChevronDown, Calendar, Globe, Award, BookOpen, MapPin, Activity, Plus, FileText } from 'lucide-react';
+import { User, Mail, Phone, Building, ShieldCheck, Download, Trash2, Edit2, Save, X, ChevronDown, Calendar, Globe, Award, BookOpen, MapPin, Activity, Plus, FileText, Book, Grid, Layers, Building2 } from 'lucide-react';
 import Card from '../Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './ProfileView.module.css';
 
 const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
-  const { documents, addDocument, deleteDocument, attendance } = useContext(AppContext);
+  const { 
+    documents, addDocument, deleteDocument, attendance,
+    departments, categories, degrees, subjects, 
+    setDepartments, setCategories, setDegrees, setSubjects,
+    currentUser 
+  } = useContext(AppContext);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...data });
   const [activeTab, setActiveTab] = useState('personal');
@@ -30,9 +35,15 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     setIsEditing(false);
   };
 
-  const handlePhotoChange = () => {
-    const url = window.prompt("Enter new photo URL (or leave blank for default):");
-    if (url !== null) handleChange(null, 'photo', url);
+  const handleAddEntry = () => {
+    const type = window.prompt("Enter type (Subject/Department/Category/Degree):");
+    if (!type) return;
+    
+    if (type.toLowerCase() === 'subject') {
+      const name = window.prompt("Subject Name:");
+      const code = window.prompt("Subject Code:");
+      if (name && code) setSubjects([...subjects, { id: Date.now(), name, code, credits: 3, syllabus: 'N/A', books: 'N/A' }]);
+    }
   };
 
   const handleExportPDF = () => {
@@ -41,17 +52,8 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
 
   const handleMenuClick = (item) => {
     setShowProfileMenu(false);
-    const tabMap = {
-      'Document': 'documents',
-      'Attendance': 'attendance',
-      'Subject': 'academic',
-      'Qualification': 'academic',
-      'Timetable': 'academic'
-    };
-    if (tabMap[item]) setActiveTab(tabMap[item]);
-    else alert(`Requested view for ${item} is currently synchronized with the ${tabMap['Subject']} tab.`);
+    setActiveTab(item.toLowerCase());
   };
-
 
   const handleUploadDoc = () => {
     const title = window.prompt("Enter Document Title:");
@@ -75,7 +77,11 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     { id: 'personal', label: 'Personal', icon: <User size={16} /> },
     { id: 'academic', label: 'Academic', icon: <Award size={16} /> },
     { id: 'documents', label: 'Documents', icon: <BookOpen size={16} /> },
-    { id: 'attendance', label: 'Attendance', icon: <Activity size={16} /> }
+    { id: 'attendance', label: 'Attendance', icon: <Activity size={16} /> },
+    { id: 'departments', label: 'Departments', icon: <Building2 size={16} /> },
+    { id: 'categories', label: 'Categories', icon: <Layers size={16} /> },
+    { id: 'degrees', label: 'Degrees', icon: <Grid size={16} /> },
+    { id: 'subjects', label: 'Subjects', icon: <Book size={16} /> }
   ];
 
   const renderField = (label, value, field, section = null) => {
@@ -100,16 +106,28 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
 
   return (
     <div className={styles.profileContainer}>
-      {/* Sidebar */}
       <Card className={styles.sidebar}>
         <div className={styles.photoSection}>
           <div className={styles.avatarContainer}>
             <div className={styles.avatar}>
               {formData.photo ? <img src={formData.photo} alt={formData.name} /> : formData.name?.charAt(0)}
             </div>
-            <button className={styles.cameraBtn} onClick={handlePhotoChange} title="Change Photo">
+            <label className={styles.cameraBtn} title="Change Photo">
               <Plus size={16} />
-            </button>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => handleChange(null, 'photo', reader.result);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                style={{ display: 'none' }}
+              />
+            </label>
           </div>
           <h2 style={{ margin: '0.5rem 0 0.25rem 0', color: 'var(--text-primary)' }}>{formData.name}</h2>
           <div className={styles.photoActions}>
@@ -162,7 +180,6 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
       </Card>
 
 
-      {/* Main Content */}
       <div className={styles.mainContent}>
         <div className={styles.headerActions}>
           <div className={styles.actionGroup}>
@@ -259,7 +276,6 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                 {renderField('Passport No', formData.personalDetails?.passportNo, 'passportNo', 'personalDetails')}
                 {renderField('Visa Expiry Date', formData.personalDetails?.visaExpiry, 'visaExpiry', 'personalDetails')}
               </div>
-
             </>
           )}
 
@@ -272,34 +288,6 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                 {renderField('Current GPA', formData.gpa, 'gpa')}
                 {renderField('Profile Verification', formData.profileStatus, 'profileStatus')}
               </div>
-              
-              {formData.academicHistory && (
-                <div style={{ marginTop: '2rem' }}>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Academic History</h3>
-                  <div className={styles.tableContainer}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
-                          <th style={{ padding: '0.75rem 0' }}>Semester</th>
-                          <th style={{ padding: '0.75rem 0' }}>GPA</th>
-                          <th style={{ padding: '0.75rem 0' }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {formData.academicHistory.map((hist, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                            <td style={{ padding: '1rem 0' }}>{hist.semester}</td>
-                            <td style={{ padding: '1rem 0' }}>{hist.gpa}</td>
-                            <td style={{ padding: '1rem 0' }}>
-                              <span style={{ padding: '0.25rem 0.5rem', background: '#e8f5e9', color: '#2e7d32', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600 }}>{hist.status}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
             </>
           )}
 
@@ -325,11 +313,6 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                     </div>
                   </div>
                 ))}
-                {userDocuments.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                    <p>No personal documents found.</p>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -359,12 +342,77 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                     </span>
                   </div>
                 ))}
-                {userAttendance.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                    <p>No attendance data available for this period.</p>
-                  </div>
-                )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'departments' && (
+            <Card className={styles.dataCard}>
+              <h2 className={styles.sectionTitle}>Departments</h2>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>ID</th><th>Department Name</th><th>Head of Department</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  {departments.map(d => (
+                    <tr key={d.id}>
+                      <td>{d.id}</td><td>{d.name}</td><td>{d.head}</td>
+                      <td><button className={styles.deleteBtn} onClick={() => setDepartments(departments.filter(item => item.id !== d.id))}><Trash2 size={16} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+
+          {activeTab === 'categories' && (
+            <Card className={styles.dataCard}>
+              <h2 className={styles.sectionTitle}>Course Categories</h2>
+              <ul className={styles.list}>
+                {categories.map(c => (
+                  <li key={c.id} className={styles.listItem}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><span className={styles.idBadge}>{c.id}</span><span>{c.name}</span></div>
+                    <button className={styles.deleteBtn} onClick={() => setCategories(categories.filter(item => item.id !== c.id))}><Trash2 size={16} /></button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {activeTab === 'degrees' && (
+            <Card className={styles.dataCard}>
+              <h2 className={styles.sectionTitle}>Degrees Map</h2>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Degree ID</th><th>Name</th><th>Category ID</th><th>Department ID</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  {degrees.map(d => (
+                    <tr key={d.id}>
+                      <td>{d.id}</td><td>{d.name}</td><td>{d.categoryId}</td><td>{d.departmentId}</td>
+                      <td><button className={styles.deleteBtn} onClick={() => setDegrees(degrees.filter(item => item.id !== d.id))}><Trash2 size={16} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+
+          {activeTab === 'subjects' && (
+            <div className={styles.grid}>
+              {subjects.map(s => (
+                <Card key={s.id} className={styles.subjectCard}>
+                  <div className={styles.subjectHeader}>
+                    <span className={styles.subjectCode}>{s.code}</span>
+                    <button className={styles.deleteBtnSmall} onClick={() => setSubjects(subjects.filter(item => item.id !== s.id))}><Trash2 size={14} /></button>
+                  </div>
+                  <h3 className={styles.subjectName}>{s.name}</h3>
+                </Card>
+              ))}
+              <Card className={styles.addCard} onClick={handleAddEntry}>
+                <Plus size={32} />
+                <span>Add New Subject</span>
+              </Card>
             </div>
           )}
         </Card>

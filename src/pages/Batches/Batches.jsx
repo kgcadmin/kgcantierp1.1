@@ -1,12 +1,12 @@
 import React, { useContext, useState } from 'react';
-import { Calendar, Users, History, Activity, FileText } from 'lucide-react';
+import { Calendar, Users, History, Activity, FileText, Trash2, Plus } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './Batches.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 
 const Batches = () => {
-  const { batches, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
+  const { batches, setBatches, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
 
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [showReports, setShowReports] = useState(false);
@@ -62,16 +62,36 @@ const Batches = () => {
             {uniqueCourses.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           {currentUser?.role === 'Admin' && (
-            <button onClick={() => {
-              const batchId = window.prompt("Enter Batch ID to promote (e.g., BAT01):");
-              const nextBatchId = window.prompt("Enter Next Level Batch ID (e.g., BAT03):");
-              if (batchId && nextBatchId) {
-                promoteBatch(batchId, nextBatchId);
-                alert("Batch promoted successfully!");
-              }
-            }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
-              <BookOpen size={18} /> Promote
-            </button>
+            <>
+              <button onClick={() => {
+                const name = window.prompt("Enter Batch Name:");
+                const courseId = window.prompt("Enter Course ID (e.g., CRS01):");
+                if (name && courseId) {
+                  const newBatch = {
+                    id: `BAT0${batches.length + 1}`,
+                    name,
+                    courseId,
+                    status: 'Active',
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+                    history: [{ date: new Date().toISOString().split('T')[0], action: 'Batch created' }]
+                  };
+                  setBatches([...batches, newBatch]);
+                }
+              }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#2e7d32', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+                <Plus size={18} /> Add Batch
+              </button>
+              <button onClick={() => {
+                const batchId = window.prompt("Enter Batch ID to promote (e.g., BAT01):");
+                const nextBatchId = window.prompt("Enter Next Level Batch ID (e.g., BAT03):");
+                if (batchId && nextBatchId) {
+                  promoteBatch(batchId, nextBatchId);
+                  alert("Batch promoted successfully!");
+                }
+              }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+                <BookOpen size={18} /> Promote
+              </button>
+            </>
           )}
           <button onClick={() => setShowReports(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
             <FileText size={18} /> Reports
@@ -85,17 +105,24 @@ const Batches = () => {
           <Card key={batch.id} className={styles.batchCard}>
             <div className={styles.batchHeader}>
               <h2 className={styles.batchName}>{batch.name}</h2>
-              <select 
-                className={`${styles.statusSelect} ${styles[batch.status.toLowerCase()]}`}
-                value={batch.status}
-                onChange={(e) => handleStatusChange(batch.id, e.target.value)}
-                disabled={currentUser?.role !== 'Admin'}
-                style={{ opacity: currentUser?.role !== 'Admin' ? 0.7 : 1, cursor: currentUser?.role !== 'Admin' ? 'not-allowed' : 'pointer' }}
-              >
-                <option value="Active">Active</option>
-                <option value="Completed">Completed</option>
-                <option value="Archived">Archived</option>
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <select 
+                  className={`${styles.statusSelect} ${styles[batch.status.toLowerCase()]}`}
+                  value={batch.status}
+                  onChange={(e) => handleStatusChange(batch.id, e.target.value)}
+                  disabled={currentUser?.role !== 'Admin'}
+                  style={{ opacity: currentUser?.role !== 'Admin' ? 0.7 : 1, cursor: currentUser?.role !== 'Admin' ? 'not-allowed' : 'pointer' }}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Archived">Archived</option>
+                </select>
+                {currentUser?.role === 'Admin' && (
+                  <button className={styles.deleteBatchBtn} onClick={() => setBatches(batches.filter(b => b.id !== batch.id))}>
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className={styles.batchDetails}>

@@ -1,11 +1,15 @@
 import React, { useContext, useState } from 'react';
-import { Book, Grid, Layers, Building2, Plus } from 'lucide-react';
+import { Book, Grid, Layers, Building2, Plus, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './AcademicSetup.module.css';
 
 const AcademicSetup = () => {
-  const { departments, categories, degrees, subjects, addAcademicEntry, currentUser } = useContext(AppContext);
+  const { 
+    departments, categories, degrees, subjects, addAcademicEntry, 
+    setDepartments, setCategories, setDegrees, setSubjects,
+    currentUser 
+  } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('departments');
 
   const handleAddEntry = () => {
@@ -70,6 +74,7 @@ const AcademicSetup = () => {
                   <th>ID</th>
                   <th>Department Name</th>
                   <th>Head of Department</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -78,6 +83,11 @@ const AcademicSetup = () => {
                     <td>{d.id}</td>
                     <td>{d.name}</td>
                     <td>{d.head}</td>
+                    <td>
+                      <button className={styles.deleteBtn} onClick={() => setDepartments(departments.filter(item => item.id !== d.id))}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -91,8 +101,13 @@ const AcademicSetup = () => {
             <ul className={styles.list}>
               {categories.map(c => (
                 <li key={c.id} className={styles.listItem}>
-                  <span className={styles.idBadge}>{c.id}</span>
-                  <span className={styles.itemName}>{c.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span className={styles.idBadge}>{c.id}</span>
+                    <span className={styles.itemName}>{c.name}</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => setCategories(categories.filter(item => item.id !== c.id))}>
+                    <Trash2 size={16} />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -109,6 +124,7 @@ const AcademicSetup = () => {
                   <th>Name</th>
                   <th>Category ID</th>
                   <th>Department ID</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -118,6 +134,11 @@ const AcademicSetup = () => {
                     <td>{d.name}</td>
                     <td>{d.categoryId}</td>
                     <td>{d.departmentId}</td>
+                    <td>
+                      <button className={styles.deleteBtn} onClick={() => setDegrees(degrees.filter(item => item.id !== d.id))}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -131,7 +152,12 @@ const AcademicSetup = () => {
               <Card key={s.id} className={styles.subjectCard}>
                 <div className={styles.subjectHeader}>
                   <span className={styles.subjectCode}>{s.code}</span>
-                  <span className={styles.creditsBadge}>{s.credits} Credits</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className={styles.creditsBadge}>{s.credits} Credits</span>
+                    <button className={styles.deleteBtnSmall} onClick={() => setSubjects(subjects.filter(item => item.id !== s.id))}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
                 <h3 className={styles.subjectName}>{s.name}</h3>
                 <div className={styles.subjectDetails}>
@@ -142,6 +168,10 @@ const AcademicSetup = () => {
                 </div>
               </Card>
             ))}
+            <Card className={styles.addCard} onClick={handleAddEntry}>
+              <Plus size={32} />
+              <span>Add New Subject</span>
+            </Card>
           </div>
         )}
       </div>
