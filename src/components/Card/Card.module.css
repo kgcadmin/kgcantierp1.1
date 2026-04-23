@@ -1,0 +1,12 @@
+.card {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: #1e293b; /* Solid HEX to fix Chrome */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: box-shadow var(--transition-normal);
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+

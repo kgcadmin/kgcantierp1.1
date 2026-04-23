@@ -1,0 +1,31 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-base);
+}
+
+.mainContent {
+  flex-grow: 1;
+  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Fix flexbox overflow */
+}
+
+@media (min-width: 1025px) {
+  .mainContent {
+    margin-left: var(--sidebar-width);
+  }
+}
+
+
+.pageContent {
+  padding: 2rem;
+  flex-grow: 1;
+  animation: fadeIn var(--transition-normal);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
