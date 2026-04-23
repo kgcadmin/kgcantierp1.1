@@ -1,11 +1,13 @@
 import React, { useContext, useState } from 'react';
-import { Users, FileText, Download, Calendar } from 'lucide-react';
+import { Users, FileText, Download, Calendar, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 
 const Payroll = () => {
-  const { payroll, leaves, faculty, approveLeave, requestLeave, addPayroll, currentUser } = useContext(AppContext);
+  const { payroll, setPayroll, leaves, setLeaves, faculty, approveLeave, requestLeave, addPayroll, currentUser } = useContext(AppContext);
+  const deletePayroll = (id) => setPayroll(payroll.filter(p => p.id !== id));
+  const deleteLeave = (id) => setLeaves(leaves.filter(l => l.id !== id));
   const [activeTab, setActiveTab] = useState('salary');
   const [showReports, setShowReports] = useState(false);
 
@@ -93,17 +95,12 @@ const Payroll = () => {
                   <td style={{ padding: '1rem 0.75rem', color: '#388e3c' }}>+₹{pay.allowances}</td>
                   <td style={{ padding: '1rem 0.75rem', color: '#d32f2f' }}>-₹{pay.deductions}</td>
                   <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>₹{pay.netPay}</td>
-                  <td style={{ padding: '1rem 0.75rem' }}>
-                    <span style={{ 
-                      padding: '0.25rem 0.75rem', 
-                      borderRadius: '1rem', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 600,
-                      background: pay.status === 'Processed' ? '#e8f5e9' : '#fff3e0',
-                      color: pay.status === 'Processed' ? '#2e7d32' : '#e65100'
-                    }}>
-                      {pay.status}
-                    </span>
+                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                    {currentUser?.role === 'Admin' && (
+                      <button onClick={() => deletePayroll(pay.id)} style={{ padding: '0.4rem', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '0.25rem', cursor: 'pointer' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -122,7 +119,7 @@ const Payroll = () => {
                 <th style={{ padding: '0.75rem' }}>Leave Type</th>
                 <th style={{ padding: '0.75rem' }}>Duration</th>
                 <th style={{ padding: '0.75rem' }}>Status</th>
-                <th style={{ padding: '0.75rem' }}>Action</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -143,12 +140,15 @@ const Payroll = () => {
                       {leave.status}
                     </span>
                   </td>
-                  <td style={{ padding: '1rem 0.75rem' }}>
-                    {leave.status === 'Pending' && currentUser?.role !== 'Faculty' ? (
-                      <button onClick={() => approveLeave(leave.id)} style={{ padding: '0.25rem 0.75rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}>Approve</button>
-                    ) : (
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{leave.status === 'Pending' ? 'Waiting' : '-'}</span>
-                    )}
+                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      {leave.status === 'Pending' && currentUser?.role !== 'Faculty' && (
+                        <button onClick={() => approveLeave(leave.id)} style={{ padding: '0.25rem 0.75rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}>Approve</button>
+                      )}
+                      {currentUser?.role === 'Admin' && (
+                        <button onClick={() => deleteLeave(leave.id)} style={{ padding: '0.4rem', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Trash2 size={14} /></button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
