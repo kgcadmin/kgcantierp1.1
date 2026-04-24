@@ -138,7 +138,87 @@ export const AppContextProvider = ({ children }) => {
     setRecentActivities(prev => [newActivity, ...prev]);
   };
 
-  const addStudent = (student) => setStudents([...students, student]);
+  const generateRandomPassword = (id) => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let rand = "";
+    for (let i = 0; i < 4; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    return `KGC!${id.slice(-3)}${rand}`;
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      
+      let importedCount = 0;
+      lines.slice(1).forEach((line, index) => {
+        const values = line.split(',').map(v => v.trim());
+        const data = {};
+        headers.forEach((h, i) => data[h] = values[i]);
+        
+        if (data.name && data.department) {
+          const id = `STU${Date.now().toString().slice(-3)}${index}`;
+          const pass = generateRandomPassword(id);
+          addStudent({
+            id,
+            rollNo: `ROL${id.slice(-4)}`,
+            grNumber: `GR${Date.now().toString().slice(-6)}`,
+            name: data.name,
+            department: data.department,
+            year: data.year || 'Freshman',
+            status: 'Active',
+            email: `${data.name.split(' ')[0].toLowerCase()}${index}@kashibaiganpatcollege.com`,
+            password: pass // This will be used to create the login account
+          });
+          importedCount++;
+        }
+      });
+      alert(`Successfully imported ${importedCount} students!`);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleAddStudent = () => {
+    const name = window.prompt("Enter Student Name:");
+    const department = window.prompt("Enter Department:");
+    if (name && department) {
+      const id = `STU00${students.length + 1}`;
+      const pass = generateRandomPassword(id);
+      addStudent({ 
+        id, 
+        rollNo: `NEW-${students.length + 1}`, 
+        grNumber: `GR-${Date.now().toString().slice(-5)}`, 
+        name, 
+        department, 
+        year: 'Freshman', 
+        status: 'Active', 
+        gpa: 0, 
+        email: `${name.split(' ')[0].toLowerCase()}${Date.now().toString().slice(-3)}@kashibaiganpatcollege.com`, 
+        profileStatus: 'Pending Docs', 
+        academicHistory: [],
+        password: pass 
+      });
+      alert(`Student added! Initial Password: ${pass}`);
+    }
+  };
+
+  const addStudent = (student) => {
+    setStudents([...students, student]);
+    // Also create a login account for the new student
+    const newUser = {
+      id: `USR${student.id}`,
+      email: student.email,
+      password: student.password || 'password',
+      role: 'Student',
+      name: student.name,
+      linkedId: student.id
+    };
+    setUsers(prev => [...prev, newUser]);
+  };
   const editStudent = (id, updated) => setStudents(students.map(s => s.id === id ? { ...s, ...updated } : s));
   const deleteStudent = (id) => setStudents(students.filter(s => s.id !== id));
 
@@ -234,10 +314,126 @@ export const AppContextProvider = ({ children }) => {
     addActivity(`requested leave for ${leave.days} days`, ['Admin', 'Faculty']);
   };
   
-  const addFaculty = (fac) => setFaculty([...faculty, { ...fac, id: `FAC00${faculty.length + 1}` }]);
+  const generateRandomPassword = (id) => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let rand = "";
+    for (let i = 0; i < 4; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    return `KGC!${id.slice(-3)}${rand}`;
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      let importedCount = 0;
+      lines.slice(1).forEach((line, index) => {
+        const values = line.split(',').map(v => v.trim());
+        const data = {};
+        headers.forEach((h, i) => data[h] = values[i]);
+        if (data.name && data.department && data.role) {
+          const id = `FAC${Date.now().toString().slice(-3)}${index}`;
+          const pass = generateRandomPassword(id);
+          addFaculty({ id, name: data.name, department: data.department, role: data.role, status: 'Active', email: `${data.name.split(' ')[0].toLowerCase()}${index}@kashibaiganpatcollege.com`, password: pass });
+          importedCount++;
+        }
+      });
+      alert(`Successfully imported ${importedCount} faculty members!`);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleAddFaculty = () => {
+    const name = window.prompt("Enter Faculty Name:");
+    const department = window.prompt("Enter Department:");
+    const role = window.prompt("Enter Role:");
+    if (name && department && role) {
+      const id = `FAC00${faculty.length + 1}`;
+      const pass = generateRandomPassword(id);
+      addFaculty({ name, department, role, status: 'Active', email: `${name.split(' ')[0].toLowerCase()}@kashibaiganpatcollege.com`, password: pass });
+      alert(`Faculty added! Initial Password: ${pass}`);
+    }
+  };
+
+  const addFaculty = (fac) => {
+    const id = fac.id || `FAC00${faculty.length + 1}`;
+    const newFac = { ...fac, id };
+    setFaculty([...faculty, newFac]);
+    // Create login account
+    const newUser = {
+      id: `USR${id}`,
+      email: fac.email,
+      password: fac.password || 'password',
+      role: 'Faculty',
+      name: fac.name,
+      linkedId: id
+    };
+    setUsers(prev => [...prev, newUser]);
+  };
   const editFaculty = (id, updatedFac) => setFaculty(faculty.map(f => f.id === id ? { ...f, ...updatedFac } : f));
   
-  const addStaff = (s) => setStaff([...staff, { ...s, id: `STF00${staff.length + 1}` }]);
+  const generateRandomPassword = (id) => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let rand = "";
+    for (let i = 0; i < 4; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    return `KGC!${id.slice(-3)}${rand}`;
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      let importedCount = 0;
+      lines.slice(1).forEach((line, index) => {
+        const values = line.split(',').map(v => v.trim());
+        const data = {};
+        headers.forEach((h, i) => data[h] = values[i]);
+        if (data.name && data.department && data.role) {
+          const id = `STF${Date.now().toString().slice(-3)}${index}`;
+          const pass = generateRandomPassword(id);
+          addStaff({ id, name: data.name, department: data.department, role: data.role, status: 'Active', email: `${data.name.split(' ')[0].toLowerCase()}${index}@kashibaiganpatcollege.com`, password: pass });
+          importedCount++;
+        }
+      });
+      alert(`Successfully imported ${importedCount} staff members!`);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleAddStaff = () => {
+    const name = window.prompt("Enter Staff Name:");
+    const department = window.prompt("Enter Department:");
+    const role = window.prompt("Enter Role:");
+    if (name && department && role) {
+      const id = `STF00${staff.length + 1}`;
+      const pass = generateRandomPassword(id);
+      addStaff({ name, department, role, status: 'Active', email: `${name.split(' ')[0].toLowerCase()}@kashibaiganpatcollege.com`, password: pass });
+      alert(`Staff added! Initial Password: ${pass}`);
+    }
+  };
+
+  const addStaff = (s) => {
+    const id = s.id || `STF00${staff.length + 1}`;
+    const newStaff = { ...s, id };
+    setStaff([...staff, newStaff]);
+    // Create login account
+    const newUser = {
+      id: `USR${id}`,
+      email: s.email,
+      password: s.password || 'password',
+      role: 'Office Staff',
+      name: s.name,
+      linkedId: id
+    };
+    setUsers(prev => [...prev, newUser]);
+  };
   const editStaff = (id, updated) => setStaff(staff.map(s => s.id === id ? { ...s, ...updated } : s));
   const deleteStaff = (id) => setStaff(staff.filter(s => s.id !== id));
   

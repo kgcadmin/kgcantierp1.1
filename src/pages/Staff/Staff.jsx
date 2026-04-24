@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Search, Plus, Edit2, Trash2, UserCircle, FileText } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, UserCircle, FileText, Upload } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from '../Students/Students.module.css';
@@ -7,7 +7,7 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import ProfileView from '../../components/ProfileView/ProfileView';
 
 const Staff = () => {
-  const { staff, addStaff, editStaff, deleteStaff, currentUser } = useContext(AppContext);
+  const { staff, addStaff, editStaff, deleteStaff, currentUser, handleAddStaff: addStaffPrompt, handleImportCSV: importStaffCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -26,14 +26,7 @@ const Staff = () => {
     return matchesSearch && matchesDept && matchesStatus;
   });
 
-  const handleAddStaff = () => {
-    const name = window.prompt("Enter Staff Name:");
-    const department = window.prompt("Enter Department:");
-    const role = window.prompt("Enter Role:");
-    if (name && department && role) {
-      addStaff({ name, department, role, status: 'Active' });
-    }
-  };
+  // Handlers moved to AppContext
 
   return (
     <div className={styles.studentsPage}>
@@ -44,10 +37,17 @@ const Staff = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Management'].includes(currentUser?.role) && (
-            <button onClick={handleAddStaff} className={styles.primaryBtn}>
-              <Plus size={18} />
-              <span>Add Staff Member</span>
-            </button>
+            <>
+              <button onClick={addStaffPrompt} className={styles.primaryBtn}>
+                <Plus size={18} />
+                <span>Add Staff Member</span>
+              </button>
+              <label className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
+                <Upload size={18} />
+                <span>Import CSV</span>
+                <input type="file" accept=".csv" onChange={importStaffCSV} style={{ display: 'none' }} />
+              </label>
+            </>
           )}
           <button onClick={() => setShowReports(true)} className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
             <FileText size={18} />

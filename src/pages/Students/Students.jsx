@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Search, Plus, Edit2, Trash2, UserCircle, BookOpen, FileText } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, UserCircle, BookOpen, FileText, Upload } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './Students.module.css';
@@ -7,7 +7,7 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import ProfileView from '../../components/ProfileView/ProfileView';
 
 const Students = () => {
-  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch } = useContext(AppContext);
+  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, handleAddStudent: addStudentPrompt, handleImportCSV: importStudentCSV } = useContext(AppContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -31,23 +31,9 @@ const Students = () => {
 
   const uniqueStatuses = Array.from(new Set(relevantStudents.map(s => s.status))).filter(Boolean);
 
-  const handleAddStudent = () => {
-    const name = window.prompt("Enter Student Name:");
-    const department = window.prompt("Enter Department:");
-    if (name && department) {
-      addStudent({ id: `STU00${students.length + 1}`, rollNo: `NEW-${students.length + 1}`, grNumber: `GR-${Date.now().toString().slice(-5)}`, name, department, year: 'Freshman', status: 'Active', gpa: 0, email: `${name.split(' ')[0].toLowerCase()}@edu.com`, profileStatus: 'Pending Docs', academicHistory: [] });
-    }
-  };
-
   const handlePromote = () => {
-    const batchId = window.prompt("Enter Batch ID to promote (e.g., BAT01):");
-    const nextBatchId = window.prompt("Enter Next Level Batch ID (e.g., BAT03):");
-    if (batchId && nextBatchId) {
-      if (window.confirm(`Are you sure you want to promote all students from ${batchId} to ${nextBatchId}?`)) {
-        promoteBatch(batchId, nextBatchId);
-        alert("Batch promoted successfully!");
-      }
-    }
+    const batchId = window.prompt("Enter Batch ID to promote:");
+    if (batchId) promoteBatch(batchId);
   };
 
 
@@ -61,10 +47,15 @@ const Students = () => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Office Staff'].includes(currentUser?.role) && (
             <>
-              <button onClick={handleAddStudent} className={styles.primaryBtn}>
+              <button onClick={addStudentPrompt} className={styles.primaryBtn}>
                 <Plus size={18} />
                 <span>Add Student</span>
               </button>
+              <label className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
+                <Upload size={18} />
+                <span>Import CSV</span>
+                <input type="file" accept=".csv" onChange={importStudentCSV} style={{ display: 'none' }} />
+              </label>
               {currentUser?.role === 'Admin' && (
                 <button onClick={handlePromote} className={styles.primaryBtn} style={{ background: '#388e3c' }}>
                   <BookOpen size={18} />

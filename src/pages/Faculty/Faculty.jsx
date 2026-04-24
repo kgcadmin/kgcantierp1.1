@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Search, Plus, Edit2, Trash2, UserCircle, FileText } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, UserCircle, FileText, Upload } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from '../Students/Students.module.css';
@@ -7,7 +7,7 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import ProfileView from '../../components/ProfileView/ProfileView';
 
 const Faculty = () => {
-  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser } = useContext(AppContext);
+  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser, handleAddFaculty: addFacultyPrompt, handleImportCSV: importFacultyCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -26,14 +26,7 @@ const Faculty = () => {
     return matchesSearch && matchesDept && matchesStatus;
   });
 
-  const handleAddFaculty = () => {
-    const name = window.prompt("Enter Faculty Name:");
-    const department = window.prompt("Enter Department:");
-    const role = window.prompt("Enter Role:");
-    if (name && department && role) {
-      addFaculty({ name, department, role, status: 'Active' });
-    }
-  };
+  // Handlers moved to AppContext
 
   const handleEditFaculty = (member) => {
     const name = window.prompt("Edit Faculty Name:", member.name);
@@ -53,11 +46,18 @@ const Faculty = () => {
           <p className={styles.subtitle}>Manage faculty members, roles, and departments.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {currentUser?.role !== 'Management' && (
-            <button onClick={handleAddFaculty} className={styles.primaryBtn}>
-              <Plus size={18} />
-              <span>Add Faculty</span>
-            </button>
+          {['Admin', 'Management'].includes(currentUser?.role) && (
+            <>
+              <button onClick={addFacultyPrompt} className={styles.primaryBtn}>
+                <Plus size={18} />
+                <span>Add Faculty</span>
+              </button>
+              <label className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
+                <Upload size={18} />
+                <span>Import CSV</span>
+                <input type="file" accept=".csv" onChange={importFacultyCSV} style={{ display: 'none' }} />
+              </label>
+            </>
           )}
           <button onClick={() => setShowReports(true)} className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
             <FileText size={18} />
