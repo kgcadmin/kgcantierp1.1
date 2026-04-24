@@ -1,13 +1,16 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users, Share2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // In-memory store for actual File objects (survives component re-renders but not page refresh)
 const fileStore = new Map();
 
 const Documents = () => {
   const { documents, addDocument, deleteDocument, currentUser } = useContext(AppContext);
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -15,6 +18,20 @@ const Documents = () => {
 
   const [showPreview, setShowPreview] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Auto-open document preview if ?doc=ID is in the URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const docId = params.get('doc');
+    if (docId && documents.length > 0) {
+      const doc = documents.find(d => d.id === docId);
+      if (doc) {
+        handlePreview(doc);
+        // Clean the URL without navigating away
+        navigate('/documents', { replace: true });
+      }
+    }
+  }, [location.search, documents]);
 
   const categories = ['All', 'Template', 'Form', 'Academic', 'Financial', 'Personal'];
 
@@ -86,23 +103,26 @@ const Documents = () => {
   };
 
   const handleShare = async (doc) => {
-    const mockLink = `https://academia.kashibaiganpatcollege.com/share/${doc.id}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a real working link to this specific document
+    const baseUrl = window.location.origin;
+    const shareLink = `${baseUrl}/documents?doc=${doc.id}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: doc.title,
-          text: `Check out this document from EduSec ERP: ${doc.title}`,
-          url: mockLink,
+          text: `View this document: ${doc.title}`,
+          url: shareLink,
         });
       } catch (err) {
-        // Fallback to clipboard if share cancelled
-        navigator.clipboard.writeText(mockLink);
-        showToast('Link copied to clipboard');
+        if (err.name !== 'AbortError') {
+          await navigator.clipboard.writeText(shareLink);
+          showToast('Link copied to clipboard!');
+        }
       }
     } else {
-      navigator.clipboard.writeText(mockLink);
-      showToast('Link copied to clipboard');
+      await navigator.clipboard.writeText(shareLink);
+      showToast('Link copied to clipboard!');
     }
   };
 
