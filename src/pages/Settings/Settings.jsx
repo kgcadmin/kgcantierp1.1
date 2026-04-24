@@ -1,11 +1,40 @@
 import React, { useState } from 'react';
-import { User, Palette, Save } from 'lucide-react';
+import { User, Palette, Save, Shield, Eye, EyeOff } from 'lucide-react';
+import { AppContext } from '../../context/AppContext';
 import Card from '../../components/Card/Card';
 import styles from './Settings.module.css';
 
 const Settings = () => {
+  const { currentUser, users, setUsers } = React.useContext(AppContext);
   const [activeTab, setActiveTab] = useState('profile');
   const [theme, setTheme] = useState('light');
+  
+  const [passwordForm, setPasswordForm] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  });
+  const [showPass, setShowPass] = useState(false);
+
+  const handlePasswordChange = () => {
+    if (!passwordForm.current || !passwordForm.new) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    if (passwordForm.current !== currentUser.password) {
+      alert("Current password is incorrect.");
+      return;
+    }
+    if (passwordForm.new !== passwordForm.confirm) {
+      alert("New passwords do not match.");
+      return;
+    }
+    
+    const updatedUsers = users.map(u => u.id === currentUser.id ? { ...u, password: passwordForm.new } : u);
+    setUsers(updatedUsers);
+    alert("Password updated successfully!");
+    setPasswordForm({ current: '', new: '', confirm: '' });
+  };
 
   return (
     <div className={styles.settingsPage}>
@@ -37,6 +66,13 @@ const Settings = () => {
               <Palette size={18} />
               <span>Appearance</span>
             </button>
+            <button 
+              className={`${styles.navItem} ${activeTab === 'security' ? styles.active : ''}`}
+              onClick={() => setActiveTab('security')}
+            >
+              <Shield size={18} />
+              <span>Security</span>
+            </button>
           </nav>
         </Card>
 
@@ -46,16 +82,61 @@ const Settings = () => {
               <h2 className={styles.cardTitle}>Profile Information</h2>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Full Name</label>
-                <input type="text" className={styles.input} defaultValue="Admin User" />
+                <input type="text" className={styles.input} defaultValue={currentUser?.name} />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Email Address</label>
-                <input type="email" className={styles.input} defaultValue="admin@university.edu" />
+                <input type="email" className={styles.input} value={currentUser?.email} disabled />
+                <p className={styles.note} style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.6 }}>Login email cannot be changed from settings.</p>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Role</label>
-                <input type="text" className={styles.input} defaultValue="System Administrator" disabled />
+                <input type="text" className={styles.input} value={currentUser?.role} disabled />
               </div>
+            </Card>
+          )}
+
+          {activeTab === 'security' && (
+            <Card className={styles.settingsCard}>
+              <h2 className={styles.cardTitle}>Change Password</h2>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Current Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showPass ? "text" : "password"} 
+                    className={styles.input} 
+                    value={passwordForm.current}
+                    onChange={(e) => setPasswordForm({...passwordForm, current: e.target.value})}
+                  />
+                  <button 
+                    onClick={() => setShowPass(!showPass)} 
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
+                  >
+                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>New Password</label>
+                <input 
+                  type="password" 
+                  className={styles.input} 
+                  value={passwordForm.new}
+                  onChange={(e) => setPasswordForm({...passwordForm, new: e.target.value})}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Confirm New Password</label>
+                <input 
+                  type="password" 
+                  className={styles.input} 
+                  value={passwordForm.confirm}
+                  onChange={(e) => setPasswordForm({...passwordForm, confirm: e.target.value})}
+                />
+              </div>
+              <button className={styles.primaryBtn} onClick={handlePasswordChange} style={{ width: '100%', marginTop: '1rem', justifyContent: 'center' }}>
+                Update Password
+              </button>
             </Card>
           )}
 

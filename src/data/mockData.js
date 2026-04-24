@@ -1,7 +1,7 @@
 export const usersData = [
-  { id: 'USR001', email: 'admin@edu.com', password: 'password', role: 'Admin', name: 'Super Admin' },
+  { id: 'USR001', email: 'admin@kashibaiganpatcollege.com', password: 'password', role: 'Admin', name: 'Super Admin' },
   { id: 'USR002', email: 'management@edu.com', password: 'password', role: 'Management', name: 'Director Board' },
-  { id: 'USR003', email: 'staff@edu.com', password: 'password', role: 'Office Staff', name: 'Registrar Office' },
+  { id: 'USR003', email: 'office@kashibaiganpatcollege.com', password: 'password', role: 'Office Staff', name: 'Registrar Office' },
   { id: 'USR004', email: 'faculty@edu.com', password: 'password', role: 'Faculty', name: 'Dr. Alan Smith', linkedId: 'FAC001' },
   { id: 'USR005', email: 'student@edu.com', password: 'password', role: 'Student', name: 'Alice Freeman', linkedId: 'STU001' }
 ];

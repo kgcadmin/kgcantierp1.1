@@ -34,13 +34,19 @@ import {
 export const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
+  const [users, setUsers] = useState(() => {
+    const savedUsers = localStorage.getItem('edusec_users');
+    return savedUsers ? JSON.parse(savedUsers) : usersData;
+  });
+
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('nexus_user');
-    return savedUser ? JSON.parse(savedUser) : usersData[0]; // Default to Admin
+    if (savedUser) return JSON.parse(savedUser);
+    return users[0]; // Default to Admin
   });
   
   const login = (email, password) => {
-    const user = usersData.find(u => u.email === email && u.password === password);
+    const user = users.find(u => u.email === email && u.password === password);
     if (user) {
       setCurrentUser(user);
       localStorage.setItem('nexus_user', JSON.stringify(user));
@@ -115,6 +121,7 @@ export const AppContextProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('edusec_documents', JSON.stringify(documents)); }, [documents]);
   useEffect(() => { localStorage.setItem('edusec_communication', JSON.stringify(communication)); }, [communication]);
   useEffect(() => { localStorage.setItem('edusec_calendar', JSON.stringify(calendar)); }, [calendar]);
+  useEffect(() => { localStorage.setItem('edusec_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('edusec_health', JSON.stringify(systemHealth)); }, [systemHealth]);
   useEffect(() => { localStorage.setItem('edusec_activities', JSON.stringify(recentActivities)); }, [recentActivities]);
 
@@ -383,7 +390,8 @@ export const AppContextProvider = ({ children }) => {
       documents, setDocuments, addDocument, deleteDocument,
       communication, setCommunication, addTask, addNotice,
       systemHealth, promoteBatch, addLoan,
-      dashboardStats, recentActivities, systemConfig
+      dashboardStats, recentActivities, systemConfig,
+      users, setUsers
     }}>
 
       {children}
