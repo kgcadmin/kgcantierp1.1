@@ -8,6 +8,20 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header > div:last-child {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
 }
 
 .title {
@@ -101,6 +115,31 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tableToolbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .tableToolbar {
+    padding: 1rem;
+  }
+  
+  .searchBox {
+    width: 100% !important;
+  }
 }
 
 .cardHeader {
