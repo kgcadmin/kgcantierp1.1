@@ -7,7 +7,7 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import ProfileView from '../../components/ProfileView/ProfileView';
 
 const Faculty = () => {
-  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser, handleAddFaculty: addFacultyPrompt, handleImportCSV: importFacultyCSV } = useContext(AppContext);
+  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser, handleAddFaculty, processCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -25,8 +25,6 @@ const Faculty = () => {
     const matchesStatus = !statusFilter || member.status === statusFilter;
     return matchesSearch && matchesDept && matchesStatus;
   });
-
-  // Handlers moved to AppContext
 
   const handleEditFaculty = (member) => {
     const name = window.prompt("Edit Faculty Name:", member.name);
@@ -48,14 +46,14 @@ const Faculty = () => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Management'].includes(currentUser?.role) && (
             <>
-              <button onClick={addFacultyPrompt} className={styles.primaryBtn}>
+              <button onClick={handleAddFaculty} className={styles.primaryBtn}>
                 <Plus size={18} />
                 <span>Add Faculty</span>
               </button>
               <label className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
                 <Upload size={18} />
                 <span>Import CSV</span>
-                <input type="file" accept=".csv" onChange={importFacultyCSV} style={{ display: 'none' }} />
+                <input type="file" accept=".csv" onChange={(e) => processCSV(e, 'faculty')} style={{ display: 'none' }} />
               </label>
             </>
           )}

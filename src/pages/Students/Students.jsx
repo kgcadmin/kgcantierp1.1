@@ -7,7 +7,7 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import ProfileView from '../../components/ProfileView/ProfileView';
 
 const Students = () => {
-  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, handleAddStudent: addStudentPrompt, handleImportCSV: importStudentCSV } = useContext(AppContext);
+  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, handleAddStudent, processCSV } = useContext(AppContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -47,14 +47,14 @@ const Students = () => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Office Staff'].includes(currentUser?.role) && (
             <>
-              <button onClick={addStudentPrompt} className={styles.primaryBtn}>
+              <button onClick={handleAddStudent} className={styles.primaryBtn}>
                 <Plus size={18} />
                 <span>Add Student</span>
               </button>
               <label className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
                 <Upload size={18} />
                 <span>Import CSV</span>
-                <input type="file" accept=".csv" onChange={importStudentCSV} style={{ display: 'none' }} />
+                <input type="file" accept=".csv" onChange={(e) => processCSV(e, 'student')} style={{ display: 'none' }} />
               </label>
               {currentUser?.role === 'Admin' && (
                 <button onClick={handlePromote} className={styles.primaryBtn} style={{ background: '#388e3c' }}>
