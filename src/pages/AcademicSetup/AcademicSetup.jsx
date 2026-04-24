@@ -35,8 +35,8 @@ const AcademicSetup = () => {
 
   return (
     <div className={styles.setupPage}>
-      <div className={styles.header}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+      <div className={`${styles.header} mobile-stack`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
           <div>
             <h1 className={styles.title}>Academic Setup</h1>
             <p className={styles.subtitle}>Centralized management of departments, categories, degrees, and subjects.</p>
@@ -68,30 +68,32 @@ const AcademicSetup = () => {
         {activeTab === 'departments' && (
           <Card className={styles.dataCard}>
             <h2 className={styles.sectionTitle}>Departments</h2>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Department Name</th>
-                  <th>Head of Department</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {departments.map(d => (
-                  <tr key={d.id}>
-                    <td>{d.id}</td>
-                    <td>{d.name}</td>
-                    <td>{d.head}</td>
-                    <td>
-                      <button className={styles.deleteBtn} onClick={() => setDepartments(departments.filter(item => item.id !== d.id))}>
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
+            <div className="table-responsive">
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Department Name</th>
+                    <th>Head of Department</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {departments.map(d => (
+                    <tr key={d.id}>
+                      <td>{d.id}</td>
+                      <td>{d.name}</td>
+                      <td>{d.head}</td>
+                      <td>
+                        <button className={styles.deleteBtn} onClick={() => setDepartments(departments.filter(item => item.id !== d.id))}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         )}
 
@@ -117,32 +119,34 @@ const AcademicSetup = () => {
         {activeTab === 'degrees' && (
           <Card className={styles.dataCard}>
             <h2 className={styles.sectionTitle}>Degrees Map</h2>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Degree ID</th>
-                  <th>Name</th>
-                  <th>Category ID</th>
-                  <th>Department ID</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {degrees.map(d => (
-                  <tr key={d.id}>
-                    <td>{d.id}</td>
-                    <td>{d.name}</td>
-                    <td>{d.categoryId}</td>
-                    <td>{d.departmentId}</td>
-                    <td>
-                      <button className={styles.deleteBtn} onClick={() => setDegrees(degrees.filter(item => item.id !== d.id))}>
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
+            <div className="table-responsive">
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Degree ID</th>
+                    <th>Name</th>
+                    <th>Category ID</th>
+                    <th>Department ID</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {degrees.map(d => (
+                    <tr key={d.id}>
+                      <td>{d.id}</td>
+                      <td>{d.name}</td>
+                      <td>{d.categoryId}</td>
+                      <td>{d.departmentId}</td>
+                      <td>
+                        <button className={styles.deleteBtn} onClick={() => setDegrees(degrees.filter(item => item.id !== d.id))}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         )}
 

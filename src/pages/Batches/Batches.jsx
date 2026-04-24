@@ -39,12 +39,12 @@ const Batches = () => {
 
   return (
     <div className={styles.batchesPage}>
-      <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className={`${styles.header} mobile-stack`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1 className={styles.title} style={{ margin: '0 0 0.5rem 0' }}>Batch Management</h1>
           <p className={styles.subtitle} style={{ margin: 0 }}>Handle lifecycle, track precise records, and manage batch status.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -97,7 +97,6 @@ const Batches = () => {
             <FileText size={18} /> Reports
           </button>
         </div>
-
       </div>
 
       <div className={styles.grid}>
@@ -159,6 +158,7 @@ const Batches = () => {
                 <div className={styles.studentsSection}>
                   <h3><Users size={16} /> Enrolled Students</h3>
                   {getStudentsForBatch(batch.id).length > 0 ? (
+                  <div className="table-responsive">
                     <table className={styles.studentsTable}>
                       <thead>
                         <tr>
@@ -177,6 +177,7 @@ const Batches = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
                   ) : (
                     <p className={styles.noStudents}>No students enrolled in this batch.</p>
                   )}

@@ -34,12 +34,12 @@ const Finance = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Finance Management System</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Automate expenses, petty cash, and statutory compliance.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {currentUser?.role !== 'Management' && (
             <>
               <button onClick={handleAddExpense} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
@@ -91,32 +91,34 @@ const Finance = () => {
               <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Recent Project Expenses</h2>
             </div>
             
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-                  <th style={{ padding: '0.75rem' }}>Transaction ID</th>
-                  <th style={{ padding: '0.75rem' }}>Description</th>
-                  <th style={{ padding: '0.75rem' }}>Category</th>
-                  <th style={{ padding: '0.75rem' }}>Amount</th>
-                  <th style={{ padding: '0.75rem' }}>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {finance.expenses.map(exp => (
-                  <tr key={exp.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{exp.id}</td>
-                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-primary)' }}>{exp.description}</td>
-                    <td style={{ padding: '1rem 0.75rem' }}>
-                      <span style={{ padding: '0.25rem 0.5rem', background: 'var(--surface-hover)', borderRadius: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {exp.category}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: '#d32f2f' }}>₹{exp.amount.toLocaleString()}</td>
-                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{exp.date}</td>
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                    <th style={{ padding: '0.75rem' }}>Transaction ID</th>
+                    <th style={{ padding: '0.75rem' }}>Description</th>
+                    <th style={{ padding: '0.75rem' }}>Category</th>
+                    <th style={{ padding: '0.75rem' }}>Amount</th>
+                    <th style={{ padding: '0.75rem' }}>Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {finance.expenses.map(exp => (
+                    <tr key={exp.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{exp.id}</td>
+                      <td style={{ padding: '1rem 0.75rem', color: 'var(--text-primary)' }}>{exp.description}</td>
+                      <td style={{ padding: '1rem 0.75rem' }}>
+                        <span style={{ padding: '0.25rem 0.5rem', background: 'var(--surface-hover)', borderRadius: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {exp.category}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: '#d32f2f' }}>₹{exp.amount.toLocaleString()}</td>
+                      <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{exp.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </div>
       )}
@@ -124,37 +126,39 @@ const Finance = () => {
       {activeTab === 'loans' && (
         <Card style={{ padding: '1.5rem' }}>
            <h2 style={{ marginBottom: '1.5rem' }}>Loans & Advances Tracking</h2>
-           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                 <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    <th style={{ padding: '0.75rem' }}>ID</th>
-                    <th style={{ padding: '0.75rem' }}>Employee ID</th>
-                    <th style={{ padding: '0.75rem' }}>Type</th>
-                    <th style={{ padding: '0.75rem' }}>Total Amount</th>
-                    <th style={{ padding: '0.75rem' }}>Remaining</th>
-                    <th style={{ padding: '0.75rem' }}>Installment</th>
-                    <th style={{ padding: '0.75rem' }}>Status</th>
-                 </tr>
-              </thead>
-              <tbody>
-                 {finance.loans?.map(loan => (
-                    <tr key={loan.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                       <td style={{ padding: '1rem 0.75rem' }}>{loan.id}</td>
-                       <td style={{ padding: '1rem 0.75rem' }}>{loan.employeeId}</td>
-                       <td style={{ padding: '1rem 0.75rem' }}>{loan.type}</td>
-                       <td style={{ padding: '1rem 0.75rem' }}>₹{loan.amount.toLocaleString()}</td>
-                       <td style={{ padding: '1rem 0.75rem', color: '#d32f2f' }}>₹{loan.remaining.toLocaleString()}</td>
-                       <td style={{ padding: '1rem 0.75rem' }}>₹{loan.installment.toLocaleString()}</td>
-                       <td style={{ padding: '1rem 0.75rem' }}>
-                          <span style={{ padding: '0.25rem 0.5rem', background: '#e3f2fd', color: '#1976d2', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600 }}>{loan.status}</span>
-                       </td>
-                    </tr>
-                 ))}
-                 {(!finance.loans || finance.loans.length === 0) && (
-                    <tr><td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No active loans found.</td></tr>
-                 )}
-              </tbody>
-           </table>
+            <div className="table-responsive">
+               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                     <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                        <th style={{ padding: '0.75rem' }}>ID</th>
+                        <th style={{ padding: '0.75rem' }}>Employee ID</th>
+                        <th style={{ padding: '0.75rem' }}>Type</th>
+                        <th style={{ padding: '0.75rem' }}>Total Amount</th>
+                        <th style={{ padding: '0.75rem' }}>Remaining</th>
+                        <th style={{ padding: '0.75rem' }}>Installment</th>
+                        <th style={{ padding: '0.75rem' }}>Status</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {finance.loans?.map(loan => (
+                        <tr key={loan.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                           <td style={{ padding: '1rem 0.75rem' }}>{loan.id}</td>
+                           <td style={{ padding: '1rem 0.75rem' }}>{loan.employeeId}</td>
+                           <td style={{ padding: '1rem 0.75rem' }}>{loan.type}</td>
+                           <td style={{ padding: '1rem 0.75rem' }}>₹{loan.amount.toLocaleString()}</td>
+                           <td style={{ padding: '1rem 0.75rem', color: '#d32f2f' }}>₹{loan.remaining.toLocaleString()}</td>
+                           <td style={{ padding: '1rem 0.75rem' }}>₹{loan.installment.toLocaleString()}</td>
+                           <td style={{ padding: '1rem 0.75rem' }}>
+                              <span style={{ padding: '0.25rem 0.5rem', background: '#e3f2fd', color: '#1976d2', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600 }}>{loan.status}</span>
+                           </td>
+                        </tr>
+                     ))}
+                     {(!finance.loans || finance.loans.length === 0) && (
+                        <tr><td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No active loans found.</td></tr>
+                     )}
+                  </tbody>
+               </table>
+            </div>
         </Card>
       )}
 

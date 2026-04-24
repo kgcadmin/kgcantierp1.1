@@ -258,24 +258,26 @@ const SystemManagement = () => {
 
              <Card style={{ padding: '1.5rem', gridColumn: 'span 2' }}>
                 <h3 style={{ margin: '0 0 1rem 0' }}>System Errors & Logs</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                   <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                         <th style={{ padding: '0.5rem' }}>Time</th>
-                         <th style={{ padding: '0.5rem' }}>Type</th>
-                         <th style={{ padding: '0.5rem' }}>Message</th>
-                      </tr>
-                   </thead>
-                   <tbody>
-                      {systemHealth.errors.map(err => (
-                         <tr key={err.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                            <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem' }}>{err.time}</td>
-                            <td style={{ padding: '0.75rem 0.5rem' }}><span style={{ color: '#d32f2f', fontWeight: 600 }}>{err.type}</span></td>
-                            <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>{err.message}</td>
+                <div className="table-responsive">
+                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                         <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                            <th style={{ padding: '0.5rem' }}>Time</th>
+                            <th style={{ padding: '0.5rem' }}>Type</th>
+                            <th style={{ padding: '0.5rem' }}>Message</th>
                          </tr>
-                      ))}
-                   </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                         {systemHealth.errors.map(err => (
+                            <tr key={err.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                               <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem' }}>{err.time}</td>
+                               <td style={{ padding: '0.75rem 0.5rem' }}><span style={{ color: '#d32f2f', fontWeight: 600 }}>{err.type}</span></td>
+                               <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>{err.message}</td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
              </Card>
           </div>
         )}

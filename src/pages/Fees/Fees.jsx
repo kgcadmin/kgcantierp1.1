@@ -237,7 +237,7 @@ const Fees = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+      <div className="responsive-grid-3">
         <Card onClick={() => setFilterStatus(currentUser?.role === 'Student' ? 'Paid' : 'All')} style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', border: (filterStatus === 'All' && currentUser?.role !== 'Student') || (filterStatus === 'Paid' && currentUser?.role === 'Student') ? '2px solid #1976d2' : '1px solid var(--border-light)', transition: 'border 0.2s' }}>
           <div style={{ color: '#1976d2' }}><CreditCard size={24} /></div>
           <div>
@@ -292,41 +292,43 @@ const Fees = () => {
           </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead style={{ background: 'var(--surface-hover)', borderRadius: '0.5rem' }}>
-            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-              <th style={{ padding: '1rem 0.75rem' }}>Receipt ID</th>
-              <th style={{ padding: '1rem 0.75rem' }}>Student Name</th>
-              <th style={{ padding: '1rem 0.75rem' }}>Fee Type</th>
-              <th style={{ padding: '1rem 0.75rem' }}>Amount</th>
-              <th style={{ padding: '1rem 0.75rem' }}>Date</th>
-              <th style={{ padding: '1rem 0.75rem' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredFees.map(fee => (
-              <tr key={fee.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{fee.id}</td>
-                <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{getStudentName(fee.studentId)}</td>
-                <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{fee.type}</td>
-                <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>₹{fee.amount}</td>
-                <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{fee.date}</td>
-                <td style={{ padding: '1rem 0.75rem' }}>
-                  <span style={{ 
-                    padding: '0.25rem 0.75rem', 
-                    borderRadius: '1rem', 
-                    fontSize: '0.75rem', 
-                    fontWeight: 600,
-                    background: fee.status === 'Paid' ? '#e8f5e9' : '#fff3e0',
-                    color: fee.status === 'Paid' ? '#2e7d32' : '#e65100'
-                  }}>
-                    {fee.status}
-                  </span>
-                </td>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead style={{ background: 'var(--surface-hover)', borderRadius: '0.5rem' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                <th style={{ padding: '1rem 0.75rem' }}>Receipt ID</th>
+                <th style={{ padding: '1rem 0.75rem' }}>Student Name</th>
+                <th style={{ padding: '1rem 0.75rem' }}>Fee Type</th>
+                <th style={{ padding: '1rem 0.75rem' }}>Amount</th>
+                <th style={{ padding: '1rem 0.75rem' }}>Date</th>
+                <th style={{ padding: '1rem 0.75rem' }}>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredFees.map(fee => (
+                <tr key={fee.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{fee.id}</td>
+                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{getStudentName(fee.studentId)}</td>
+                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{fee.type}</td>
+                  <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>₹{fee.amount}</td>
+                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{fee.date}</td>
+                  <td style={{ padding: '1rem 0.75rem' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.75rem', 
+                      borderRadius: '1rem', 
+                      fontSize: '0.75rem', 
+                      fontWeight: 600,
+                      background: fee.status === 'Paid' ? '#e8f5e9' : '#fff3e0',
+                      color: fee.status === 'Paid' ? '#2e7d32' : '#e65100'
+                    }}>
+                      {fee.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {showStructuresModal && (

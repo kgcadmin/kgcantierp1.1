@@ -187,6 +187,37 @@ input:focus, select:focus, textarea:focus {
 input::placeholder, textarea::placeholder {
   color: var(--text-muted);
 }
+
+/* Global Responsive Helpers */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .responsive-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .mobile-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
 @media (max-width: 1024px) {
   :root {
     --sidebar-width: 0px; /* Hide sidebar by default on mobile */
@@ -216,4 +247,9 @@ input::placeholder, textarea::placeholder {
   input, select, button {
     min-height: 44px;
   }
+}
+.icon-button-hover:hover {
+  background: var(--surface-hover) !important;
+  color: var(--primary) !important;
+  transform: translateY(-1px);
 }

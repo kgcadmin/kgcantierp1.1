@@ -33,12 +33,12 @@ const Payroll = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Payroll & HRMS Management</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Automate payroll processing, leave management, and employee info.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           {activeTab === 'salary' && currentUser?.role !== 'Faculty' && currentUser?.role !== 'Student' && (
             <button onClick={handleProcessSalary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               Process Salary
@@ -76,84 +76,88 @@ const Payroll = () => {
       {activeTab === 'salary' && (
         <Card style={{ padding: '1.5rem' }}>
           <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: 'var(--text-primary)' }}>April 2026 Payroll</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-                <th style={{ padding: '0.75rem' }}>Employee</th>
-                <th style={{ padding: '0.75rem' }}>Base Salary</th>
-                <th style={{ padding: '0.75rem' }}>Allowances</th>
-                <th style={{ padding: '0.75rem' }}>Deductions</th>
-                <th style={{ padding: '0.75rem' }}>Net Pay</th>
-                <th style={{ padding: '0.75rem' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {relevantPayroll.map(pay => (
-                <tr key={pay.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{getEmployeeName(pay.employeeId)}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>₹{pay.baseSalary}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: '#388e3c' }}>+₹{pay.allowances}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: '#d32f2f' }}>-₹{pay.deductions}</td>
-                  <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>₹{pay.netPay}</td>
-                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
-                    {currentUser?.role === 'Admin' && (
-                      <button onClick={() => deletePayroll(pay.id)} style={{ padding: '0.4rem', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '0.25rem', cursor: 'pointer' }}>
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </td>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                  <th style={{ padding: '0.75rem' }}>Employee</th>
+                  <th style={{ padding: '0.75rem' }}>Base Salary</th>
+                  <th style={{ padding: '0.75rem' }}>Allowances</th>
+                  <th style={{ padding: '0.75rem' }}>Deductions</th>
+                  <th style={{ padding: '0.75rem' }}>Net Pay</th>
+                  <th style={{ padding: '0.75rem' }}>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {relevantPayroll.map(pay => (
+                  <tr key={pay.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{getEmployeeName(pay.employeeId)}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>₹{pay.baseSalary}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: '#388e3c' }}>+₹{pay.allowances}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: '#d32f2f' }}>-₹{pay.deductions}</td>
+                    <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>₹{pay.netPay}</td>
+                    <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                      {currentUser?.role === 'Admin' && (
+                        <button onClick={() => deletePayroll(pay.id)} style={{ padding: '0.4rem', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '0.25rem', cursor: 'pointer' }}>
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 
       {activeTab === 'leaves' && (
         <Card style={{ padding: '1.5rem' }}>
           <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Leave Requests</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-                <th style={{ padding: '0.75rem' }}>Employee</th>
-                <th style={{ padding: '0.75rem' }}>Leave Type</th>
-                <th style={{ padding: '0.75rem' }}>Duration</th>
-                <th style={{ padding: '0.75rem' }}>Status</th>
-                <th style={{ padding: '0.75rem', textAlign: 'right' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {relevantLeaves.map(leave => (
-                <tr key={leave.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{getEmployeeName(leave.employeeId)}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{leave.type}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{leave.days} Days</td>
-                  <td style={{ padding: '1rem 0.75rem' }}>
-                    <span style={{ 
-                      padding: '0.25rem 0.75rem', 
-                      borderRadius: '1rem', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 600,
-                      background: leave.status === 'Approved' ? '#e8f5e9' : '#fff3e0',
-                      color: leave.status === 'Approved' ? '#2e7d32' : '#e65100'
-                    }}>
-                      {leave.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      {leave.status === 'Pending' && currentUser?.role !== 'Faculty' && (
-                        <button onClick={() => approveLeave(leave.id)} style={{ padding: '0.25rem 0.75rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}>Approve</button>
-                      )}
-                      {currentUser?.role === 'Admin' && (
-                        <button onClick={() => deleteLeave(leave.id)} style={{ padding: '0.4rem', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Trash2 size={14} /></button>
-                      )}
-                    </div>
-                  </td>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                  <th style={{ padding: '0.75rem' }}>Employee</th>
+                  <th style={{ padding: '0.75rem' }}>Leave Type</th>
+                  <th style={{ padding: '0.75rem' }}>Duration</th>
+                  <th style={{ padding: '0.75rem' }}>Status</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'right' }}>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {relevantLeaves.map(leave => (
+                  <tr key={leave.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{getEmployeeName(leave.employeeId)}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{leave.type}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{leave.days} Days</td>
+                    <td style={{ padding: '1rem 0.75rem' }}>
+                      <span style={{ 
+                        padding: '0.25rem 0.75rem', 
+                        borderRadius: '1rem', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 600,
+                        background: leave.status === 'Approved' ? '#e8f5e9' : '#fff3e0',
+                        color: leave.status === 'Approved' ? '#2e7d32' : '#e65100'
+                      }}>
+                        {leave.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        {leave.status === 'Pending' && currentUser?.role !== 'Faculty' && (
+                          <button onClick={() => approveLeave(leave.id)} style={{ padding: '0.25rem 0.75rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}>Approve</button>
+                        )}
+                        {currentUser?.role === 'Admin' && (
+                          <button onClick={() => deleteLeave(leave.id)} style={{ padding: '0.4rem', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Trash2 size={14} /></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 

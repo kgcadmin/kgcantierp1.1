@@ -264,9 +264,9 @@ export const hostelData = {
 };
 
 export const documentsData = [
-  { id: 'DOC001', title: 'Bonafide Certificate Template', type: 'Template', category: 'Certification', dateAdded: '2026-01-10' },
-  { id: 'DOC002', title: 'Fee Concession Form', type: 'Form', category: 'Financial', dateAdded: '2026-02-15' },
-  { id: 'DOC003', title: 'STU001_Passport.pdf', type: 'Upload', category: 'Student ID', dateAdded: '2026-08-10' },
+  { id: 'DOC001', title: 'Bonafide Certificate Template', type: 'Template', category: 'Certification', dateAdded: '2026-01-10', fileUrl: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=800', fileType: 'image/jpeg', size: '15.4 KB' },
+  { id: 'DOC002', title: 'Fee Concession Form', type: 'Form', category: 'Financial', dateAdded: '2026-02-15', fileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=800', fileType: 'image/jpeg', size: '12.1 KB' },
+  { id: 'DOC003', title: 'STU001_Passport.jpg', type: 'Upload', category: 'Student ID', dateAdded: '2026-08-10', fileUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=800', fileType: 'image/jpeg', size: '45.0 KB' },
 ];
 
 export const communicationData = {

@@ -34,12 +34,12 @@ const Hostel = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Hostel Management</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Room allotments, fees, and visitor logs.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {currentUser?.role !== 'Student' && (
             <button onClick={handleAction} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <Plus size={18} /> {activeTab === 'rooms' ? 'Allocate Room' : 'Log Visitor'}
@@ -107,28 +107,30 @@ const Hostel = () => {
 
       {activeTab === 'visitors' && (
         <Card style={{ padding: '1.5rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-                <th style={{ padding: '0.75rem' }}>Visitor Name</th>
-                <th style={{ padding: '0.75rem' }}>Relation</th>
-                <th style={{ padding: '0.75rem' }}>Visiting Student</th>
-                <th style={{ padding: '0.75rem' }}>Date</th>
-                <th style={{ padding: '0.75rem' }}>Time In/Out</th>
-              </tr>
-            </thead>
-            <tbody>
-              {relevantVisitors.map(visitor => (
-                <tr key={visitor.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{visitor.name}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{visitor.relation}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{getStudentName(visitor.studentId)}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{visitor.date}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{visitor.timeIn} - {visitor.timeOut || 'Present'}</td>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                  <th style={{ padding: '0.75rem' }}>Visitor Name</th>
+                  <th style={{ padding: '0.75rem' }}>Relation</th>
+                  <th style={{ padding: '0.75rem' }}>Visiting Student</th>
+                  <th style={{ padding: '0.75rem' }}>Date</th>
+                  <th style={{ padding: '0.75rem' }}>Time In/Out</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {relevantVisitors.map(visitor => (
+                  <tr key={visitor.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>{visitor.name}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{visitor.relation}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{getStudentName(visitor.studentId)}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{visitor.date}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{visitor.timeIn} - {visitor.timeOut || 'Present'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 

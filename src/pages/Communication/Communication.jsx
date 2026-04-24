@@ -49,7 +49,7 @@ const Communication = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Communication Hub</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Task management, E-Notices, and communication channels.</p>
@@ -75,38 +75,40 @@ const Communication = () => {
 
       {activeTab === 'tasks' && (
         <Card style={{ padding: '1.5rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-                <th style={{ padding: '0.75rem' }}>Task ID</th>
-                <th style={{ padding: '0.75rem' }}>Title</th>
-                <th style={{ padding: '0.75rem' }}>Assignee</th>
-                <th style={{ padding: '0.75rem' }}>Due Date</th>
-                <th style={{ padding: '0.75rem' }}>Priority</th>
-                <th style={{ padding: '0.75rem' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {relevantTasks.map(task => (
-                <tr key={task.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{task.id}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-primary)', fontWeight: 500 }}>{task.title}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{getFacultyName(task.assignee)}</td>
-                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{task.dueDate}</td>
-                  <td style={{ padding: '1rem 0.75rem' }}>
-                    <span style={{ padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 600, background: task.priority === 'High' ? '#ffebee' : '#fff3e0', color: task.priority === 'High' ? '#c62828' : '#e65100' }}>
-                      {task.priority}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem 0.75rem' }}>
-                    <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600, background: task.status === 'In Progress' ? '#e3f2fd' : '#e8f5e9', color: task.status === 'In Progress' ? '#1976d2' : '#2e7d32' }}>
-                      {task.status}
-                    </span>
-                  </td>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                  <th style={{ padding: '0.75rem' }}>Task ID</th>
+                  <th style={{ padding: '0.75rem' }}>Title</th>
+                  <th style={{ padding: '0.75rem' }}>Assignee</th>
+                  <th style={{ padding: '0.75rem' }}>Due Date</th>
+                  <th style={{ padding: '0.75rem' }}>Priority</th>
+                  <th style={{ padding: '0.75rem' }}>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {relevantTasks.map(task => (
+                  <tr key={task.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{task.id}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-primary)', fontWeight: 500 }}>{task.title}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{getFacultyName(task.assignee)}</td>
+                    <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{task.dueDate}</td>
+                    <td style={{ padding: '1rem 0.75rem' }}>
+                      <span style={{ padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 600, background: task.priority === 'High' ? '#ffebee' : '#fff3e0', color: task.priority === 'High' ? '#c62828' : '#e65100' }}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 0.75rem' }}>
+                      <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600, background: task.status === 'In Progress' ? '#e3f2fd' : '#e8f5e9', color: task.status === 'In Progress' ? '#1976d2' : '#2e7d32' }}>
+                        {task.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 

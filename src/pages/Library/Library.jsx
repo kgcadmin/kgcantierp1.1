@@ -38,7 +38,7 @@ const Library = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+      <div className="responsive-grid-3">
         <Card onClick={() => setFilterStatus('All')} style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', border: filterStatus === 'All' ? '2px solid #388e3c' : '1px solid var(--border-light)', transition: 'border 0.2s' }}>
           <div style={{ color: '#388e3c' }}><Book size={24} /></div>
           <div>
@@ -63,74 +63,76 @@ const Library = () => {
       </div>
 
       <Card style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', gap: '1rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Search Catalog</h2>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
             <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
             <input 
               type="text" 
               placeholder="Search by Title, Author, or ISBN..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ padding: '0.5rem 0.5rem 0.5rem 2.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', width: '350px' }}
+              style={{ padding: '0.5rem 0.5rem 0.5rem 2.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', width: '100%' }}
             />
           </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-              <th style={{ padding: '0.75rem' }}>Title & Author</th>
-              <th style={{ padding: '0.75rem' }}>Category</th>
-              <th style={{ padding: '0.75rem' }}>ISBN</th>
-              <th style={{ padding: '0.75rem' }}>Location</th>
-              <th style={{ padding: '0.75rem' }}>Status</th>
-              {currentUser?.role !== 'Student' && <th style={{ padding: '0.75rem', textAlign: 'right' }}>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredLibrary.map(book => (
-              <tr key={book.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '1rem 0.75rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{book.title}</span>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{book.author}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{book.category}</td>
-                <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{book.isbn}</td>
-                <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>Shelf {book.shelf}</td>
-                <td style={{ padding: '1rem 0.75rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ 
-                      padding: '0.25rem 0.75rem', 
-                      borderRadius: '1rem', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 600,
-                      background: book.status === 'Available' ? '#e8f5e9' : book.status === 'Issued' ? '#fff3e0' : '#e3f2fd',
-                      color: book.status === 'Available' ? '#2e7d32' : book.status === 'Issued' ? '#e65100' : '#1976d2'
-                    }}>
-                      {book.status}
-                    </span>
-                    {book.dueDate && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Due: {book.dueDate}</span>}
-                  </div>
-                </td>
-                {currentUser?.role !== 'Student' && (
-                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
-                    <button onClick={() => { if(window.confirm('Delete this book?')) deleteLibraryBook(book.id); }} style={{ background: 'none', border: 'none', color: '#d32f2f', cursor: 'pointer', padding: '0.5rem' }} title="Delete Book">
-                      <Trash2 size={16} />
-                    </button>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                <th style={{ padding: '0.75rem' }}>Title & Author</th>
+                <th style={{ padding: '0.75rem' }}>Category</th>
+                <th style={{ padding: '0.75rem' }}>ISBN</th>
+                <th style={{ padding: '0.75rem' }}>Location</th>
+                <th style={{ padding: '0.75rem' }}>Status</th>
+                {currentUser?.role !== 'Student' && <th style={{ padding: '0.75rem', textAlign: 'right' }}>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLibrary.map(book => (
+                <tr key={book.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem 0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{book.title}</span>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{book.author}</span>
+                    </div>
                   </td>
-                )}
-              </tr>
-            ))}
-            {filteredLibrary.length === 0 && (
-              <tr>
-                <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No books found in the catalog matching your search.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{book.category}</td>
+                  <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{book.isbn}</td>
+                  <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>Shelf {book.shelf}</td>
+                  <td style={{ padding: '1rem 0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <span style={{ 
+                        padding: '0.25rem 0.75rem', 
+                        borderRadius: '1rem', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 600,
+                        background: book.status === 'Available' ? '#e8f5e9' : book.status === 'Issued' ? '#fff3e0' : '#e3f2fd',
+                        color: book.status === 'Available' ? '#2e7d32' : book.status === 'Issued' ? '#e65100' : '#1976d2'
+                      }}>
+                        {book.status}
+                      </span>
+                      {book.dueDate && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Due: {book.dueDate}</span>}
+                    </div>
+                  </td>
+                  {currentUser?.role !== 'Student' && (
+                    <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                      <button onClick={() => { if(window.confirm('Delete this book?')) deleteLibraryBook(book.id); }} style={{ background: 'none', border: 'none', color: '#d32f2f', cursor: 'pointer', padding: '0.5rem' }} title="Delete Book">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {filteredLibrary.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No books found in the catalog matching your search.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {showAddBook && (

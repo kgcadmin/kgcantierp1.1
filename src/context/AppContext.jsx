@@ -288,7 +288,6 @@ export const AppContextProvider = ({ children }) => {
   const editStudent = (id, updated) => setStudents(students.map(s => s.id === id ? { ...s, ...updated } : s));
   const deleteStudent = (id) => setStudents(students.filter(s => s.id !== id));
   const deleteFaculty = (id) => setFaculty(faculty.filter(f => f.id !== id));
-  const deleteCourse = (id) => setCourses(courses.filter(c => c.id !== id));
 
   const updateBatchStatus = (id, newStatus, historyEntry) => {
     setBatches(batches.map(b => b.id === id ? {
@@ -380,11 +379,34 @@ export const AppContextProvider = ({ children }) => {
   const editStaff = (id, updated) => setStaff(staff.map(s => s.id === id ? { ...s, ...updated } : s));
   const deleteStaff = (id) => setStaff(staff.filter(s => s.id !== id));
   
-  const addCourse = (crs) => setCourses([...courses, { ...crs, id: `CRS0${courses.length + 1}` }]);
+  const addCourse = (crs) => {
+    const id = `CRS0${courses.length + 1}`;
+    setCourses([...courses, { ...crs, id }]);
+    addActivity(`added a new course: ${crs.title}`, ['Admin', 'Management', 'Faculty']);
+  };
   const editCourse = (id, updatedCrs) => setCourses(courses.map(c => c.id === id ? { ...c, ...updatedCrs } : c));
+  const deleteCourse = (id) => {
+    const crs = courses.find(c => c.id === id);
+    setCourses(courses.filter(c => c.id !== id));
+    if (crs) addActivity(`deleted course: ${crs.title}`, ['Admin', 'Management']);
+  };
   
-  const addDocument = (doc) => setDocuments([...documents, { ...doc, id: `DOC00${documents.length + 1}` }]);
-  const deleteDocument = (id) => setDocuments(documents.filter(d => d.id !== id));
+  const addDocument = (doc) => {
+    const id = doc.id || `DOC00${documents.length + 1}`;
+    setDocuments([...documents, { ...doc, id }]);
+    
+    let audience = ['Admin', 'Office Staff'];
+    if (doc.visibility === 'Public') audience = [...audience, 'Student', 'Faculty'];
+    if (doc.visibility === 'Student-Specific' && doc.studentId) audience = [...audience, `USR${doc.studentId}`];
+
+    addActivity(`uploaded a new document: ${doc.title}`, audience);
+  };
+  
+  const deleteDocument = (id) => {
+    const doc = documents.find(d => d.id === id);
+    setDocuments(documents.filter(d => d.id !== id));
+    if (doc) addActivity(`deleted document: ${doc.title}`, ['Admin', 'Office Staff']);
+  };
   
   const addTimetable = (slot) => setTimetable([...timetable, { ...slot, id: `TT00${timetable.length + 1}` }]);
   const addPayroll = (record) => setPayroll([...payroll, { ...record, id: `PAY00${payroll.length + 1}` }]);
