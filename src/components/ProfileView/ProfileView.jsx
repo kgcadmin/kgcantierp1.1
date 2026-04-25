@@ -9,7 +9,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     documents, addDocument, deleteDocument, attendance,
     departments, categories, degrees, subjects, 
     setDepartments, setCategories, setDegrees, setSubjects,
-    currentUser 
+    currentUser, profileTemplate, setProfileTemplate 
   } = useContext(AppContext);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...data });
@@ -159,18 +159,40 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     { id: 'subjects', label: 'Subjects', icon: <Book size={16} /> }
   ];
 
-  const renderField = (label, value, field, section = null) => {
-    const displayValue = section ? formData[section]?.[field] : formData[field];
+  const renderField = (label, value, field, sectionId = null) => {
+    const sectionKey = sectionId === 'personal' ? 'personalDetails' : sectionId;
+    const displayValue = sectionKey ? formData[sectionKey]?.[field] : formData[field];
     
     return (
       <div className={styles.fieldItem}>
-        <label className={styles.fieldLabel}>{label}</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <label className={styles.fieldLabel}>{label}</label>
+          {isEditing && currentUser?.role === 'Admin' && (
+            <button 
+              onClick={() => {
+                if (window.confirm(`Delete field "${label}" from template?`)) {
+                  const newTemplate = { ...profileTemplate };
+                  const sectionIdx = newTemplate.sections.findIndex(s => s.id === sectionId);
+                  if (sectionIdx > -1) {
+                    newTemplate.sections[sectionIdx].fields = newTemplate.sections[sectionIdx].fields.filter(f => f.id !== field);
+                    setProfileTemplate(newTemplate);
+                    showToast('Field removed from template');
+                  }
+                }
+              }}
+              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+              title="Remove from Template"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
         {isEditing ? (
           <input 
             type="text" 
             className={styles.fieldInput}
             value={displayValue || ''}
-            onChange={(e) => handleChange(section, field, e.target.value)}
+            onChange={(e) => handleChange(sectionKey, field, e.target.value)}
           />
         ) : (
           <div className={styles.fieldValue}>{displayValue || 'N/A'}</div>
@@ -327,31 +349,90 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
 
         <Card style={{ padding: '2rem' }}>
           {activeTab === 'personal' && (
-            <>
-              <div className={styles.sectionTitle}><User size={20} /> Personal Information</div>
-              <div className={styles.gridFields}>
-                {renderField('Full Name', formData.name, 'name')}
-                {renderField('Roll No', formData.rollNo, 'rollNo')}
-                {renderField('GR Number', formData.grNumber, 'grNumber')}
-                {renderField('Certificate Name', formData.personalDetails?.certificateName, 'certificateName', 'personalDetails')}
-                {renderField('Gender', formData.personalDetails?.gender, 'gender', 'personalDetails')}
-                {renderField('Date of Birth', formData.personalDetails?.dob, 'dob', 'personalDetails')}
-                {renderField('Mother Name', formData.personalDetails?.motherName, 'motherName', 'personalDetails')}
-                {renderField('Father Name', formData.personalDetails?.fatherName, 'fatherName', 'personalDetails')}
-                {renderField('Nationality', formData.personalDetails?.nationality, 'nationality', 'personalDetails')}
-                {renderField('Religion', formData.personalDetails?.religion, 'religion', 'personalDetails')}
-                {renderField('Cast', formData.personalDetails?.cast, 'cast', 'personalDetails')}
-                {renderField('Birth Place', formData.personalDetails?.birthPlace, 'birthPlace', 'personalDetails')}
-                {renderField('Bloodgroup', formData.personalDetails?.bloodgroup, 'bloodgroup', 'personalDetails')}
-                {renderField('Languages', formData.personalDetails?.languages, 'languages', 'personalDetails')}
-                {renderField('Hobbies', formData.personalDetails?.hobbies, 'hobbies', 'personalDetails')}
-                {renderField('NRIC No', formData.personalDetails?.nricNo, 'nricNo', 'personalDetails')}
-                {renderField('Resident', formData.personalDetails?.resident, 'resident', 'personalDetails')}
-                {renderField('Library Book Quota', formData.personalDetails?.libraryQuota, 'libraryQuota', 'personalDetails')}
-                {renderField('Passport No', formData.personalDetails?.passportNo, 'passportNo', 'personalDetails')}
-                {renderField('Visa Expiry Date', formData.personalDetails?.visaExpiry, 'visaExpiry', 'personalDetails')}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className={styles.sectionTitle} style={{ margin: 0 }}><User size={20} /> Personal Information</div>
+                {isEditing && currentUser?.role === 'Admin' && (
+                  <button 
+                    onClick={() => {
+                      const title = window.prompt("New Section Title (e.g. Identity Documents):");
+                      if (title) {
+                        const id = title.toLowerCase().replace(/\s+/g, '_');
+                        setProfileTemplate({
+                          ...profileTemplate,
+                          sections: [...profileTemplate.sections, { id, title, fields: [] }]
+                        });
+                        showToast('Section added to template');
+                      }
+                    }}
+                    className={styles.btn}
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: 'var(--bg-surface-hover)' }}
+                  >
+                    <Plus size={14} /> Add Section
+                  </button>
+                )}
               </div>
-            </>
+
+              {profileTemplate.sections.map((section) => (
+                <div key={section.id} style={{ padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: '1rem', background: 'rgba(255,255,255,0.01)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h3 style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 600, margin: 0 }}>{section.title}</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {isEditing && currentUser?.role === 'Admin' && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              const label = window.prompt("Field Label (e.g. Passport Number):");
+                              if (label) {
+                                const id = label.toLowerCase().replace(/\s+/g, '_');
+                                const type = window.prompt("Field Type (text, date, select):", "text");
+                                const newTemplate = { ...profileTemplate };
+                                const sIdx = newTemplate.sections.findIndex(s => s.id === section.id);
+                                newTemplate.sections[sIdx].fields.push({ id, label, type: type || 'text' });
+                                setProfileTemplate(newTemplate);
+                                showToast('Field added to template');
+                              }
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
+                            <Plus size={14} /> Add Field
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (window.confirm(`Delete entire section "${section.title}"?`)) {
+                                setProfileTemplate({
+                                  ...profileTemplate,
+                                  sections: profileTemplate.sections.filter(s => s.id !== section.id)
+                                });
+                                showToast('Section removed');
+                              }
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className={styles.gridFields}>
+                    {section.id === 'personal' && (
+                      <>
+                        {renderField('Full Name', formData.name, 'name')}
+                        {renderField('Roll No', formData.rollNo, 'rollNo')}
+                        {renderField('GR Number', formData.grNumber, 'grNumber')}
+                      </>
+                    )}
+                    {section.fields.map(field => renderField(field.label, null, field.id, section.id))}
+                    {section.fields.length === 0 && section.id !== 'personal' && (
+                      <div style={{ gridColumn: 'span 3', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.85rem', fontStyle: 'italic', padding: '1rem' }}>
+                        No fields defined for this section. Click 'Add Field' while editing.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
           {activeTab === 'academic' && (
