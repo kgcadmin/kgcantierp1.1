@@ -1,19 +1,19 @@
-import React, { useContext } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import React, { useContext, useState } from 'react';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar/Sidebar';
 import Header from '../components/Header/Header';
 import styles from './MainLayout.module.css';
 import { AppContext } from '../context/AppContext';
-import { useState } from 'react';
 
 
 const MainLayout = () => {
   const { currentUser } = useContext(AppContext);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  const location = useLocation();
 
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    // Pass intended destination so login can redirect back to it
+    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
   return (

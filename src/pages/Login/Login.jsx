@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { GraduationCap, Mail, Lock } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import styles from './Login.module.css';
@@ -10,19 +10,21 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login, currentUser, systemConfig } = useContext(AppContext);
-
+  const location = useLocation();
+  // Where to go after login — defaults to /dashboard
+  const from = location.state?.from || '/dashboard';
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (login(email, password)) {
-      navigate('/dashboard');
+      navigate(from, { replace: true });
     } else {
       setError('Invalid email or password');
     }
   };
 
   if (currentUser) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={from} replace />;
   }
 
   return (
