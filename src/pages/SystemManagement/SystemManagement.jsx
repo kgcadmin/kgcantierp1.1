@@ -1,17 +1,19 @@
 import React, { useContext, useState } from 'react';
-import { Shield, Bell, Settings as SettingsIcon, Save, Upload, Image as ImageIcon } from 'lucide-react';
+import { Shield, Bell, Settings as SettingsIcon, Save, Upload, Image as ImageIcon, Layout, Plus, Trash2, ChevronRight } from 'lucide-react';
 
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 
 const SystemManagement = () => {
-  const { systemConfig, setSystemConfig, systemHealth } = useContext(AppContext);
+  const { systemConfig, setSystemConfig, systemHealth, profileTemplate, setProfileTemplate } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('settings');
   const [config, setConfig] = useState(systemConfig);
+  const [editingTemplate, setEditingTemplate] = useState(profileTemplate);
 
 
   const handleSave = () => {
     setSystemConfig(config);
+    setProfileTemplate(editingTemplate);
     // Update favicon if changed
     if (config.collegeFavicon) {
       let link = document.querySelector("link[rel~='icon']");
@@ -22,7 +24,7 @@ const SystemManagement = () => {
       }
       link.href = config.collegeFavicon;
     }
-    alert('System settings updated successfully!');
+    alert('System settings and templates updated successfully!');
   };
 
   const handleFileUpload = (e, type) => {
@@ -53,8 +55,7 @@ const SystemManagement = () => {
       </div>
       
       <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
-        {['Settings', 'Branding', 'Roles', 'Notifications', 'Schedulers', 'Health'].map(tab => (
-
+        {['Settings', 'Branding', 'Forms', 'Roles', 'Notifications', 'Schedulers', 'Health'].map(tab => (
           <button 
             key={tab} 
             onClick={() => setActiveTab(tab.toLowerCase())}
@@ -158,6 +159,91 @@ const SystemManagement = () => {
                     </label>
                   </div>
                 </div>
+              </div>
+            </Card>
+          </div>
+        )}
+        {activeTab === 'forms' && (
+          <div style={{ gridColumn: 'span 2' }}>
+            <Card style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div>
+                  <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>
+                    <Layout size={20} /> Personal Information Form Builder
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Customize the fields available in student/staff profile forms.</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    const sectionId = window.prompt("New Section Name (e.g. Identity Docs):");
+                    if (sectionId) {
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        sections: [...editingTemplate.sections, { id: sectionId.toLowerCase().replace(/\s+/g, '_'), title: sectionId, fields: [] }]
+                      });
+                    }
+                  }}
+                  className={styles.btn} 
+                  style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Plus size={16} /> Add Section
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {editingTemplate.sections.map((section, sIdx) => (
+                  <div key={section.id} style={{ padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                      <h3 style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 600 }}>{section.title}</h3>
+                      <button 
+                        onClick={() => {
+                          const label = window.prompt("Field Label (e.g. Passport Number):");
+                          if (!label) return;
+                          const type = window.prompt("Field Type (text, date, select, checkbox):", "text");
+                          const newField = { id: label.toLowerCase().replace(/\s+/g, '_'), label, type: type || 'text' };
+                          
+                          const newSections = [...editingTemplate.sections];
+                          newSections[sIdx].fields.push(newField);
+                          setEditingTemplate({ ...editingTemplate, sections: newSections });
+                        }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.8125rem' }}
+                      >
+                        <Plus size={14} /> Add Field
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                      {section.fields.map((field, fIdx) => (
+                        <div key={field.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <ChevronRight size={14} color="var(--text-tertiary)" />
+                            <div>
+                              <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 500 }}>{field.label}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Type: {field.type}</div>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              if (window.confirm(`Remove field "${field.label}"?`)) {
+                                const newSections = [...editingTemplate.sections];
+                                newSections[sIdx].fields.splice(fIdx, 1);
+                                setEditingTemplate({ ...editingTemplate, sections: newSections });
+                              }
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', opacity: 0.6, cursor: 'pointer' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      {section.fields.length === 0 && (
+                        <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '1rem', color: 'var(--text-tertiary)', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                          No fields in this section yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Card>
           </div>

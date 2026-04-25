@@ -95,6 +95,35 @@ export const AppContextProvider = ({ children }) => {
   const [calendar, setCalendar] = useState(() => loadState('calendar', initialCalendar));
   const [systemHealth, setSystemHealth] = useState(() => loadState('health', initialSystemHealth));
   const [recentActivities, setRecentActivities] = useState(() => loadState('activities', initialActivities));
+  
+  // Dynamic Form Templates for Personal Info
+  const [profileTemplate, setProfileTemplate] = useState(() => loadState('profileTemplate', {
+    sections: [
+      {
+        id: 'personal',
+        title: 'Personal Information',
+        fields: [
+          { id: 'certificateName', label: 'Certificate Name', type: 'text', required: true },
+          { id: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'], required: true },
+          { id: 'dob', label: 'Date of Birth', type: 'date', required: true },
+          { id: 'nationality', label: 'Nationality', type: 'text' },
+          { id: 'bloodgroup', label: 'Blood Group', type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] },
+          { id: 'religion', label: 'Religion', type: 'text' },
+          { id: 'cast', label: 'Caste', type: 'text' },
+          { id: 'birthPlace', label: 'Birth Place', type: 'text' }
+        ]
+      },
+      {
+        id: 'contact',
+        title: 'Contact Details',
+        fields: [
+          { id: 'resident', label: 'Resident Type', type: 'select', options: ['Home', 'Hostel', 'Rental'] },
+          { id: 'passportNo', label: 'Passport Number', type: 'text' },
+          { id: 'visaExpiry', label: 'Visa Expiry', type: 'date' }
+        ]
+      }
+    ]
+  }));
 
   // Persistence Effects
   useEffect(() => { localStorage.setItem('edusec_students', JSON.stringify(students)); }, [students]);
@@ -124,6 +153,7 @@ export const AppContextProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('edusec_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('edusec_health', JSON.stringify(systemHealth)); }, [systemHealth]);
   useEffect(() => { localStorage.setItem('edusec_activities', JSON.stringify(recentActivities)); }, [recentActivities]);
+  useEffect(() => { localStorage.setItem('edusec_profileTemplate', JSON.stringify(profileTemplate)); }, [profileTemplate]);
 
 
 
@@ -551,7 +581,8 @@ export const AppContextProvider = ({ children }) => {
       communication, setCommunication, addTask, addNotice,
       systemHealth, promoteBatch, addLoan,
       dashboardStats, recentActivities, systemConfig,
-      users, setUsers
+      users, setUsers,
+      profileTemplate, setProfileTemplate
     }}>
 
       {children}
