@@ -196,22 +196,27 @@ export const AppContextProvider = ({ children }) => {
           const pass = generateRandomPassword(id);
           const email = `${data.name.split(' ')[0].toLowerCase()}${index}${Date.now().toString().slice(-2)}@kashibaiganpatcollege.com`;
 
+          const baseData = {
+            id,
+            name: data.name,
+            department: data.department,
+            status: 'Active',
+            email,
+            password: pass,
+            personalDetails: {} // Will be filled as they complete profile
+          };
+
           if (type === 'student') {
             addStudent({
-              id,
+              ...baseData,
               rollNo: data.rollno || `ROL${id.slice(-4)}`,
               grNumber: data.grnumber || `GR${Date.now().toString().slice(-6)}`,
-              name: data.name,
-              department: data.department,
               year: data.year || 'Freshman',
-              status: 'Active',
-              email,
-              password: pass
             });
           } else if (type === 'faculty') {
-            addFaculty({ id, name: data.name, department: data.department, role: data.role || 'Professor', status: 'Active', email, password: pass });
+            addFaculty({ ...baseData, role: data.role || 'Professor' });
           } else if (type === 'staff') {
-            addStaff({ id, name: data.name, department: data.department, role: data.role || 'Staff', status: 'Active', email, password: pass });
+            addStaff({ ...baseData, role: data.role || 'Staff' });
           }
           importedCount++;
         }
@@ -231,8 +236,8 @@ export const AppContextProvider = ({ children }) => {
       const pass = generateRandomPassword(id);
       addStudent({ 
         id, 
-        rollNo: `NEW-${students.length + 1}`, 
-        grNumber: `GR-${Date.now().toString().slice(-5)}`, 
+        rollNo: `ROL${Date.now().toString().slice(-4)}`, 
+        grNumber: `GR${Date.now().toString().slice(-5)}`, 
         name, 
         department, 
         year: 'Freshman', 
@@ -241,7 +246,8 @@ export const AppContextProvider = ({ children }) => {
         email: `${name.split(' ')[0].toLowerCase()}${Date.now().toString().slice(-3)}@kashibaiganpatcollege.com`, 
         profileStatus: 'Pending Docs', 
         academicHistory: [],
-        password: pass 
+        password: pass,
+        personalDetails: {} // Template will render empty fields for them to fill
       });
       alert(`Student added! Initial Password: ${pass}`);
     }
