@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Settings, Menu } from 'lucide-react';
 
@@ -11,6 +11,24 @@ const Header = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
+
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  // Close both dropdowns when clicking anywhere outside them
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <header className={`glass-panel ${styles.header}`}>
       <button className={styles.menuBtn} onClick={onMenuClick}>
@@ -18,19 +36,19 @@ const Header = ({ onMenuClick }) => {
       </button>
       <div className={styles.logoPlaceholder} style={{ flex: 1 }}></div>
 
-      
       <div className={styles.actions}>
-        <div style={{ position: 'relative' }}>
-          <button 
-            className={styles.iconBtn} 
-            onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); }}
+        {/* Notification Bell */}
+        <div style={{ position: 'relative' }} ref={notifRef}>
+          <button
+            className={styles.iconBtn}
+            onClick={() => { setShowNotifications(prev => !prev); setShowProfileMenu(false); }}
           >
             <Bell size={20} />
             {recentActivities?.filter(act => !act.audience || ['Admin', 'Management', 'Office Staff'].includes(currentUser?.role) || act.audience.includes(currentUser?.role || 'Guest')).length > 0 && (
               <span className={styles.badge}>{Math.min(recentActivities.filter(act => !act.audience || ['Admin', 'Management', 'Office Staff'].includes(currentUser?.role) || act.audience.includes(currentUser?.role || 'Guest')).length, 9)}</span>
             )}
           </button>
-          
+
           {showNotifications && (
             <div className={styles.dropdown}>
               <div className={styles.dropdownHeader}>Recent Notifications</div>
@@ -43,15 +61,22 @@ const Header = ({ onMenuClick }) => {
               {recentActivities?.filter(act => !act.audience || act.audience.includes(currentUser?.role || 'Guest')).length === 0 && (
                 <div className={styles.dropdownItem} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem' }}>No new notifications</div>
               )}
-              <div className={styles.dropdownItem} style={{ textAlign: 'center', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }} onClick={() => { navigate('/communication'); setShowNotifications(false); }}>View All Activity</div>
+              <div
+                className={styles.dropdownItem}
+                style={{ textAlign: 'center', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}
+                onClick={() => { navigate('/communication'); setShowNotifications(false); }}
+              >
+                View All Activity
+              </div>
             </div>
           )}
         </div>
-        
-        <div style={{ position: 'relative' }}>
-          <div 
-            className={styles.profile} 
-            onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
+
+        {/* Profile Menu */}
+        <div style={{ position: 'relative' }} ref={profileRef}>
+          <div
+            className={styles.profile}
+            onClick={() => { setShowProfileMenu(prev => !prev); setShowNotifications(false); }}
           >
             <div className={styles.avatar}>
               {currentUser?.name ? currentUser.name.charAt(0) : <User size={20} />}
@@ -68,16 +93,16 @@ const Header = ({ onMenuClick }) => {
                 <p style={{ margin: 0, fontWeight: 600 }}>{currentUser?.name}</p>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{currentUser?.email}</p>
               </div>
-              <button 
-                className={styles.dropdownItem} 
+              <button
+                className={styles.dropdownItem}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 onClick={() => { navigate('/settings'); setShowProfileMenu(false); }}
               >
                 <Settings size={16} /> Account Settings
               </button>
-              <button 
-                className={styles.dropdownItem} 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e65100', borderTop: '1px solid var(--border-light)' }} 
+              <button
+                className={styles.dropdownItem}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e65100', borderTop: '1px solid var(--border-light)' }}
                 onClick={logout}
               >
                 <LogOut size={16} /> Secure Logout
