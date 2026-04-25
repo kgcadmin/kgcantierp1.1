@@ -15,6 +15,13 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   const [formData, setFormData] = useState({ ...data });
   const [activeTab, setActiveTab] = useState('personal');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showPreview, setShowPreview] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleChange = (section, field, value) => {
     if (section) {
@@ -78,9 +85,64 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
       size: (file.size / 1024).toFixed(1) + ' KB',
       fileType: file.type,
       fileUrl,
+      hasLocalFile: true // Mark as uploaded locally
     });
     // Reset input so same file can be re-selected
     e.target.value = '';
+    showToast('Document uploaded successfully!');
+  };
+
+  const handlePreview = (doc) => {
+    // If we have a fileUrl (blob URL), use it
+    if (doc.fileUrl) {
+      setShowPreview(doc);
+    } else {
+      showToast('Preview not available for this record');
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    if (!doc.fileUrl) {
+      showToast('No file available for download');
+      return;
+    }
+
+    try {
+      const response = await fetch(doc.fileUrl);
+      const blob = await response.blob();
+      const file = new File([blob], doc.title, { type: doc.fileType });
+
+      if (window.showSaveFilePicker) {
+        try {
+          const ext = doc.title.split('.').pop();
+          const handle = await window.showSaveFilePicker({
+            suggestedName: doc.title,
+            types: [{ description: 'File', accept: { [doc.fileType || 'application/octet-stream']: [`.${ext}`] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(file);
+          await writable.close();
+          showToast('File saved successfully!');
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+      
+      // Fallback for non-supported browsers
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.title;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Starting download...');
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('Download failed');
+    }
   };
 
   const userDocuments = documents.filter(d => d.studentId === formData.id);
@@ -330,12 +392,19 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{doc.category} • {doc.dateAdded}</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className={styles.actionBtn} onClick={() => alert('Downloading...')}><Download size={16} /></button>
-                      <button className={styles.actionBtn} style={{ color: '#c62828' }} onClick={() => deleteDocument(doc.id)}><Trash2 size={16} /></button>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button className={styles.actionBtn} onClick={() => handlePreview(doc)} title="Preview"><FileText size={16} /></button>
+                      <button className={styles.actionBtn} onClick={() => handleDownload(doc)} title="Download"><Download size={16} /></button>
+                      <button className={styles.actionBtn} style={{ color: '#ef4444' }} onClick={() => { deleteDocument(doc.id); showToast('Document deleted'); }} title="Delete"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}
+                {userDocuments.length === 0 && (
+                  <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--surface-hover)', borderRadius: '0.5rem', border: '1px dashed var(--border-color)' }}>
+                    <BookOpen size={40} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                    <p style={{ margin: 0, color: 'var(--text-tertiary)' }}>No documents uploaded yet.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -440,6 +509,72 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
           )}
         </Card>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#1e293b', color: 'white', padding: '1rem 1.5rem', borderRadius: '0.75rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 3000, display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid var(--border-color)', animation: 'slideUp 0.3s ease-out' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></div>
+          {toast}
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2500, padding: '2rem' }}>
+          <Card style={{ width: '800px', height: '80vh', maxWidth: '95vw', padding: '0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <FileText size={20} color="var(--primary)" />
+                <h2 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Preview: {showPreview.title}</h2>
+              </div>
+              <button onClick={() => setShowPreview(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={24} /></button>
+            </div>
+            <div style={{ flex: 1, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', overflow: 'hidden' }}>
+              {showPreview.fileUrl ? (
+                showPreview.fileType?.startsWith('image/') ? (
+                  <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                    <img src={showPreview.fileUrl} alt={showPreview.title} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                  </div>
+                ) : showPreview.fileType === 'application/pdf' ? (
+                  <iframe src={showPreview.fileUrl} title={showPreview.title} style={{ width: '100%', height: '100%', border: 'none' }} />
+                ) : (
+                  <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
+                    <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+                    <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
+                    <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
+                  </div>
+                )
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
+                  <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+                  <p style={{ fontSize: '1.1rem' }}>Sample Data Preview</p>
+                  <p style={{ fontSize: '0.875rem' }}>{showPreview.title}</p>
+                </div>
+              )}
+            </div>
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+               <button 
+                 onClick={() => { handleDownload(showPreview); setShowPreview(null); }} 
+                 style={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   gap: '0.5rem', 
+                   padding: '0.75rem 1.5rem', 
+                   borderRadius: '0.5rem', 
+                   background: 'var(--primary)', 
+                   color: 'white', 
+                   border: 'none', 
+                   cursor: 'pointer', 
+                   fontWeight: 600,
+                   transition: 'all 0.2s'
+                 }}
+               >
+                 <Download size={18} /> Download Now
+               </button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
