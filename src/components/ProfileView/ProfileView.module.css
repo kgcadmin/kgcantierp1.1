@@ -137,16 +137,22 @@
 
 .btn {
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--border-color);
-  background: white;
-  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #1e293b;
+  color: #f1f5f9;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: #334155;
+  border-color: var(--primary);
 }
 
 .btnPrimary { background: var(--primary); color: white; border-color: var(--primary); }
