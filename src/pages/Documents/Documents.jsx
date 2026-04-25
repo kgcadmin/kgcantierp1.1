@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users, Share2 } from 'lucide-react';
+import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -102,29 +102,6 @@ const Documents = () => {
     }
   };
 
-  const handleShare = async (doc) => {
-    // Generate a real working link to this specific document
-    const baseUrl = window.location.origin;
-    const shareLink = `${baseUrl}/documents?doc=${doc.id}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: doc.title,
-          text: `View this document: ${doc.title}`,
-          url: shareLink,
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          await navigator.clipboard.writeText(shareLink);
-          showToast('Link copied to clipboard!');
-        }
-      }
-    } else {
-      await navigator.clipboard.writeText(shareLink);
-      showToast('Link copied to clipboard!');
-    }
-  };
 
   const handleDownload = async (doc) => {
     const file = fileStore.get(doc.id);
