@@ -2,15 +2,12 @@ import React, { useContext, useState, useEffect } from 'react';
 import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
-import { useLocation, useNavigate } from 'react-router-dom';
 
 // In-memory store for actual File objects (survives component re-renders but not page refresh)
 const fileStore = new Map();
 
 const Documents = () => {
   const { documents, addDocument, deleteDocument, currentUser } = useContext(AppContext);
-  const location = useLocation();
-  const navigate = useNavigate();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -19,19 +16,33 @@ const Documents = () => {
   const [showPreview, setShowPreview] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Auto-open document preview if ?doc=ID is in the URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const docId = params.get('doc');
-    if (docId && documents.length > 0) {
-      const doc = documents.find(d => d.id === docId);
-      if (doc) {
-        handlePreview(doc);
-        // Clean the URL without navigating away
-        navigate('/documents', { replace: true });
-      }
+  const handlePreview = (doc) => {
+    const file = fileStore.get(doc.id);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setShowPreview({ ...doc, fileUrl: url });
+    } else if (doc.fileUrl) {
+      setShowPreview(doc);
+    } else {
+      setShowPreview(doc);
     }
-  }, [location.search, documents]);
+  };
+
+  // Auto-open document preview if ?doc=ID is in the URL — runs once on mount only
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const docId = params.get('doc');
+    if (!docId) return;
+    // Wait until documents are loaded
+    if (documents.length === 0) return;
+    const doc = documents.find(d => d.id === docId);
+    if (doc) {
+      setShowPreview(doc.fileUrl ? doc : { ...doc });
+      // Clean URL
+      window.history.replaceState({}, '', '/documents');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documents.length]);
 
   const categories = ['All', 'Template', 'Form', 'Academic', 'Financial', 'Personal'];
 
@@ -89,18 +100,6 @@ const Documents = () => {
 
     return matchesSearch && matchesCategory && isVisible;
   });
-  const handlePreview = (doc) => {
-    const file = fileStore.get(doc.id);
-    if (file) {
-      // Generate a fresh preview URL from the actual file
-      const url = URL.createObjectURL(file);
-      setShowPreview({ ...doc, fileUrl: url });
-    } else if (doc.fileUrl) {
-      setShowPreview(doc);
-    } else {
-      setShowPreview(doc);
-    }
-  };
 
 
   const handleDownload = async (doc) => {
