@@ -158,7 +158,25 @@ const Documents = () => {
             />
           </div>
           {currentUser?.role !== 'Student' && (
-            <button onClick={() => setShowUploadModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+            <button 
+              onClick={() => setShowUploadModal(true)} 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem', 
+                background: 'var(--primary)', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.75rem 1.5rem', 
+                borderRadius: '0.5rem', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.4)',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'var(--primary-hover)'}
+              onMouseOut={e => e.currentTarget.style.background = 'var(--primary)'}
+            >
               <UploadCloud size={18} /> Upload
             </button>
           )}
@@ -230,14 +248,20 @@ const Documents = () => {
                       <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{doc.dateAdded}</td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                          <button onClick={() => handlePreview(doc)} style={{ padding: '0.5rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', borderRadius: '0.25rem' }} className="icon-button-hover" title="Preview">
+                          <button onClick={() => handlePreview(doc)} style={{ padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-light)', color: 'var(--text-main)', cursor: 'pointer', borderRadius: '0.5rem', transition: 'all 0.2s' }} className="icon-button-hover" title="Preview">
                             <FileText size={18} />
                           </button>
-                          <button onClick={() => handleDownload(doc)} style={{ padding: '0.5rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', borderRadius: '0.25rem' }} className="icon-button-hover" title="Download">
+                          <button onClick={() => handleDownload(doc)} style={{ padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-light)', color: 'var(--text-main)', cursor: 'pointer', borderRadius: '0.5rem', transition: 'all 0.2s' }} className="icon-button-hover" title="Download">
                             <Download size={18} />
                           </button>
                           {currentUser?.role !== 'Student' && (
-                            <button onClick={() => handleDeleteWithCleanup(doc.id)} style={{ padding: '0.5rem', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: '0.25rem' }} className="icon-button-hover" title="Delete">
+                            <button 
+                              onClick={() => handleDeleteWithCleanup(doc.id)} 
+                              style={{ padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-light)', color: '#ef4444', cursor: 'pointer', borderRadius: '0.5rem', transition: 'all 0.2s' }} 
+                              onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = 'white'; }}
+                              onMouseOut={e => { e.currentTarget.style.background = 'var(--bg-base)'; e.currentTarget.style.color = '#ef4444'; }}
+                              title="Delete"
+                            >
                               <Trash2 size={18} />
                             </button>
                           )}
@@ -376,7 +400,24 @@ const Documents = () => {
               )}
             </div>
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-               <button onClick={() => { handleDownload(showPreview); setShowPreview(null); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+               <button 
+                 onClick={() => { handleDownload(showPreview); setShowPreview(null); }} 
+                 style={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   gap: '0.5rem', 
+                   padding: '0.75rem 1.5rem', 
+                   borderRadius: '0.5rem', 
+                   background: 'var(--primary)', 
+                   color: 'white', 
+                   border: 'none', 
+                   cursor: 'pointer', 
+                   fontWeight: 600,
+                   transition: 'all 0.2s'
+                 }}
+                 onMouseOver={e => e.currentTarget.style.background = 'var(--primary-hover)'}
+                 onMouseOut={e => e.currentTarget.style.background = 'var(--primary)'}
+               >
                  <Download size={18} /> Download Now
                </button>
             </div>
