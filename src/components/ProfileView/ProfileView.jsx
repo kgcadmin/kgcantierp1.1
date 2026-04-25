@@ -56,18 +56,31 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   };
 
   const handleUploadDoc = () => {
-    const title = window.prompt("Enter Document Title:");
-    if (title) {
-      addDocument({
-        title,
-        category: 'Profile Attachment',
-        type: 'Upload',
-        visibility: 'Student-Specific',
-        studentId: formData.id,
-        dateAdded: new Date().toISOString().split('T')[0]
-      });
-      alert("Document uploaded successfully!");
-    }
+    // Trigger hidden file input
+    document.getElementById(`profile-doc-upload-${formData.id}`).click();
+  };
+
+  const handleDocFileSelected = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const docId = `DOC${Date.now()}`;
+    // Import fileStore from Documents module is not possible cross-module,
+    // so we store the file as a blob URL in the document record instead
+    const fileUrl = URL.createObjectURL(file);
+    addDocument({
+      id: docId,
+      title: file.name,
+      category: 'Profile Attachment',
+      type: 'Upload',
+      visibility: 'Student-Specific',
+      studentId: formData.id,
+      dateAdded: new Date().toISOString().split('T')[0],
+      size: (file.size / 1024).toFixed(1) + ' KB',
+      fileType: file.type,
+      fileUrl,
+    });
+    // Reset input so same file can be re-selected
+    e.target.value = '';
   };
 
   const userDocuments = documents.filter(d => d.studentId === formData.id);
@@ -295,7 +308,17 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div className={styles.sectionTitle} style={{ margin: 0, border: 0 }}><BookOpen size={20} /> Personal Documents</div>
-                <button className={styles.btn} onClick={handleUploadDoc}><Plus size={16} /> Upload New</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Hidden real file input */}
+                  <input
+                    type="file"
+                    id={`profile-doc-upload-${formData.id}`}
+                    style={{ display: 'none' }}
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={handleDocFileSelected}
+                  />
+                  <button className={styles.btn} onClick={handleUploadDoc}><Plus size={16} /> Upload New</button>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {userDocuments.map(doc => (
