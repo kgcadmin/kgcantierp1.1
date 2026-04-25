@@ -86,9 +86,11 @@ const Documents = () => {
     setUploadData({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });
   };
 
-  const filteredDocuments = documents.filter(d => {
-    const matchesSearch = d.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         d.category.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredDocuments = documents?.filter(d => {
+    if (!d) return false;
+    const title = (d.title || '').toLowerCase();
+    const category = (d.category || '').toLowerCase();
+    const matchesSearch = title.includes(searchTerm.toLowerCase()) || category.includes(searchTerm.toLowerCase());
     const matchesCategory = activeCategory === 'All' || d.type === activeCategory || d.category === activeCategory;
     
     let isVisible = true;
@@ -99,7 +101,7 @@ const Documents = () => {
     }
 
     return matchesSearch && matchesCategory && isVisible;
-  });
+  }) || [];
 
 
   const handleDownload = async (doc) => {
@@ -230,9 +232,6 @@ const Documents = () => {
                         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                           <button onClick={() => handlePreview(doc)} style={{ padding: '0.5rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', borderRadius: '0.25rem' }} className="icon-button-hover" title="Preview">
                             <FileText size={18} />
-                          </button>
-                          <button onClick={() => handleShare(doc)} style={{ padding: '0.5rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', borderRadius: '0.25rem' }} className="icon-button-hover" title="Share">
-                            <Share2 size={18} />
                           </button>
                           <button onClick={() => handleDownload(doc)} style={{ padding: '0.5rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', borderRadius: '0.25rem' }} className="icon-button-hover" title="Download">
                             <Download size={18} />
