@@ -11,15 +11,25 @@ const Hostel = () => {
   const [showReports, setShowReports] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const getStudentName = (id) => students.find(s => s.id === id)?.name || id;
+  // Safety check to prevent blank page crash if data hasn't loaded yet
+  if (!hostel || !hostel.rooms || !hostel.visitors) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <Home size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+        <p>Loading hostel records...</p>
+      </div>
+    );
+  }
+
+  const getStudentName = (id) => students?.find(s => s.id === id)?.name || id;
 
   const relevantRooms = currentUser?.role === 'Student' 
-    ? hostel.rooms.filter(r => r.occupants.includes(currentUser.linkedId))
-    : hostel.rooms;
+    ? (hostel.rooms || []).filter(r => r.occupants?.includes(currentUser.linkedId))
+    : (hostel.rooms || []);
 
   const relevantVisitors = currentUser?.role === 'Student'
-    ? hostel.visitors.filter(v => v.studentId === currentUser.linkedId)
-    : hostel.visitors;
+    ? (hostel.visitors || []).filter(v => v.studentId === currentUser.linkedId)
+    : (hostel.visitors || []);
 
   const handleSaveAction = (data) => {
     if (activeTab === 'rooms') {
