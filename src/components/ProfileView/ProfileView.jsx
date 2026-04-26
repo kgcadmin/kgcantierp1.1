@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { User, Mail, Phone, Building, ShieldCheck, Download, Trash2, Edit2, Save, X, ChevronDown, Calendar, Globe, Award, BookOpen, MapPin, Activity, Plus, FileText, Book, Grid, Layers, Building2 } from 'lucide-react';
 import Card from '../Card/Card';
 import { AppContext, fileStore } from '../../context/AppContext';
@@ -17,6 +17,8 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showPreview, setShowPreview] = useState(null);
   const [toast, setToast] = useState(null);
+  
+  const fileInputRef = useRef(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -63,8 +65,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   };
 
   const handleUploadDoc = () => {
-    // Trigger hidden file input
-    document.getElementById(`profile-doc-upload-${formData.id}`).click();
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const handleDocFileSelected = (e) => {
@@ -84,7 +85,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
             category: 'Profile Attachment',
             type: 'Upload',
             visibility: 'Student-Specific',
-            studentId: formData.id,
+            studentId: String(formData.id),
             dateAdded: new Date().toISOString().split('T')[0],
             size: (file.size / 1024).toFixed(1) + ' KB',
             fileUrl: res.url,
@@ -105,7 +106,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
         category: 'Profile Attachment',
         type: 'Upload',
         visibility: 'Student-Specific',
-        studentId: formData.id,
+        studentId: String(formData.id),
         dateAdded: new Date().toISOString().split('T')[0],
         size: (file.size / 1024).toFixed(1) + ' KB',
         fileUrl: URL.createObjectURL(file),
@@ -197,7 +198,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     }
   };
 
-  const userDocuments = documents?.filter(d => d.studentId === formData?.id) || [];
+  const userDocuments = documents?.filter(d => String(d.studentId) === String(formData?.id)) || [];
   const userAttendance = attendance?.filter(a => a.records && a.records[formData?.id]) || [];
 
   const tabs = [
@@ -507,7 +508,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                   {/* Hidden real file input */}
                   <input
                     type="file"
-                    id={`profile-doc-upload-${formData.id}`}
+                    ref={fileInputRef}
                     style={{ display: 'none' }}
                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={handleDocFileSelected}
