@@ -1,11 +1,11 @@
 import React, { useContext, useState } from 'react';
-import { Search, Plus, CreditCard, Clock, CheckCircle, X, Settings, Calculator, FileText, Download } from 'lucide-react';
+import { Search, Plus, CreditCard, Clock, CheckCircle, X, Settings, Calculator, FileText, Download, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import AddEntryModal from '../../components/AddEntryModal';
 
 const Fees = () => {
-  const { fees, students, addFee, feeStructures, addFeeStructure, courses, batches, enrollments, departments, currentUser } = useContext(AppContext);
+  const { fees, students, addFee, deleteFee, feeStructures, addFeeStructure, courses, batches, enrollments, departments, currentUser } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showStructuresModal, setShowStructuresModal] = useState(false);
@@ -307,6 +307,7 @@ const Fees = () => {
                 <th style={{ padding: '1rem 0.75rem' }}>Amount</th>
                 <th style={{ padding: '1rem 0.75rem' }}>Date</th>
                 <th style={{ padding: '1rem 0.75rem' }}>Status</th>
+                {currentUser?.role === 'Admin' && <th style={{ padding: '1rem 0.75rem' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -329,6 +330,21 @@ const Fees = () => {
                       {fee.status}
                     </span>
                   </td>
+                  {currentUser?.role === 'Admin' && (
+                    <td style={{ padding: '1rem 0.75rem' }}>
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('Send this fee entry to Recovery Centre?')) {
+                            deleteFee(fee.id);
+                          }
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        title="Move to Recovery Centre"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

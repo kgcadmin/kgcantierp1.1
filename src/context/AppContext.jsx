@@ -846,6 +846,7 @@ export const AppContextProvider = ({ children }) => {
       else if (collection === 'faculty') setFaculty(updatedData);
       else if (collection === 'staff') setStaff(updatedData);
       else if (collection === 'courses') setCourses(updatedData);
+      else if (collection === 'fees') setFees(updatedData);
       // Add more as needed...
       
       refreshRecoveryData();
