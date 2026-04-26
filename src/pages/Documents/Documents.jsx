@@ -68,6 +68,9 @@ const Documents = () => {
     const finalTitle = uploadData.title.includes('.') ? uploadData.title : `${uploadData.title}.${extension}`;
     const docId = `DOC${Date.now()}`;
 
+    // Store in-memory for immediate preview/download in current session
+    fileStore.set(docId, uploadData.file);
+
     const docMeta = {
       id: docId,
       title: finalTitle,
@@ -81,22 +84,28 @@ const Documents = () => {
       hasLocalFile: true,
     };
 
-    // If API is available, upload to server
-    if (import.meta.env.VITE_API_URL) {
+    // Always attempt upload if we are in production or have an API URL
+    const shouldUpload = import.meta.env.PROD || import.meta.env.VITE_API_URL;
+
+    if (shouldUpload) {
       api.upload(uploadData.file).then(res => {
         if (res && res.url) {
+          // Use relative URL for better compatibility with SSL/Nginx
+          const relativeUrl = res.url.replace(/^https?:\/\/[^/]+/, '');
           addDocument({
             ...docMeta,
-            fileUrl: res.url,
+            fileUrl: relativeUrl,
           });
+          showToast('Document uploaded and synced successfully!');
         }
       }).catch(err => {
         console.error('Upload failed:', err);
-        alert('File upload failed. Saving metadata locally only.');
+        showToast('Sync failed, but file is available in current session.');
         addDocument(docMeta);
       });
     } else {
       addDocument(docMeta);
+      showToast('Document saved to local storage.');
     }
     setShowUploadModal(false);
     setUploadData({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });
@@ -143,7 +152,9 @@ const Documents = () => {
       window.open(url, '_blank');
       showToast('File opened — use Ctrl+S to save');
     } else if (doc.fileUrl) {
-      window.open(doc.fileUrl, '_blank');
+      // Ensure relative URLs are correctly opened
+      const fullUrl = doc.fileUrl.startsWith('http') ? doc.fileUrl : `${window.location.origin}${doc.fileUrl}`;
+      window.open(fullUrl, '_blank');
       showToast('Opening file...');
     } else {
       showToast('No file available for download');
@@ -394,19 +405,26 @@ const Documents = () => {
             </div>
             <div style={{ flex: 1, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', overflow: 'hidden' }}>
               {showPreview.fileUrl ? (
-                showPreview.fileType?.startsWith('image/') ? (
-                  <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                    <img src={showPreview.fileUrl} alt={showPreview.title} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
-                  </div>
-                ) : showPreview.fileType === 'application/pdf' ? (
-                  <iframe src={showPreview.fileUrl} title={showPreview.title} style={{ width: '100%', height: '100%', border: 'none' }} />
-                ) : (
-                  <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
-                    <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
-                    <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
-                    <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
-                  </div>
-                )
+                (() => {
+                  const fullUrl = showPreview.fileUrl.startsWith('http') ? showPreview.fileUrl : `${window.location.origin}${showPreview.fileUrl}`;
+                  if (showPreview.fileType?.startsWith('image/')) {
+                    return (
+                      <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                        <img src={fullUrl} alt={showPreview.title} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                      </div>
+                    );
+                  } else if (showPreview.fileType === 'application/pdf') {
+                    return <iframe src={fullUrl} title={showPreview.title} style={{ width: '100%', height: '100%', border: 'none' }} />;
+                  } else {
+                    return (
+                      <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
+                        <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+                        <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
+                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
+                      </div>
+                    );
+                  }
+                })()
               ) : (
                 <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
                   <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
