@@ -235,7 +235,7 @@ export const AppContextProvider = ({ children }) => {
   };
 
   const syncToVPS = async (collection, data, id = null, method = 'POST') => {
-    if (!import.meta.env.VITE_API_URL) return;
+    // Remove the check for VITE_API_URL to allow relative paths in production
     if (method === 'POST') await api.post(collection, data);
     else if (method === 'PUT') await api.put(collection, id, data);
     else if (method === 'DELETE') {
