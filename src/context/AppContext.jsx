@@ -475,6 +475,7 @@ export const AppContextProvider = ({ children }) => {
     setBatches(prev => prev.filter(b => b.id !== id));
     syncToVPS('batches', null, id, 'DELETE');
   };
+  const updateBatchStatus = (id, newStatus, historyEntry) => {
     const updated = batches.find(b => b.id === id);
     if (updated) {
       const newBatch = { ...updated, status: newStatus, history: [...updated.history, historyEntry] };
