@@ -35,7 +35,8 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 10000,
-        padding: '1rem'
+        padding: '2rem',
+        overflowY: 'auto'
       }}
       onClick={onClose}
     >
@@ -44,10 +45,13 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         style={{
           width: '500px',
           maxWidth: '100%',
+          maxHeight: 'min(90vh, 800px)',
+          overflowY: 'auto',
           padding: '2rem',
           position: 'relative',
           background: 'var(--bg-surface)',
-          border: '1px solid var(--border-light)'
+          border: '1px solid var(--border-light)',
+          margin: 'auto'
         }}
         onClick={e => e.stopPropagation()}
       >
