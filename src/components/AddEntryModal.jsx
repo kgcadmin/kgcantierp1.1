@@ -29,13 +29,13 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'rgba(15, 23, 42, 0.8)',
+        background: 'rgba(15, 23, 42, 0.9)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start', // Start from top so it never cuts off the title
         justifyContent: 'center',
         zIndex: 10000,
-        padding: '2rem',
+        padding: '5rem 2rem', // Large top padding for breathing room
         overflowY: 'auto'
       }}
       onClick={onClose}
@@ -45,13 +45,12 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         style={{
           width: '500px',
           maxWidth: '100%',
-          maxHeight: 'min(90vh, 800px)',
-          overflowY: 'auto',
-          padding: '2rem',
+          padding: '2.5rem',
           position: 'relative',
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-light)',
-          margin: 'auto'
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          marginBottom: '2rem' // Bottom margin for scrolling space
         }}
         onClick={e => e.stopPropagation()}
       >
