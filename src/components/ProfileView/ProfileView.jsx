@@ -117,16 +117,34 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   };
 
   const handlePreview = (doc) => {
+    // Push dummy state so 'Back' button closes the modal
+    window.history.pushState({ modalOpen: true }, '');
+
     const file = fileStore.get(doc.id);
     if (file) {
       const url = URL.createObjectURL(file);
       setShowPreview({ ...doc, fileUrl: url });
     } else if (doc.fileUrl && doc.fileUrl.length > 5 && doc.fileUrl !== '/') {
+      // Guess type if missing
+      if (!doc.fileType && doc.title) {
+        const ext = doc.title.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+          doc.fileType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+        } else if (ext === 'pdf') {
+          doc.fileType = 'application/pdf';
+        }
+      }
       setShowPreview(doc);
     } else {
       showToast('File not found or not yet synced to server');
     }
   };
+
+  useEffect(() => {
+    const handlePopState = () => setShowPreview(null);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleDownload = async (doc) => {
     const file = fileStore.get(doc.id);

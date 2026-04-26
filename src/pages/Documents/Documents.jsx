@@ -15,18 +15,36 @@ const Documents = () => {
   const [toast, setToast] = useState(null);
 
   const handlePreview = (doc) => {
+    // Add a dummy state to history so 'Back' button closes the modal
+    window.history.pushState({ modalOpen: true }, '');
+    
     // Check if we have the actual file in memory
     const file = fileStore.get(doc.id);
     if (file) {
       const url = URL.createObjectURL(file);
       setShowPreview({ ...doc, fileUrl: url });
     } else if (doc.fileUrl && doc.fileUrl.length > 5 && doc.fileUrl !== '/') {
-      // Basic check to ensure it's a real path like /uploads/... and not just /
+      // Guess file type from extension if missing
+      if (!doc.fileType && doc.title) {
+        const ext = doc.title.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+          doc.fileType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+        } else if (ext === 'pdf') {
+          doc.fileType = 'application/pdf';
+        }
+      }
       setShowPreview(doc);
     } else {
       showToast('File not found or not yet synced to server');
     }
   };
+
+  // Close preview when user clicks browser 'Back'
+  useEffect(() => {
+    const handlePopState = () => setShowPreview(null);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Auto-open document preview if ?doc=ID is in the URL — runs once on mount only
   useEffect(() => {
