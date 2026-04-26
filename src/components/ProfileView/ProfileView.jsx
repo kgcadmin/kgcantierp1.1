@@ -145,8 +145,8 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     }
   };
 
-  const userDocuments = documents.filter(d => d.studentId === formData.id);
-  const userAttendance = attendance.filter(a => a.records && a.records[formData.id]);
+  const userDocuments = documents?.filter(d => d.studentId === formData?.id) || [];
+  const userAttendance = attendance?.filter(a => a.records && a.records[formData?.id]) || [];
 
   const tabs = [
     { id: 'personal', label: 'Personal', icon: <User size={16} /> },
@@ -373,7 +373,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                 )}
               </div>
 
-              {profileTemplate.sections.map((section) => (
+              {profileTemplate?.sections?.map((section) => (
                 <div key={section.id} style={{ padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: '1rem', background: 'rgba(255,255,255,0.01)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 600, margin: 0 }}>{section.title}</h3>
@@ -423,7 +423,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                         {renderField('GR Number', formData.grNumber, 'grNumber')}
                       </>
                     )}
-                    {section.fields.map(field => renderField(field.label, null, field.id, section.id))}
+                    {section?.fields?.map(field => renderField(field.label, null, field.id, section.id))}
                     {section.fields.length === 0 && section.id !== 'personal' && (
                       <div style={{ gridColumn: 'span 3', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.85rem', fontStyle: 'italic', padding: '1rem' }}>
                         No fields defined for this section. Click 'Add Field' while editing.

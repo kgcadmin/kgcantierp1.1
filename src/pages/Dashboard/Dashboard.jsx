@@ -73,8 +73,8 @@ const Dashboard = () => {
 
     return [
       { id: 1, title: 'Total Students', value: students?.length || 0, icon: 'Users', path: '/students', change: '+12%', isPositive: true },
-      { id: 2, title: 'Total Revenue', value: '₹' + totalRevenue.toLocaleString(), icon: 'DollarSign', path: '/fees', change: '+5%', isPositive: true },
-      { id: 3, title: 'Monthly Expenses', value: '₹' + totalExpenses.toLocaleString(), icon: 'Wallet', path: '/finance', change: '-2%', isPositive: false },
+      { id: 2, title: 'Total Revenue', value: '₹' + totalRevenue?.toLocaleString() || '0', icon: 'DollarSign', path: '/fees', change: '+5%', isPositive: true },
+      { id: 3, title: 'Monthly Expenses', value: '₹' + totalExpenses?.toLocaleString() || '0', icon: 'Wallet', path: '/finance', change: '-2%', isPositive: false },
       { id: 4, title: 'System Health', value: '99.9%', icon: 'ShieldCheck', path: '/system', color: '#10b981' },
     ];
   }, [currentUser, students, faculty, fees, feeStructures, enrollments, batches, timetable, recoveredItems, finance, today]);
@@ -82,11 +82,11 @@ const Dashboard = () => {
   // Logic: Today's Schedule
   const todaySchedule = useMemo(() => {
     if (currentUser?.role === 'Student') {
-      const myEnrollments = enrollments.filter(e => e.studentId === currentUser.linkedId);
-      return timetable.filter(t => t.day === today && myEnrollments.some(e => e.batchId === t.batchId)).sort((a, b) => a.time.localeCompare(b.time));
+      const myEnrollments = enrollments?.filter(e => e.studentId === currentUser.linkedId) || [];
+      return timetable?.filter(t => t.day === today && myEnrollments.some(e => e.batchId === t.batchId))?.sort((a, b) => a.time.localeCompare(b.time)) || [];
     }
     if (currentUser?.role === 'Faculty') {
-      return timetable.filter(t => t.day === today && t.facultyId === currentUser.linkedId).sort((a, b) => a.time.localeCompare(b.time));
+      return timetable?.filter(t => t.day === today && t.facultyId === currentUser.linkedId)?.sort((a, b) => a.time.localeCompare(b.time)) || [];
     }
     return [];
   }, [currentUser, timetable, enrollments, today]);
@@ -254,13 +254,13 @@ const Dashboard = () => {
               <h3 className={styles.cardTitle}>Institutional Logs</h3>
             </div>
             <div className={styles.activityList}>
-              {recentActivities.filter(act => 
+              {(recentActivities || []).filter(act => 
                 !act.audience || 
                 ['Admin', 'Management', 'Office Staff'].includes(currentUser?.role) || 
                 act.audience.includes(currentUser?.role)
               ).slice(0, 5).map((activity) => (
                 <div key={activity.id} className={styles.activityItem}>
-                  <div className={styles.activityDot} style={{ background: activity.action.includes('deleted') || activity.action.includes('error') ? '#ef4444' : activity.action.includes('restored') || activity.action.includes('added') ? '#10b981' : 'var(--primary)' }}></div>
+                  <div className={styles.activityDot} style={{ background: activity.action?.includes('deleted') || activity.action?.includes('error') ? '#ef4444' : activity.action?.includes('restored') || activity.action?.includes('added') ? '#10b981' : 'var(--primary)' }}></div>
                   <div className={styles.activityContent}>
                     <p className={styles.activityText}>
                       <span className={styles.activityUser}>{activity.user}</span> {activity.action}
