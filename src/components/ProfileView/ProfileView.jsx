@@ -96,7 +96,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
         if (res && res.url && !res.error) {
           addDocument({
             ...docMeta,
-            fileUrl: res.url, // Update with server URL (now relative)
+            fileUrl: res.url, // Use relative URL from server
             fileType: res.mimetype || docMeta.fileType
           });
           showToast('Document uploaded and synced!');
@@ -120,10 +120,10 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     if (file) {
       const url = URL.createObjectURL(file);
       setShowPreview({ ...doc, fileUrl: url });
-    } else if (doc.fileUrl && doc.fileUrl !== '/') {
+    } else if (doc.fileUrl && doc.fileUrl.length > 5 && doc.fileUrl !== '/') {
       setShowPreview(doc);
     } else {
-      showToast('File not yet synced or missing');
+      showToast('File not found or not yet synced to server');
     }
   };
 

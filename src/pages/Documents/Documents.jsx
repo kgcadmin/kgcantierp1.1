@@ -20,10 +20,11 @@ const Documents = () => {
     if (file) {
       const url = URL.createObjectURL(file);
       setShowPreview({ ...doc, fileUrl: url });
-    } else if (doc.fileUrl && doc.fileUrl !== '/') {
+    } else if (doc.fileUrl && doc.fileUrl.length > 5 && doc.fileUrl !== '/') {
+      // Basic check to ensure it's a real path like /uploads/... and not just /
       setShowPreview(doc);
     } else {
-      showToast('File not yet synced or missing');
+      showToast('File not found or not yet synced to server');
     }
   };
 
