@@ -5,34 +5,46 @@ import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 
 const Payroll = () => {
-  const { payroll, setPayroll, leaves, setLeaves, faculty, approveLeave, requestLeave, addPayroll, currentUser } = useContext(AppContext);
-  const deletePayroll = (id) => setPayroll(payroll.filter(p => p.id !== id));
-  const deleteLeave = (id) => setLeaves(leaves.filter(l => l.id !== id));
+  const { 
+    payroll, leaves, faculty, staff, 
+    approveLeave, requestLeave, addPayroll, 
+    deletePayroll, deleteLeave, currentUser 
+  } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('salary');
   const [showReports, setShowReports] = useState(false);
+  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [newEntry, setNewEntry] = useState({ employeeId: '', baseSalary: '', allowances: '', deductions: '', month: 'April 2026' });
 
-  const getEmployeeName = (id) => faculty.find(f => f.id === id)?.name || id;
+  const getEmployeeName = (id) => {
+    const emp = [...faculty, ...staff].find(e => e.id === id);
+    return emp?.name || id;
+  };
 
   const handleExport = () => {
     window.print();
   };
 
-  const handleProcessSalary = () => {
-    const employeeId = window.prompt("Enter Employee ID (e.g., FAC001):");
-    const baseSalary = window.prompt("Enter Base Salary:");
-    const allowances = window.prompt("Enter Allowances:");
-    const deductions = window.prompt("Enter Deductions:");
-    if (employeeId && baseSalary && allowances && deductions) {
-      const netPay = Number(baseSalary) + Number(allowances) - Number(deductions);
-      addPayroll({ employeeId, baseSalary: Number(baseSalary), allowances: Number(allowances), deductions: Number(deductions), netPay, status: 'Processed' });
-    }
+  const handleAddEntry = (e) => {
+    e.preventDefault();
+    const netPay = Number(newEntry.baseSalary) + Number(newEntry.allowances) - Number(newEntry.deductions);
+    addPayroll({ 
+      ...newEntry, 
+      baseSalary: Number(newEntry.baseSalary), 
+      allowances: Number(newEntry.allowances), 
+      deductions: Number(newEntry.deductions), 
+      netPay, 
+      status: 'Processed' 
+    });
+    setShowEntryModal(false);
+    setNewEntry({ employeeId: '', baseSalary: '', allowances: '', deductions: '', month: 'April 2026' });
+    alert("Payroll entry added successfully!");
   };
 
   const relevantPayroll = currentUser?.role === 'Faculty' ? payroll.filter(p => p.employeeId === currentUser.linkedId) : payroll;
   const relevantLeaves = currentUser?.role === 'Faculty' ? leaves.filter(l => l.employeeId === currentUser.linkedId) : leaves;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Payroll & HRMS Management</h1>
@@ -40,8 +52,8 @@ const Payroll = () => {
         </div>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           {activeTab === 'salary' && currentUser?.role !== 'Faculty' && currentUser?.role !== 'Student' && (
-            <button onClick={handleProcessSalary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
-              Process Salary
+            <button onClick={() => setShowEntryModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+              + New Entry
             </button>
           )}
           {activeTab === 'leaves' && currentUser?.role === 'Faculty' && (
@@ -166,7 +178,7 @@ const Payroll = () => {
         onClose={() => setShowReports(false)}
         title="Payroll"
         data={relevantPayroll.map(p => {
-          const emp = faculty.find(f => f.id === p.employeeId) || {};
+          const emp = [...faculty, ...staff].find(e => e.id === p.employeeId) || {};
           return { 
             ...p, 
             employeeName: emp.name || p.employeeId,
@@ -192,6 +204,52 @@ const Payroll = () => {
           { key: 'month', label: 'Month', options: Array.from(new Set(relevantPayroll.map(p => p.month))).filter(Boolean).map(m => ({ value: m, label: m })) }
         ]}
       />
+
+      {showEntryModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <Card style={{ width: '500px', padding: '2rem', maxWidth: '90%' }}>
+            <h2 style={{ margin: '0 0 1.5rem 0' }}>Add Payroll Entry</h2>
+            <form onSubmit={handleAddEntry} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Select Employee</label>
+                <select 
+                  required
+                  value={newEntry.employeeId} 
+                  onChange={(e) => setNewEntry({...newEntry, employeeId: e.target.value})}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }}
+                >
+                  <option value="">Choose Faculty/Staff...</option>
+                  {[...faculty, ...staff].map(emp => <option key={emp.id} value={emp.id}>{emp.name} ({emp.id})</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Base Salary</label>
+                  <input type="number" required value={newEntry.baseSalary} onChange={(e) => setNewEntry({...newEntry, baseSalary: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Allowances</label>
+                  <input type="number" required value={newEntry.allowances} onChange={(e) => setNewEntry({...newEntry, allowances: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Deductions</label>
+                  <input type="number" required value={newEntry.deductions} onChange={(e) => setNewEntry({...newEntry, deductions: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Month</label>
+                  <input type="text" required value={newEntry.month} onChange={(e) => setNewEntry({...newEntry, month: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setShowEntryModal(false)} style={{ flex: 1, padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)', background: 'var(--surface)', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ flex: 1, padding: '0.75rem', borderRadius: '0.4rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Save Entry</button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

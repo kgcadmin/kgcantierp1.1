@@ -1,17 +1,20 @@
 import React, { useContext, useState } from 'react';
-import { Calendar, Users, History, Activity, FileText, Trash2, Plus } from 'lucide-react';
+import { Calendar, Users, History, Activity, FileText, Trash2, Plus, BookOpen } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './Batches.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Batches = () => {
-  const { batches, setBatches, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
+  const { batches, deleteBatch, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
 
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [showReports, setShowReports] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [courseFilter, setCourseFilter] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
 
   const uniqueStatuses = Array.from(new Set(batches.map(b => b.status))).filter(Boolean);
   const uniqueCourses = Array.from(new Set(batches.map(b => b.courseId))).filter(Boolean);
@@ -29,6 +32,26 @@ const Batches = () => {
     });
   };
 
+  const handleAddSubmit = (data) => {
+    const newBatch = {
+      id: `BAT0${batches.length + 1}`,
+      ...data,
+      status: 'Active',
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      history: [{ date: new Date().toISOString().split('T')[0], action: 'Batch created' }]
+    };
+    setBatches([...batches, newBatch]);
+    setShowAddModal(false);
+  };
+
+  const handlePromoteSubmit = (data) => {
+    if (data.batchId && data.nextBatchId) {
+      promoteBatch(data.batchId, data.nextBatchId);
+      setShowPromoteModal(false);
+    }
+  };
+
   const getStudentsForBatch = (batchId) => {
     const enr = enrollments.filter(e => e.batchId === batchId);
     return enr.map(e => {
@@ -38,7 +61,7 @@ const Batches = () => {
   };
 
   return (
-    <div className={styles.batchesPage}>
+    <div className={`${styles.batchesPage} page-animate`}>
       <div className={`${styles.header} mobile-stack`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1 className={styles.title} style={{ margin: '0 0 0.5rem 0' }}>Batch Management</h1>
@@ -63,34 +86,14 @@ const Batches = () => {
           </select>
           {currentUser?.role === 'Admin' && (
             <>
-              <button onClick={() => {
-                const name = window.prompt("Enter Batch Name:");
-                const courseId = window.prompt("Enter Course ID (e.g., CRS01):");
-                if (name && courseId) {
-                  const newBatch = {
-                    id: `BAT0${batches.length + 1}`,
-                    name,
-                    courseId,
-                    status: 'Active',
-                    startDate: new Date().toISOString().split('T')[0],
-                    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-                    history: [{ date: new Date().toISOString().split('T')[0], action: 'Batch created' }]
-                  };
-                  setBatches([...batches, newBatch]);
-                }
-              }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#2e7d32', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <>
+              <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#2e7d32', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                 <Plus size={18} /> Add Batch
               </button>
-              <button onClick={() => {
-                const batchId = window.prompt("Enter Batch ID to promote (e.g., BAT01):");
-                const nextBatchId = window.prompt("Enter Next Level Batch ID (e.g., BAT03):");
-                if (batchId && nextBatchId) {
-                  promoteBatch(batchId, nextBatchId);
-                  alert("Batch promoted successfully!");
-                }
-              }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+              <button onClick={() => setShowPromoteModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                 <BookOpen size={18} /> Promote
               </button>
+            </>
             </>
           )}
           <button onClick={() => setShowReports(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
@@ -117,7 +120,7 @@ const Batches = () => {
                   <option value="Archived">Archived</option>
                 </select>
                 {currentUser?.role === 'Admin' && (
-                  <button className={styles.deleteBatchBtn} onClick={() => setBatches(batches.filter(b => b.id !== batch.id))}>
+                  <button className={styles.deleteBatchBtn} onClick={() => deleteBatch(batch.id)}>
                     <Trash2 size={18} />
                   </button>
                 )}
@@ -188,6 +191,28 @@ const Batches = () => {
         ))}
       </div>
 
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddSubmit}
+        title="Add New Batch"
+        fields={[
+          { name: 'name', label: 'Batch Name', required: true, placeholder: 'e.g. Batch 2024-A' },
+          { name: 'courseId', label: 'Course ID', required: true, placeholder: 'e.g. CRS01' }
+        ]}
+      />
+
+      <AddEntryModal 
+        isOpen={showPromoteModal}
+        onClose={() => setShowPromoteModal(false)}
+        onSave={handlePromoteSubmit}
+        title="Promote Batch"
+        fields={[
+          { name: 'batchId', label: 'Current Batch ID', required: true, placeholder: 'e.g. BAT01' },
+          { name: 'nextBatchId', label: 'Target Batch ID', required: true, placeholder: 'e.g. BAT03' }
+        ]}
+      />
+
       <ReportExportModal 
         isOpen={showReports}
         onClose={() => setShowReports(false)}
@@ -211,6 +236,4 @@ const Batches = () => {
   );
 };
 
-// Need this extra import since I missed BookOpen in the main import
-import { BookOpen } from 'lucide-react';
 export default Batches;

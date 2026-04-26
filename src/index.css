@@ -83,6 +83,17 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  transition: all var(--transition-fast);
+}
+
+button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+button:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
 }
 
 /* Scrollbar */
@@ -253,3 +264,29 @@ input::placeholder, textarea::placeholder {
   color: var(--primary) !important;
   transform: translateY(-1px);
 }
+
+/* Page Entry Animations - "Physics" */
+@keyframes pageEntry {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-animate {
+  animation: pageEntry 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.card-animate {
+  animation: pageEntry 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.card-animate:nth-child(1) { animation-delay: 0.05s; }
+.card-animate:nth-child(2) { animation-delay: 0.1s; }
+.card-animate:nth-child(3) { animation-delay: 0.15s; }
+.card-animate:nth-child(4) { animation-delay: 0.2s; }
+.card-animate:nth-child(5) { animation-delay: 0.25s; }

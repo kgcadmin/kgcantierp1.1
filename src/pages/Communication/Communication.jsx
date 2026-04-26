@@ -1,11 +1,13 @@
 import React, { useContext, useState } from 'react';
-import { MessageSquare, Bell, CheckSquare, Plus, AlertCircle } from 'lucide-react';
+import { MessageSquare, Bell, CheckSquare, Plus, AlertCircle, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Communication = () => {
-  const { communication, faculty, addTask, addNotice, currentUser } = useContext(AppContext);
+  const { communication, faculty, addTask, addNotice, deleteTask, deleteNotice, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('tasks');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const relevantTasks = currentUser?.role === 'Student' 
     ? communication.tasks.filter(t => t.assignee === currentUser.linkedId)
@@ -19,43 +21,24 @@ const Communication = () => {
 
   const getFacultyName = (id) => faculty.find(f => f.id === id)?.name || id;
 
-  const handleCreate = () => {
+  const handleSaveCreate = (data) => {
     if (activeTab === 'tasks') {
-      if (currentUser?.role !== 'Admin') {
-        alert("Only Admins can create tasks.");
-        return;
-      }
-      const title = window.prompt("Enter Task Title:");
-      const assignee = window.prompt("Enter Assignee ID (e.g., FAC001):");
-      const dueDate = window.prompt("Enter Due Date (YYYY-MM-DD):");
-      const priority = window.prompt("Enter Priority (High, Medium, Low):");
-      if (title && assignee && dueDate && priority) {
-        addTask({ title, assignee, dueDate, priority, status: 'Pending' });
-      }
+      addTask({ ...data, status: 'Pending' });
     } else {
-      const title = window.prompt("Enter Notice Title:");
-      const audiencePromptStr = currentUser?.role === 'Faculty' ? "Enter Audience (Students):" : "Enter Audience (All, Students, Faculty):";
-      const audience = window.prompt(audiencePromptStr);
-      if (currentUser?.role === 'Faculty' && audience !== 'Students') {
-        alert("Faculty can only post notices for Students.");
-        return;
-      }
-      const type = window.prompt("Enter Notice Type (Holiday, Academic, Alert):");
-      if (title && audience && type) {
-        addNotice({ title, audience, type, date: new Date().toISOString().split('T')[0] });
-      }
+      addNotice({ ...data, date: new Date().toISOString().split('T')[0] });
     }
+    setShowAddModal(false);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Communication Hub</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Task management, E-Notices, and communication channels.</p>
         </div>
         {currentUser?.role !== 'Student' && (
-          <button onClick={handleCreate} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+          <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
             <Plus size={18} /> {activeTab === 'tasks' ? 'Create Task' : 'Post Notice'}
           </button>
         )}
@@ -85,6 +68,7 @@ const Communication = () => {
                   <th style={{ padding: '0.75rem' }}>Due Date</th>
                   <th style={{ padding: '0.75rem' }}>Priority</th>
                   <th style={{ padding: '0.75rem' }}>Status</th>
+                  {currentUser?.role === 'Admin' && <th style={{ padding: '0.75rem' }}>Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -104,6 +88,13 @@ const Communication = () => {
                         {task.status}
                       </span>
                     </td>
+                    {currentUser?.role === 'Admin' && (
+                      <td style={{ padding: '1rem 0.75rem' }}>
+                        <button onClick={() => { if(window.confirm('Delete task?')) deleteTask(task.id); }} style={{ background: 'none', border: 'none', color: '#d32f2f', cursor: 'pointer' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -129,10 +120,70 @@ const Communication = () => {
                   <span><strong style={{ color: 'var(--text-primary)' }}>Type:</strong> {notice.type}</span>
                 </div>
               </div>
+              {currentUser?.role === 'Admin' && (
+                <button onClick={() => { if(window.confirm('Delete notice?')) deleteNotice(notice.id); }} style={{ background: 'none', border: 'none', color: '#d32f2f', cursor: 'pointer', padding: '0.5rem' }}>
+                  <Trash2 size={18} />
+                </button>
+              )}
             </Card>
           ))}
         </div>
       )}
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleSaveCreate}
+        title={activeTab === 'tasks' ? 'Create New Task' : 'Post E-Notice'}
+        fields={activeTab === 'tasks' ? [
+          { name: 'title', label: 'Task Title', required: true, placeholder: 'e.g. Update Syllabus' },
+          { 
+            name: 'assignee', 
+            label: 'Assign To', 
+            type: 'select', 
+            required: true, 
+            options: faculty.map(f => ({ value: f.id, label: f.name })) 
+          },
+          { name: 'dueDate', label: 'Due Date', type: 'date', required: true },
+          { 
+            name: 'priority', 
+            label: 'Priority', 
+            type: 'select', 
+            required: true, 
+            options: [
+              { value: 'High', label: 'High' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'Low', label: 'Low' }
+            ] 
+          }
+        ] : [
+          { name: 'title', label: 'Notice Title', required: true, placeholder: 'e.g. Winter Break Announcement' },
+          { 
+            name: 'audience', 
+            label: 'Target Audience', 
+            type: 'select', 
+            required: true, 
+            options: currentUser?.role === 'Faculty' ? [
+              { value: 'Students', label: 'Students' }
+            ] : [
+              { value: 'All', label: 'All' },
+              { value: 'Students', label: 'Students' },
+              { value: 'Faculty', label: 'Faculty' }
+            ] 
+          },
+          { 
+            name: 'type', 
+            label: 'Notice Type', 
+            type: 'select', 
+            required: true, 
+            options: [
+              { value: 'Academic', label: 'Academic' },
+              { value: 'Holiday', label: 'Holiday' },
+              { value: 'Alert', label: 'Alert' },
+              { value: 'Event', label: 'Event' }
+            ] 
+          }
+        ]}
+      />
     </div>
   );
 };

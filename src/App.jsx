@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login/Login';
 import { AppContext, AppContextProvider } from './context/AppContext';
 import { ShieldAlert } from 'lucide-react';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy loaded modules to keep the app lightweight
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
@@ -24,6 +25,8 @@ const Library = lazy(() => import('./pages/Library/Library'));
 const Communication = lazy(() => import('./pages/Communication/Communication'));
 const SystemManagement = lazy(() => import('./pages/SystemManagement/SystemManagement'));
 const Finance = lazy(() => import('./pages/Finance/Finance'));
+const AttendanceTracking = lazy(() => import('./pages/AttendanceTracking/AttendanceTracking'));
+const RecoveryCentre = lazy(() => import('./pages/RecoveryCentre/RecoveryCentre'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem' }}>
@@ -64,27 +67,126 @@ function AppContent() {
             {/* Protected Routes inside MainLayout */}
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="students" element={<Students />} />
-              <Route path="faculty" element={<Faculty />} />
-              <Route path="staff" element={<Staff />} />
-              <Route path="courses" element={<Courses />} />
-              <Route path="academic-setup" element={<AcademicSetup />} />
-              <Route path="batches" element={<Batches />} />
               
-              {/* New ERP Modules */}
-              <Route path="payroll" element={<Payroll />} />
-              <Route path="documents" element={<Documents />} />
-              <Route path="fees" element={<Fees />} />
-              <Route path="exams" element={<Exams />} />
-              <Route path="timetable" element={<Timetable />} />
-              <Route path="hostel" element={<Hostel />} />
-              <Route path="library" element={<Library />} />
-              <Route path="communication" element={<Communication />} />
-              <Route path="system" element={<SystemManagement />} />
-              <Route path="finance" element={<Finance />} />
+              <Route path="dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
               
-              <Route path="settings" element={<Settings />} />
+              <Route path="students" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Faculty', 'Office Staff']}>
+                  <Students />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="faculty" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management']}>
+                  <Faculty />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="staff" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff']}>
+                  <Staff />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="courses" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Faculty']}>
+                  <Courses />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="academic-setup" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management']}>
+                  <AcademicSetup />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="batches" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management']}>
+                  <Batches />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="payroll" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff', 'Faculty']}>
+                  <Payroll />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="documents" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff', 'Student']}>
+                  <Documents />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="fees" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff', 'Student']}>
+                  <Fees />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="exams" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Faculty', 'Student']}>
+                  <Exams />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="timetable" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Faculty', 'Student']}>
+                  <Timetable />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="hostel" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff', 'Student']}>
+                  <Hostel />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="library" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff', 'Student']}>
+                  <Library />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="communication" element={
+                <ProtectedRoute>
+                  <Communication />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="system" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management']}>
+                  <SystemManagement />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="finance" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Office Staff']}>
+                  <Finance />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="attendance" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management', 'Faculty', 'Student', 'Office Staff']}>
+                  <AttendanceTracking />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="recovery" element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <RecoveryCentre />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="settings" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management']}>
+                  <Settings />
+                </ProtectedRoute>
+              } />
             </Route>
             
             {/* Fallback */}

@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Search, Plus, CreditCard, Clock, CheckCircle, X, Settings, Calculator, FileText, Download } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Fees = () => {
   const { fees, students, addFee, feeStructures, addFeeStructure, courses, batches, enrollments, departments, currentUser } = useContext(AppContext);
@@ -10,6 +11,7 @@ const Fees = () => {
   const [showStructuresModal, setShowStructuresModal] = useState(false);
   const [showDuesModal, setShowDuesModal] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
+  const [showCollectModal, setShowCollectModal] = useState(false);
   const [reportFilters, setReportFilters] = useState({ departmentId: '', courseId: '', batchId: '', status: 'All' });
   const [duesResult, setDuesResult] = useState(null);
   const [breakdownItems, setBreakdownItems] = useState([{ type: 'Tuition', amount: '' }]);
@@ -45,13 +47,16 @@ const Fees = () => {
 
   const getStudentName = (id) => students.find(s => s.id === id)?.name || id;
 
-  const handleCollectFee = () => {
-    const studentId = window.prompt("Enter Student ID (e.g., STU001):");
-    const amount = window.prompt("Enter Amount:");
-    const type = window.prompt("Enter Fee Type (e.g., Tuition, Hostel):");
-    
-    if (studentId && amount && type) {
-      addFee({ studentId: studentId.toUpperCase(), amount: Number(amount), type, status: 'Paid', date: new Date().toISOString().split('T')[0] });
+  const handleCollectSubmit = (data) => {
+    if (data.studentId && data.amount && data.type) {
+      addFee({ 
+        studentId: data.studentId.toUpperCase(), 
+        amount: Number(data.amount), 
+        type: data.type, 
+        status: 'Paid', 
+        date: new Date().toISOString().split('T')[0] 
+      });
+      setShowCollectModal(false);
     }
   };
 
@@ -198,7 +203,7 @@ const Fees = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Fees Management</h1>
@@ -219,7 +224,7 @@ const Fees = () => {
                   <button onClick={() => setShowDuesModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '0.75rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                     <Calculator size={18} /> Check Dues
                   </button>
-                  <button onClick={handleCollectFee} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+                  <button onClick={() => setShowCollectModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                     <Plus size={18} /> Collect Fees
                   </button>
                 </>
@@ -595,6 +600,17 @@ const Fees = () => {
           </div>
         </div>
       )}
+      <AddEntryModal 
+        isOpen={showCollectModal}
+        onClose={() => setShowCollectModal(false)}
+        onSave={handleCollectSubmit}
+        title="Collect Fee Payment"
+        fields={[
+          { name: 'studentId', label: 'Student ID', required: true, placeholder: 'e.g. STU001' },
+          { name: 'amount', label: 'Amount (₹)', type: 'number', required: true, placeholder: 'e.g. 5000' },
+          { name: 'type', label: 'Fee Type', required: true, placeholder: 'e.g. Tuition' }
+        ]}
+      />
     </div>
   );
 };

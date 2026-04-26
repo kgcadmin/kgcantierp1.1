@@ -5,14 +5,16 @@ import { AppContext } from '../../context/AppContext';
 import styles from '../Students/Students.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ProfileView from '../../components/ProfileView/ProfileView';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Faculty = () => {
-  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser, handleAddFaculty, processCSV } = useContext(AppContext);
+  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser, processCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState(null);
   const [showReports, setShowReports] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const uniqueDepts = Array.from(new Set(faculty.map(f => f.department))).filter(Boolean);
   const uniqueStatuses = Array.from(new Set(faculty.map(f => f.status))).filter(Boolean);
@@ -26,18 +28,19 @@ const Faculty = () => {
     return matchesSearch && matchesDept && matchesStatus;
   });
 
-  const handleEditFaculty = (member) => {
-    const name = window.prompt("Edit Faculty Name:", member.name);
-    const department = window.prompt("Edit Department:", member.department);
-    const role = window.prompt("Edit Role:", member.role);
-    const status = window.prompt("Edit Status (Active/Inactive):", member.status);
-    if (name && department && role && status) {
-      editFaculty(member.id, { name, department, role, status });
-    }
+  const handleAddSubmit = (data) => {
+    const id = `FAC00${faculty.length + 1}`;
+    addFaculty({
+      ...data,
+      id,
+      status: 'Active',
+      password: `Pass@${id}`,
+      personalDetails: {}
+    });
   };
 
   return (
-    <div className={styles.studentsPage}>
+    <div className={`${styles.studentsPage} page-animate`}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Faculty Directory</h1>
@@ -46,7 +49,7 @@ const Faculty = () => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Management'].includes(currentUser?.role) && (
             <>
-              <button onClick={handleAddFaculty} className={styles.primaryBtn}>
+              <button onClick={() => setShowAddModal(true)} className={styles.primaryBtn}>
                 <Plus size={18} />
                 <span>Add Faculty</span>
               </button>
@@ -126,7 +129,7 @@ const Faculty = () => {
                     </td>
                     <td>
                       <div className={styles.actions}>
-                        <button className={styles.actionBtn} id={`faculty-edit-${member.id}`} onClick={(e) => { e.stopPropagation(); handleEditFaculty(member); }}><Edit2 size={16} /></button>
+                        <button className={styles.actionBtn} id={`faculty-edit-${member.id}`} onClick={(e) => { e.stopPropagation(); setSelectedFaculty(member); }}><Edit2 size={16} /></button>
                         <button className={styles.actionBtn} id={`faculty-delete-${member.id}`} onClick={(e) => { e.stopPropagation(); deleteFaculty(member.id); }}><Trash2 size={16} /></button>
                       </div>
                     </td>
@@ -160,6 +163,19 @@ const Faculty = () => {
           />
         )}
       </div>
+
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddSubmit}
+        title="Add New Faculty"
+        fields={[
+          { name: 'name', label: 'Full Name', required: true, placeholder: 'e.g. Dr. Robert Smith' },
+          { name: 'email', label: 'Personal Email (for login)', required: true, placeholder: 'e.g. robert@gmail.com' },
+          { name: 'department', label: 'Department', required: true, placeholder: 'e.g. Mathematics' },
+          { name: 'role', label: 'Academic Role', required: true, placeholder: 'e.g. Associate Professor' }
+        ]}
+      />
 
       <ReportExportModal 
         isOpen={showReports}

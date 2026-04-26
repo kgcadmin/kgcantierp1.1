@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users } from 'lucide-react';
+import { api } from '../../utils/api';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 
@@ -67,10 +68,7 @@ const Documents = () => {
     const finalTitle = uploadData.title.includes('.') ? uploadData.title : `${uploadData.title}.${extension}`;
     const docId = `DOC${Date.now()}`;
 
-    // Store the actual File object in memory for reliable downloads/previews
-    fileStore.set(docId, uploadData.file);
-
-    addDocument({
+    const docMeta = {
       id: docId,
       title: finalTitle,
       category: uploadData.category || 'General',
@@ -81,7 +79,25 @@ const Documents = () => {
       size: (uploadData.file.size / 1024).toFixed(1) + ' KB',
       fileType: uploadData.file.type,
       hasLocalFile: true,
-    });
+    };
+
+    // If API is available, upload to server
+    if (import.meta.env.VITE_API_URL) {
+      api.upload(uploadData.file).then(res => {
+        if (res && res.url) {
+          addDocument({
+            ...docMeta,
+            fileUrl: res.url,
+          });
+        }
+      }).catch(err => {
+        console.error('Upload failed:', err);
+        alert('File upload failed. Saving metadata locally only.');
+        addDocument(docMeta);
+      });
+    } else {
+      addDocument(docMeta);
+    }
     setShowUploadModal(false);
     setUploadData({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });
   };
@@ -140,7 +156,7 @@ const Documents = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Document Hub</h1>

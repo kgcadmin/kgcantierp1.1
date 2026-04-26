@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, Settings, Building2, CalendarDays, Wallet, FileText, Banknote, PenTool, Clock, Home, Library, MessageSquare, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, Settings, Building2, CalendarDays, Wallet, FileText, Banknote, PenTool, Clock, Home, Library, MessageSquare, ShieldAlert, UserCheck, RotateCcw } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import styles from './Sidebar.module.css';
 
@@ -24,21 +24,24 @@ const Sidebar = ({ isVisible, onClose }) => {
     { name: 'Exams', path: '/exams', icon: <PenTool size={20} /> },
     { name: 'Timetable', path: '/timetable', icon: <Clock size={20} /> },
     { name: 'Hostel', path: '/hostel', icon: <Home size={20} /> },
+    { name: 'Attendance', path: '/attendance', icon: <UserCheck size={20} /> },
     { name: 'Library', path: '/library', icon: <Library size={20} /> },
     { name: 'Communication', path: '/communication', icon: <MessageSquare size={20} /> },
     { name: 'System', path: '/system', icon: <ShieldAlert size={20} /> },
     { name: 'Finance', path: '/finance', icon: <Banknote size={20} /> },
+    { name: 'Recovery Centre', path: '/recovery', icon: <RotateCcw size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
 
   const getFilteredNavItems = () => {
     if (!currentUser) return [];
-    if (['Admin', 'Management'].includes(currentUser.role)) return navItems;
+    if (currentUser.role === 'Admin') return navItems;
+    if (currentUser.role === 'Management') return navItems.filter(item => item.name !== 'Recovery Centre');
     
     const roleMap = {
-      'Faculty': ['Dashboard', 'SIS (Students)', 'Courses', 'Exams', 'Timetable', 'Payroll', 'Communication'],
-      'Student': ['Dashboard', 'Fees', 'Timetable', 'Exams', 'Library', 'Hostel', 'Documents', 'Communication'],
-      'Office Staff': ['Dashboard', 'SIS (Students)', 'Staff', 'Payroll', 'Documents', 'Fees', 'Communication']
+      'Faculty': ['Dashboard', 'SIS (Students)', 'Courses', 'Exams', 'Timetable', 'Attendance', 'Payroll', 'Communication'],
+      'Student': ['Dashboard', 'Fees', 'Timetable', 'Exams', 'Attendance', 'Library', 'Hostel', 'Documents', 'Communication'],
+      'Office Staff': ['Dashboard', 'SIS (Students)', 'Staff', 'Attendance', 'Payroll', 'Documents', 'Fees', 'Communication']
     };
 
     const allowed = roleMap[currentUser.role] || [];

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { 
   usersData,
   studentsData as initialStudents, 
@@ -29,6 +29,7 @@ import {
   staffData as initialStaff,
   systemHealthData as initialSystemHealth
 } from '../data/mockData';
+import { api } from '../utils/api';
 
 
 export const AppContext = createContext();
@@ -95,6 +96,8 @@ export const AppContextProvider = ({ children }) => {
   const [calendar, setCalendar] = useState(() => loadState('calendar', initialCalendar));
   const [systemHealth, setSystemHealth] = useState(() => loadState('health', initialSystemHealth));
   const [recentActivities, setRecentActivities] = useState(() => loadState('activities', initialActivities));
+  const [recoveredItems, setRecoveredItems] = useState([]);
+  const [academicYear, setAcademicYear] = useState(() => loadState('academicYear', '2026-27'));
   
   // Dynamic Form Templates for Personal Info
   const [profileTemplate, setProfileTemplate] = useState(() => loadState('profileTemplate', {
@@ -125,6 +128,67 @@ export const AppContextProvider = ({ children }) => {
     ]
   }));
 
+  // Initialize data from API if VITE_API_URL is set
+  useEffect(() => {
+    const fetchData = async () => {
+      const apiStudents = await api.get('students');
+      if (apiStudents) setStudents(apiStudents);
+      const apiFaculty = await api.get('faculty');
+      if (apiFaculty) setFaculty(apiFaculty);
+      const apiStaff = await api.get('staff');
+      if (apiStaff) setStaff(apiStaff);
+      const apiCourses = await api.get('courses');
+      if (apiCourses) setCourses(apiCourses);
+      const apiDepartments = await api.get('departments');
+      if (apiDepartments) setDepartments(apiDepartments);
+      const apiCategories = await api.get('categories');
+      if (apiCategories) setCategories(apiCategories);
+      const apiDegrees = await api.get('degrees');
+      if (apiDegrees) setDegrees(apiDegrees);
+      const apiSubjects = await api.get('subjects');
+      if (apiSubjects) setSubjects(apiSubjects);
+      const apiBatches = await api.get('batches');
+      if (apiBatches) setBatches(apiBatches);
+      const apiEnrollments = await api.get('enrollments');
+      if (apiEnrollments) setEnrollments(apiEnrollments);
+      const apiConfig = await api.get('config');
+      if (apiConfig) setSystemConfig(apiConfig);
+      const apiFees = await api.get('fees');
+      if (apiFees) setFees(apiFees);
+      const apiPayroll = await api.get('payroll');
+      if (apiPayroll) setPayroll(apiPayroll);
+      const apiLeaves = await api.get('leaves');
+      if (apiLeaves) setLeaves(apiLeaves);
+      const apiFinance = await api.get('finance');
+      if (apiFinance) setFinance(apiFinance);
+      const apiExams = await api.get('exams');
+      if (apiExams) setExams(apiExams);
+      const apiTimetable = await api.get('timetable');
+      if (apiTimetable) setTimetable(apiTimetable);
+      const apiAttendance = await api.get('attendance');
+      if (apiAttendance) setAttendance(apiAttendance);
+      const apiLibrary = await api.get('library');
+      if (apiLibrary) setLibrary(apiLibrary);
+      const apiHostel = await api.get('hostel');
+      if (apiHostel) setHostel(apiHostel);
+      const apiDocs = await api.get('documents');
+      if (apiDocs) setDocuments(apiDocs);
+      const apiComm = await api.get('communication');
+      if (apiComm) setCommunication(apiComm);
+      const apiCalendar = await api.get('calendar');
+      if (apiCalendar) setCalendar(apiCalendar);
+      const apiHealth = await api.get('health');
+      if (apiHealth) setSystemHealth(apiHealth);
+      const apiActivities = await api.get('activities');
+      if (apiActivities) setRecentActivities(apiActivities);
+      const apiTemplate = await api.get('profileTemplate');
+      if (apiTemplate) setProfileTemplate(apiTemplate);
+      const apiUsers = await api.get('users');
+      if (apiUsers) setUsers(apiUsers);
+    };
+    fetchData();
+  }, []);
+
   // Persistence Effects
   useEffect(() => { localStorage.setItem('edusec_students', JSON.stringify(students)); }, [students]);
   useEffect(() => { localStorage.setItem('edusec_faculty', JSON.stringify(faculty)); }, [faculty]);
@@ -154,6 +218,7 @@ export const AppContextProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('edusec_health', JSON.stringify(systemHealth)); }, [systemHealth]);
   useEffect(() => { localStorage.setItem('edusec_activities', JSON.stringify(recentActivities)); }, [recentActivities]);
   useEffect(() => { localStorage.setItem('edusec_profileTemplate', JSON.stringify(profileTemplate)); }, [profileTemplate]);
+  useEffect(() => { localStorage.setItem('edusec_academicYear', JSON.stringify(academicYear)); }, [academicYear]);
 
 
 
@@ -166,6 +231,17 @@ export const AppContextProvider = ({ children }) => {
       audience
     };
     setRecentActivities(prev => [newActivity, ...prev]);
+    api.post('activities', newActivity);
+  };
+
+  const syncToVPS = async (collection, data, id = null, method = 'POST') => {
+    if (!import.meta.env.VITE_API_URL) return;
+    if (method === 'POST') await api.post(collection, data);
+    else if (method === 'PUT') await api.put(collection, id, data);
+    else if (method === 'DELETE') {
+      await api.delete(collection, id);
+      refreshRecoveryData();
+    }
   };
 
   // Shared Helper Functions
@@ -194,7 +270,7 @@ export const AppContextProvider = ({ children }) => {
         if (data.name && data.department) {
           const id = `${type === 'student' ? 'STU' : type === 'faculty' ? 'FAC' : 'STF'}${Date.now().toString().slice(-3)}${index}`;
           const pass = generateRandomPassword(id);
-          const email = `${data.name.split(' ')[0].toLowerCase()}${index}${Date.now().toString().slice(-2)}@kashibaiganpatcollege.com`;
+          const email = data.email || `${data.name.split(' ')[0].toLowerCase()}${index}${Date.now().toString().slice(-2)}@kashibaiganpatcollege.com`;
 
           const baseData = {
             id,
@@ -203,7 +279,7 @@ export const AppContextProvider = ({ children }) => {
             status: 'Active',
             email,
             password: pass,
-            personalDetails: {} // Will be filled as they complete profile
+            personalDetails: {} 
           };
 
           if (type === 'student') {
@@ -227,88 +303,76 @@ export const AppContextProvider = ({ children }) => {
     reader.readAsText(file);
   };
 
-  // Student Handlers
-  const handleAddStudent = () => {
-    const name = window.prompt("Enter Student Name:");
-    const department = window.prompt("Enter Department:");
-    if (name && department) {
-      const id = `STU00${students.length + 1}`;
-      const pass = generateRandomPassword(id);
-      addStudent({ 
-        id, 
-        rollNo: `ROL${Date.now().toString().slice(-4)}`, 
-        grNumber: `GR${Date.now().toString().slice(-5)}`, 
-        name, 
-        department, 
-        year: 'Freshman', 
-        status: 'Active', 
-        gpa: 0, 
-        email: `${name.split(' ')[0].toLowerCase()}${Date.now().toString().slice(-3)}@kashibaiganpatcollege.com`, 
-        profileStatus: 'Pending Docs', 
-        academicHistory: [],
-        password: pass,
-        personalDetails: {} // Template will render empty fields for them to fill
-      });
-      alert(`Student added! Initial Password: ${pass}`);
-    }
-  };
-
   const addStudent = (student) => {
-    setStudents(prev => [...prev, student]);
+    const id = student.id || `STU00${students.length + 1}`;
+    const newStudent = { ...student, id };
+    setStudents(prev => [...prev, newStudent]);
+    
     const newUser = {
-      id: `USR${student.id}`,
-      email: student.email,
+      id: `USR${id}`,
+      email: student.email, // Using provided email
       password: student.password || 'password',
       role: 'Student',
       name: student.name,
-      linkedId: student.id
+      linkedId: id
     };
     setUsers(prev => [...prev, newUser]);
+    
+    syncToVPS('students', newStudent);
+    syncToVPS('users', newUser);
   };
-
-  // Faculty Handlers
-  const handleAddFaculty = () => {
-    const name = window.prompt("Enter Faculty Name:");
-    const department = window.prompt("Enter Department:");
-    const role = window.prompt("Enter Role:");
-    if (name && department && role) {
-      const id = `FAC00${faculty.length + 1}`;
-      const pass = generateRandomPassword(id);
-      addFaculty({ name, department, role, status: 'Active', email: `${name.split(' ')[0].toLowerCase()}@kashibaiganpatcollege.com`, password: pass });
-      alert(`Faculty added! Initial Password: ${pass}`);
+  const editStudent = (id, updated) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+    syncToVPS('students', { ...updated, id }, id, 'PUT');
+  };
+  const deleteStudent = (id) => {
+    setStudents(prev => prev.filter(s => s.id !== id));
+    const user = users.find(u => u.linkedId === id);
+    if (user) {
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      syncToVPS('users', null, user.id, 'DELETE');
     }
+    syncToVPS('students', null, id, 'DELETE');
   };
 
   const addFaculty = (fac) => {
     const id = fac.id || `FAC00${faculty.length + 1}`;
-    setFaculty(prev => [...prev, { ...fac, id }]);
+    const newFac = { ...fac, id };
+    setFaculty(prev => [...prev, newFac]);
+    
     const newUser = {
       id: `USR${id}`,
-      email: fac.email,
+      email: fac.email, // Using provided email
       password: fac.password || 'password',
       role: 'Faculty',
       name: fac.name,
       linkedId: id
     };
     setUsers(prev => [...prev, newUser]);
+    
+    syncToVPS('faculty', newFac);
+    syncToVPS('users', newUser);
+  };
+  const editFaculty = (id, updated) => {
+    setFaculty(prev => prev.map(f => f.id === id ? { ...f, ...updated } : f));
+    syncToVPS('faculty', { ...updated, id }, id, 'PUT');
+  };
+  const deleteFaculty = (id) => {
+    setFaculty(prev => prev.filter(f => f.id !== id));
+    const user = users.find(u => u.linkedId === id);
+    if (user) {
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      syncToVPS('users', null, user.id, 'DELETE');
+    }
+    syncToVPS('faculty', null, id, 'DELETE');
   };
 
   // Staff Handlers
-  const handleAddStaff = () => {
-    const name = window.prompt("Enter Staff Name:");
-    const department = window.prompt("Enter Department:");
-    const role = window.prompt("Enter Role:");
-    if (name && department && role) {
-      const id = `STF00${staff.length + 1}`;
-      const pass = generateRandomPassword(id);
-      addStaff({ name, department, role, status: 'Active', email: `${name.split(' ')[0].toLowerCase()}@kashibaiganpatcollege.com`, password: pass });
-      alert(`Staff added! Initial Password: ${pass}`);
-    }
-  };
-
   const addStaff = (s) => {
     const id = s.id || `STF00${staff.length + 1}`;
-    setStaff(prev => [...prev, { ...s, id }]);
+    const newStaff = { ...s, id };
+    setStaff(prev => [...prev, newStaff]);
+    
     const newUser = {
       id: `USR${id}`,
       email: s.email,
@@ -318,12 +382,25 @@ export const AppContextProvider = ({ children }) => {
       linkedId: id
     };
     setUsers(prev => [...prev, newUser]);
+    
+    syncToVPS('staff', newStaff);
+    syncToVPS('users', newUser);
+  };
+  const editStaff = (id, updated) => {
+    setStaff(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+    syncToVPS('staff', { ...updated, id }, id, 'PUT');
+  };
+  const deleteStaff = (id) => {
+    setStaff(prev => prev.filter(s => s.id !== id));
+    const user = users.find(u => u.linkedId === id);
+    if (user) {
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      syncToVPS('users', null, user.id, 'DELETE');
+    }
+    syncToVPS('staff', null, id, 'DELETE');
   };
 
 
-  const editStudent = (id, updated) => setStudents(students.map(s => s.id === id ? { ...s, ...updated } : s));
-  const deleteStudent = (id) => setStudents(students.filter(s => s.id !== id));
-  const deleteFaculty = (id) => setFaculty(faculty.filter(f => f.id !== id));
 
   const updateBatchStatus = (id, newStatus, historyEntry) => {
     setBatches(batches.map(b => b.id === id ? {
@@ -353,21 +430,64 @@ export const AppContextProvider = ({ children }) => {
     addActivity(`enrolled student ${studentId} in batch ${batchId}`, ['Admin', 'Student']);
   };
 
-  // Polishing Phase: State Mutation Functions
-  const addFeeStructure = (structure) => setFeeStructures([...feeStructures, { ...structure, id: `FST00${feeStructures.length + 1}` }]);
-  const addFee = (fee) => setFees([...fees, { ...fee, id: `FEE00${fees.length + 1}` }]);
+  const addFeeStructure = (structure) => {
+    const newStructure = { ...structure, id: `FST00${feeStructures.length + 1}` };
+    setFeeStructures([...feeStructures, newStructure]);
+    syncToVPS('feeStructures', newStructure);
+  };
+  const addFee = (fee) => {
+    const newFee = { ...fee, id: `FEE00${fees.length + 1}` };
+    setFees([...fees, newFee]);
+    syncToVPS('fees', newFee);
+  };
   const addExpense = (expense) => {
-    const newFinance = { ...finance, expenses: [...finance.expenses, { ...expense, id: `EXP00${finance.expenses.length + 1}` }] };
+    const newExpense = { ...expense, id: `EXP00${finance.expenses.length + 1}` };
+    const newBalance = finance.pettyCash.balance - (expense.amount || 0);
+    const newFinance = { 
+      ...finance, 
+      pettyCash: { ...finance.pettyCash, balance: newBalance },
+      expenses: [...finance.expenses, newExpense] 
+    };
     setFinance(newFinance);
+    syncToVPS('finance', newFinance, 'finance-global', 'PUT'); // Special case for global finance object
+    addActivity(`recorded expense: ${expense.description} (-₹${expense.amount})`, ['Admin', 'Management']);
+  };
+
+  const refillPettyCash = (amount) => {
+    const newFinance = {
+      ...finance,
+      pettyCash: {
+        balance: finance.pettyCash.balance + Number(amount),
+        lastRefill: new Date().toISOString().split('T')[0]
+      }
+    };
+    setFinance(newFinance);
+    addActivity(`refilled petty cash: +₹${amount}`, ['Admin', 'Management']);
+  };
+  const deleteFee = (id) => {
+    setFees(prev => prev.filter(f => f.id !== id));
+    syncToVPS('fees', null, id, 'DELETE');
   };
   const addExam = (exam) => {
     setExams([...exams, { ...exam, id: `EXM00${exams.length + 1}` }]);
     addActivity(`scheduled a new exam: ${exam.title}`, ['Admin', 'Student', 'Faculty']);
   };
+  const deleteExam = (id) => {
+    setExams(prev => prev.filter(e => e.id !== id));
+    syncToVPS('exams', null, id, 'DELETE');
+  };
   const addTask = (task) => {
     const newCommunication = { ...communication, tasks: [...communication.tasks, { ...task, id: `TSK00${communication.tasks.length + 1}` }] };
     setCommunication(newCommunication);
     addActivity(`assigned a task to ${task.assignee}`, ['Admin', 'Faculty', 'Student']);
+  };
+  const deleteTask = (id) => {
+    const newComm = { ...communication, tasks: communication.tasks.filter(t => t.id !== id) };
+    setCommunication(newComm);
+    syncToVPS('communication', newComm, 'communication-global', 'PUT'); // Communication is often a global object in this app
+    // Actually, if I want it in recovery centre, it should be its own collection.
+    // But looking at how it's stored, it's inside communicationData.
+    // For now, I'll just sync the whole thing.
   };
 
   const addLoan = (loan) => {
@@ -403,17 +523,23 @@ export const AppContextProvider = ({ children }) => {
     if (notice.audience === 'Faculty') audienceMap = ['Admin', 'Faculty'];
     addActivity(`posted a new notice: ${notice.title}`, audienceMap);
   };
+  const deleteNotice = (id) => {
+    const newComm = { ...communication, notices: communication.notices.filter(n => n.id !== id) };
+    setCommunication(newComm);
+    syncToVPS('communication', newComm, 'communication-global', 'PUT');
+  };
   const approveLeave = (leaveId) => {
     setLeaves(leaves.map(l => l.id === leaveId ? { ...l, status: 'Approved' } : l));
+  };
+  const deleteLeave = (id) => {
+    setLeaves(prev => prev.filter(l => l.id !== id));
+    syncToVPS('leaves', null, id, 'DELETE');
   };
   const requestLeave = (leave) => {
     setLeaves([...leaves, { ...leave, id: `LVE00${leaves.length + 1}` }]);
     addActivity(`requested leave for ${leave.days} days`, ['Admin', 'Faculty']);
   };
   
-  const editFaculty = (id, updatedFac) => setFaculty(faculty.map(f => f.id === id ? { ...f, ...updatedFac } : f));
-  const editStaff = (id, updated) => setStaff(staff.map(s => s.id === id ? { ...s, ...updated } : s));
-  const deleteStaff = (id) => setStaff(staff.filter(s => s.id !== id));
   
   const addCourse = (crs) => {
     const id = `CRS0${courses.length + 1}`;
@@ -424,6 +550,7 @@ export const AppContextProvider = ({ children }) => {
   const deleteCourse = (id) => {
     const crs = courses.find(c => c.id === id);
     setCourses(courses.filter(c => c.id !== id));
+    syncToVPS('courses', null, id, 'DELETE');
     if (crs) addActivity(`deleted course: ${crs.title}`, ['Admin', 'Management']);
   };
   
@@ -441,11 +568,16 @@ export const AppContextProvider = ({ children }) => {
   const deleteDocument = (id) => {
     const doc = documents.find(d => d.id === id);
     setDocuments(documents.filter(d => d.id !== id));
+    syncToVPS('documents', null, id, 'DELETE');
     if (doc) addActivity(`deleted document: ${doc.title}`, ['Admin', 'Office Staff']);
   };
   
   const addTimetable = (slot) => setTimetable([...timetable, { ...slot, id: `TT00${timetable.length + 1}` }]);
   const addPayroll = (record) => setPayroll([...payroll, { ...record, id: `PAY00${payroll.length + 1}` }]);
+  const deletePayroll = (id) => {
+    setPayroll(prev => prev.filter(p => p.id !== id));
+    syncToVPS('payroll', null, id, 'DELETE');
+  };
   
   const addAcademicEntry = (type, entry) => {
     if (type === 'departments') setDepartments([...departments, { ...entry, id: `DPT0${departments.length + 1}` }]);
@@ -454,12 +586,39 @@ export const AppContextProvider = ({ children }) => {
     if (type === 'subjects') setSubjects([...subjects, { ...entry, id: `SUB0${subjects.length + 1}` }]);
   };
 
+  const deleteDepartment = (id) => {
+    setDepartments(prev => prev.filter(d => d.id !== id));
+    syncToVPS('departments', null, id, 'DELETE');
+  };
+  const deleteCategory = (id) => {
+    setCategories(prev => prev.filter(c => c.id !== id));
+    syncToVPS('categories', null, id, 'DELETE');
+  };
+  const deleteDegree = (id) => {
+    setDegrees(prev => prev.filter(d => d.id !== id));
+    syncToVPS('degrees', null, id, 'DELETE');
+  };
+  const deleteSubject = (id) => {
+    setSubjects(prev => prev.filter(s => s.id !== id));
+    syncToVPS('subjects', null, id, 'DELETE');
+  };
+  const deleteBatch = (id) => {
+    setBatches(prev => prev.filter(b => b.id !== id));
+    syncToVPS('batches', null, id, 'DELETE');
+  };
+
   const editCalendarEvent = (id, updatedEvent) => setCalendar(calendar.map(c => c.id === id ? { ...c, ...updatedEvent } : c));
   const addCalendarEvent = (newEvent) => setCalendar([...calendar, { ...newEvent, id: `CAL00${calendar.length + 1}` }]);
-  const deleteCalendarEvent = (id) => setCalendar(calendar.filter(c => c.id !== id));
+  const deleteCalendarEvent = (id) => {
+    setCalendar(calendar.filter(c => c.id !== id));
+    syncToVPS('calendar', null, id, 'DELETE');
+  };
 
   const addLibraryBook = (book) => setLibrary([...library, { ...book, id: `LIB00${library.length + 1}` }]);
-  const deleteLibraryBook = (id) => setLibrary(library.filter(l => l.id !== id));
+  const deleteLibraryBook = (id) => {
+    setLibrary(library.filter(l => l.id !== id));
+    syncToVPS('library', null, id, 'DELETE');
+  };
 
   const updateBatch = (batchId, updatedFields) => {
     setBatches(batches.map(b => b.id === batchId ? { ...b, ...updatedFields } : b));
@@ -479,16 +638,16 @@ export const AppContextProvider = ({ children }) => {
     }));
   };
 
-  const markAttendance = (batchId, date, records) => {
-    const existingIndex = attendance.findIndex(a => a.batchId === batchId && a.date === date);
+  const markAttendance = (batchId, date, records, subjectId) => {
+    const existingIndex = attendance.findIndex(a => a.batchId === batchId && a.date === date && a.subjectId === subjectId);
     if (existingIndex >= 0) {
       const newAttendance = [...attendance];
       newAttendance[existingIndex] = { ...newAttendance[existingIndex], records };
       setAttendance(newAttendance);
     } else {
-      setAttendance([...attendance, { id: `ATD0${attendance.length + 1}`, batchId, date, records }]);
+      setAttendance([...attendance, { id: `ATD0${attendance.length + 1}`, batchId, date, records, subjectId }]);
     }
-    addActivity(`marked attendance for batch ${batchId}`, ['Admin', 'Faculty', 'Student']);
+    addActivity(`marked attendance for ${subjectId || 'batch'} in ${batchId}`, ['Admin', 'Faculty', 'Student']);
   };
 
   const generateTimetable = (maxClassesPerTeacher, batchId, courseId) => {
@@ -556,41 +715,86 @@ export const AppContextProvider = ({ children }) => {
   
 
 
-  return (
-    <AppContext.Provider value={{
-      currentUser, login, logout,
-      students, addStudent, editStudent, deleteStudent, handleAddStudent,
-      faculty, addFaculty, editFaculty, deleteFaculty, handleAddFaculty,
-      staff, addStaff, editStaff, deleteStaff, handleAddStaff,
-      processCSV,
-      courses, addCourse, editCourse, deleteCourse,
-      departments, setDepartments,
-      categories, setCategories,
-      degrees, setDegrees,
-      subjects, setSubjects,
-      addAcademicEntry,
-      batches, updateBatchStatus, updateBatch,
-      enrollments, enrollStudent,
-      systemConfig, setSystemConfig,
-      feeStructures, setFeeStructures, addFeeStructure,
-      fees, setFees, addFee,
-      payroll, setPayroll, addPayroll,
-      leaves, setLeaves, approveLeave, requestLeave,
-      finance, setFinance, addExpense,
-      exams, setExams, addExam,
-      timetable, setTimetable, addTimetable, generateTimetable, editTimetableSlot, bulkReplaceTimetable,
-      calendar, setCalendar, editCalendarEvent, addCalendarEvent, deleteCalendarEvent,
-      attendance, setAttendance, markAttendance,
-      library, setLibrary, addLibraryBook, deleteLibraryBook,
-      hostel, setHostel, addRoomOccupant, addVisitor,
-      documents, setDocuments, addDocument, deleteDocument,
-      communication, setCommunication, addTask, addNotice,
-      systemHealth, promoteBatch, addLoan,
-      dashboardStats, recentActivities, systemConfig,
-      users, setUsers,
-      profileTemplate, setProfileTemplate
-    }}>
+  const refreshRecoveryData = async () => {
+    if (currentUser?.role === 'Admin') {
+      const data = await api.getRecovery();
+      setRecoveredItems(data || []);
+    }
+  };
 
+  const restoreItem = async (collection, id) => {
+    const res = await api.restore(collection, id);
+    if (res?.success) {
+      // Refresh the specific collection and recovery data
+      const updatedData = await api.get(collection);
+      if (collection === 'students') setStudents(updatedData);
+      else if (collection === 'faculty') setFaculty(updatedData);
+      else if (collection === 'staff') setStaff(updatedData);
+      else if (collection === 'courses') setCourses(updatedData);
+      // Add more as needed...
+      
+      refreshRecoveryData();
+      addActivity(`restored ${collection} record: ${id}`, ['Admin']);
+      return true;
+    }
+    return false;
+  };
+
+  const permanentDeleteItem = async (collection, id) => {
+    const res = await api.permanentDelete(collection, id);
+    if (res?.success) {
+      refreshRecoveryData();
+      addActivity(`permanently deleted ${collection} record: ${id}`, ['Admin']);
+      return true;
+    }
+    return false;
+  };
+
+  const contextValue = useMemo(() => ({
+    currentUser, login, logout,
+    students, addStudent, editStudent, deleteStudent,
+    faculty, addFaculty, editFaculty, deleteFaculty,
+    staff, addStaff, editStaff, deleteStaff,
+    processCSV,
+    courses, addCourse, editCourse, deleteCourse,
+    departments, setDepartments,
+    categories, setCategories,
+    degrees, setDegrees,
+    subjects, setSubjects,
+    addAcademicEntry,
+    batches, updateBatchStatus, updateBatch,
+    enrollments, enrollStudent,
+    systemConfig, setSystemConfig,
+    feeStructures, setFeeStructures, addFeeStructure,
+    fees, setFees, addFee,
+    payroll, setPayroll, addPayroll,
+    leaves, setLeaves, approveLeave, requestLeave,
+    finance, setFinance, addExpense, refillPettyCash,
+    exams, setExams, addExam,
+    timetable, setTimetable, addTimetable, generateTimetable, editTimetableSlot, bulkReplaceTimetable,
+    calendar, setCalendar, editCalendarEvent, addCalendarEvent, deleteCalendarEvent,
+    attendance, setAttendance, markAttendance,
+    library, setLibrary, addLibraryBook, deleteLibraryBook,
+    hostel, setHostel, addRoomOccupant, addVisitor,
+    documents, setDocuments, addDocument, deleteDocument,
+    communication, setCommunication, addTask, addNotice,
+    systemHealth, promoteBatch, addLoan,
+    dashboardStats, recentActivities,
+    users, setUsers,
+    profileTemplate, setProfileTemplate,
+    recoveredItems, refreshRecoveryData, restoreItem, permanentDeleteItem,
+    academicYear, setAcademicYear,
+    deleteDepartment, deleteCategory, deleteDegree, deleteSubject, deleteBatch,
+    deleteExam, deleteTask, deleteNotice, deleteFee, deletePayroll, deleteLeave
+  }), [
+    currentUser, students, faculty, staff, courses, departments, categories, degrees, subjects, 
+    batches, enrollments, systemConfig, feeStructures, fees, payroll, leaves, finance, exams, 
+    timetable, calendar, attendance, library, hostel, documents, communication, systemHealth, 
+    recentActivities, users, profileTemplate, recoveredItems, academicYear
+  ]);
+
+  return (
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

@@ -4,6 +4,7 @@ import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './Courses.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Courses = () => {
   const { courses, addCourse, editCourse, deleteCourse, degrees, categories, subjects, currentUser } = useContext(AppContext);
@@ -11,6 +12,8 @@ const Courses = () => {
   const [showReports, setShowReports] = useState(false);
   const [instructorFilter, setInstructorFilter] = useState('');
   const [creditsFilter, setCreditsFilter] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
 
   const uniqueInstructors = Array.from(new Set(courses.map(c => c.instructor))).filter(Boolean);
   const uniqueCredits = Array.from(new Set(courses.map(c => String(c.credits)))).filter(Boolean);
@@ -30,25 +33,18 @@ const Courses = () => {
   };
   const getSubjectNames = (subIds) => subIds.map(id => subjects.find(s => s.id === id)?.name).join(', ');
 
-  const handleAddCourse = () => {
-    const title = window.prompt("Enter Course Title:");
-    const instructor = window.prompt("Enter Instructor Name:");
-    if (title && instructor) {
-      addCourse({ title, instructor, degreeId: 'DEG01', subjects: [], credits: 4, schedule: 'TBD' });
-    }
-  };
-
-  const handleEditCourse = (course) => {
-    const title = window.prompt("Edit Course Title:", course.title);
-    const instructor = window.prompt("Edit Instructor Name:", course.instructor);
-    const credits = window.prompt("Edit Credits:", course.credits);
-    if (title && instructor && credits) {
-      editCourse(course.id, { title, instructor, credits: Number(credits) });
+  const handleSaveCourse = (data) => {
+    if (editingCourse) {
+      editCourse(editingCourse.id, { ...data, credits: Number(data.credits) });
+      setEditingCourse(null);
+    } else {
+      addCourse({ ...data, credits: Number(data.credits), subjects: [], schedule: 'TBD' });
+      setShowAddModal(false);
     }
   };
 
   return (
-    <div className={styles.coursesPage}>
+    <div className={`${styles.coursesPage} page-animate`}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Course Management</h1>
@@ -56,7 +52,7 @@ const Courses = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {currentUser?.role !== 'Student' && currentUser?.role !== 'Faculty' && (
-            <button onClick={handleAddCourse} className={styles.primaryBtn}>
+            <button onClick={() => setShowAddModal(true)} className={styles.primaryBtn}>
               <Plus size={18} />
               <span>Add Course</span>
             </button>
@@ -134,7 +130,7 @@ const Courses = () => {
               
               {currentUser?.role !== 'Student' && currentUser?.role !== 'Faculty' && (
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-                  <button onClick={() => handleEditCourse(course)} style={{ flex: 1, padding: '0.5rem', background: 'var(--surface-hover)', border: '1px solid var(--border-color)', borderRadius: '0.25rem', cursor: 'pointer', color: 'var(--text-primary)' }}>Edit</button>
+                  <button onClick={() => setEditingCourse(course)} style={{ flex: 1, padding: '0.5rem', background: 'var(--surface-hover)', border: '1px solid var(--border-color)', borderRadius: '0.25rem', cursor: 'pointer', color: 'var(--text-primary)' }}>Edit</button>
                   <button onClick={() => deleteCourse(course.id)} style={{ flex: 1, padding: '0.5rem', background: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '0.25rem', cursor: 'pointer', color: '#c62828' }}>Delete</button>
                 </div>
               )}
@@ -160,6 +156,25 @@ const Courses = () => {
         filters={[
           { key: 'instructor', label: 'Instructor', options: Array.from(new Set(courses.map(c => c.instructor))).filter(Boolean).map(i => ({ value: i, label: i })) },
           { key: 'credits', label: 'Credits', options: Array.from(new Set(courses.map(c => String(c.credits)))).filter(Boolean).map(cr => ({ value: cr, label: `${cr} Credits` })) }
+        ]}
+      />
+
+      <AddEntryModal 
+        isOpen={showAddModal || !!editingCourse}
+        onClose={() => { setShowAddModal(false); setEditingCourse(null); }}
+        onSave={handleSaveCourse}
+        title={editingCourse ? 'Edit Course' : 'Add New Course'}
+        fields={[
+          { name: 'title', label: 'Course Title', required: true, placeholder: 'e.g. Mechanical Engineering' },
+          { name: 'instructor', label: 'Instructor', required: true, placeholder: 'e.g. Dr. Robert Smith' },
+          { name: 'credits', label: 'Credits', type: 'number', required: true, placeholder: '4' },
+          { 
+            name: 'degreeId', 
+            label: 'Degree', 
+            type: 'select', 
+            required: true, 
+            options: degrees.map(d => ({ value: d.id, label: d.name })) 
+          }
         ]}
       />
     </div>

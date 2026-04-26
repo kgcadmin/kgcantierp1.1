@@ -5,15 +5,19 @@ import { AppContext } from '../../context/AppContext';
 import styles from './Students.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ProfileView from '../../components/ProfileView/ProfileView';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Students = () => {
-  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, handleAddStudent, processCSV } = useContext(AppContext);
+  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, processCSV } = useContext(AppContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [showReports, setShowReports] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(null); // studentId
 
   const relevantStudents = currentUser?.role === 'Faculty'
     ? students.filter(s => {
@@ -31,14 +35,29 @@ const Students = () => {
 
   const uniqueStatuses = Array.from(new Set(relevantStudents.map(s => s.status))).filter(Boolean);
 
-  const handlePromote = () => {
-    const batchId = window.prompt("Enter Batch ID to promote:");
-    if (batchId) promoteBatch(batchId);
+  const handlePromote = (data) => {
+    if (data.batchId) promoteBatch(data.batchId);
   };
 
+  const handleAddSubmit = (data) => {
+    const id = `STU00${students.length + 1}`;
+    addStudent({ 
+      ...data,
+      id, 
+      rollNo: `ROL${Date.now().toString().slice(-4)}`, 
+      grNumber: `GR${Date.now().toString().slice(-5)}`, 
+      year: 'Freshman', 
+      status: 'Active', 
+      gpa: 0, 
+      profileStatus: 'Pending Docs', 
+      academicHistory: [],
+      password: `Pass@${id}`,
+      personalDetails: {}
+    });
+  };
 
   return (
-    <div className={styles.studentsPage}>
+    <div className={`${styles.studentsPage} page-animate`}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Student Information System (SIS)</h1>
@@ -47,7 +66,7 @@ const Students = () => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Office Staff'].includes(currentUser?.role) && (
             <>
-              <button onClick={handleAddStudent} className={styles.primaryBtn}>
+              <button onClick={() => setShowAddModal(true)} className={styles.primaryBtn}>
                 <Plus size={18} />
                 <span>Add Student</span>
               </button>
@@ -57,7 +76,7 @@ const Students = () => {
                 <input type="file" accept=".csv" onChange={(e) => processCSV(e, 'student')} style={{ display: 'none' }} />
               </label>
               {currentUser?.role === 'Admin' && (
-                <button onClick={handlePromote} className={styles.primaryBtn} style={{ background: '#388e3c' }}>
+                <button onClick={() => setShowPromoteModal(true)} className={styles.primaryBtn} style={{ background: '#388e3c' }}>
                   <BookOpen size={18} />
                   <span>Promote Batch</span>
                 </button>
@@ -133,11 +152,7 @@ const Students = () => {
                               title="Enroll in Batch"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const batchId = window.prompt("Enter Batch ID to enroll (e.g., BAT01, BAT02):");
-                                if (batchId) {
-                                  enrollStudent(student.id, batchId.trim().toUpperCase());
-                                  alert("Student enrolled successfully! Check the Batches page.");
-                                }
+                                setShowEnrollModal(student.id);
                               }}
                             >
                               <Plus size={16} />
@@ -182,6 +197,40 @@ const Students = () => {
           />
         )}
       </div>
+
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddSubmit}
+        title="Add New Student"
+        fields={[
+          { name: 'name', label: 'Full Name', required: true, placeholder: 'e.g. John Doe' },
+          { name: 'email', label: 'Personal Email (for login)', required: true, placeholder: 'e.g. john@gmail.com' },
+          { name: 'department', label: 'Department', required: true, placeholder: 'e.g. Computer Science' }
+        ]}
+      />
+
+      <AddEntryModal 
+        isOpen={showPromoteModal}
+        onClose={() => setShowPromoteModal(false)}
+        onSave={handlePromote}
+        title="Promote Batch"
+        fields={[
+          { name: 'batchId', label: 'Batch ID', required: true, placeholder: 'e.g. BAT01' }
+        ]}
+      />
+
+      <AddEntryModal 
+        isOpen={!!showEnrollModal}
+        onClose={() => setShowEnrollModal(null)}
+        onSave={(data) => {
+          if (data.batchId) enrollStudent(showEnrollModal, data.batchId.toUpperCase());
+        }}
+        title="Enroll in Batch"
+        fields={[
+          { name: 'batchId', label: 'Batch ID', required: true, placeholder: 'e.g. BAT02' }
+        ]}
+      />
 
       <ReportExportModal 
         isOpen={showReports}

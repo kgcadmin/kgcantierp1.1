@@ -3,18 +3,20 @@ import { Shield, Bell, Settings as SettingsIcon, Save, Upload, Image as ImageIco
 
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const SystemManagement = () => {
   const { systemConfig, setSystemConfig, systemHealth, profileTemplate, setProfileTemplate } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('settings');
   const [config, setConfig] = useState(systemConfig);
   const [editingTemplate, setEditingTemplate] = useState(profileTemplate);
+  const [activeModal, setActiveModal] = useState(null); // 'section' | 'field'
+  const [modalContext, setModalContext] = useState(null);
 
 
   const handleSave = () => {
     setSystemConfig(config);
     setProfileTemplate(editingTemplate);
-    // Update favicon if changed
     if (config.collegeFavicon) {
       let link = document.querySelector("link[rel~='icon']");
       if (!link) {
@@ -24,7 +26,31 @@ const SystemManagement = () => {
       }
       link.href = config.collegeFavicon;
     }
-    alert('System settings and templates updated successfully!');
+  };
+
+  const handleModalSave = (data) => {
+    if (activeModal === 'section') {
+      setEditingTemplate({
+        ...editingTemplate,
+        sections: [...editingTemplate.sections, { 
+          id: data.title.toLowerCase().replace(/\s+/g, '_'), 
+          title: data.title, 
+          fields: [] 
+        }]
+      });
+    } else if (activeModal === 'field') {
+      const { sectionIndex } = modalContext;
+      const newField = { 
+        id: data.label.toLowerCase().replace(/\s+/g, '_'), 
+        label: data.label, 
+        type: data.type || 'text' 
+      };
+      const newSections = [...editingTemplate.sections];
+      newSections[sectionIndex].fields.push(newField);
+      setEditingTemplate({ ...editingTemplate, sections: newSections });
+    }
+    setActiveModal(null);
+    setModalContext(null);
   };
 
   const handleFileUpload = (e, type) => {
@@ -40,7 +66,7 @@ const SystemManagement = () => {
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>System Management</h1>
@@ -174,17 +200,8 @@ const SystemManagement = () => {
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Customize the fields available in student/staff profile forms.</p>
                 </div>
                 <button 
-                  onClick={() => {
-                    const sectionId = window.prompt("New Section Name (e.g. Identity Docs):");
-                    if (sectionId) {
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        sections: [...editingTemplate.sections, { id: sectionId.toLowerCase().replace(/\s+/g, '_'), title: sectionId, fields: [] }]
-                      });
-                    }
-                  }}
-                  className={styles.btn} 
-                  style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  onClick={() => setActiveModal('section')}
+                  style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
                 >
                   <Plus size={16} /> Add Section
                 </button>
@@ -197,16 +214,10 @@ const SystemManagement = () => {
                       <h3 style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 600 }}>{section.title}</h3>
                       <button 
                         onClick={() => {
-                          const label = window.prompt("Field Label (e.g. Passport Number):");
-                          if (!label) return;
-                          const type = window.prompt("Field Type (text, date, select, checkbox):", "text");
-                          const newField = { id: label.toLowerCase().replace(/\s+/g, '_'), label, type: type || 'text' };
-                          
-                          const newSections = [...editingTemplate.sections];
-                          newSections[sIdx].fields.push(newField);
-                          setEditingTemplate({ ...editingTemplate, sections: newSections });
+                          setModalContext({ sectionIndex: sIdx });
+                          setActiveModal('field');
                         }}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.8125rem' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}
                       >
                         <Plus size={14} /> Add Field
                       </button>
@@ -369,6 +380,31 @@ const SystemManagement = () => {
         )}
 
       </div>
+
+      <AddEntryModal 
+        isOpen={!!activeModal}
+        onClose={() => { setActiveModal(null); setModalContext(null); }}
+        onSave={handleModalSave}
+        title={activeModal === 'section' ? 'Add New Form Section' : 'Add New Field'}
+        fields={activeModal === 'section' ? [
+          { name: 'title', label: 'Section Title', required: true, placeholder: 'e.g. Personal Details' }
+        ] : [
+          { name: 'label', label: 'Field Label', required: true, placeholder: 'e.g. Blood Group' },
+          { 
+            name: 'type', 
+            label: 'Field Type', 
+            type: 'select', 
+            required: true, 
+            options: [
+              { value: 'text', label: 'Short Text' },
+              { value: 'number', label: 'Number' },
+              { value: 'date', label: 'Date' },
+              { value: 'select', label: 'Dropdown Selection' },
+              { value: 'checkbox', label: 'Checkbox' }
+            ] 
+          }
+        ]}
+      />
     </div>
   );
 };

@@ -1,0 +1,26 @@
+server {
+    listen 80;
+    server_name your-domain.com; # Replace with your domain or IP
+
+    # React Frontend
+    location / {
+        root /var/www/edusec/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Node.js API
+    location /api {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Uploads Static Files
+    location /uploads {
+        alias /var/www/edusec/server/uploads;
+    }
+}

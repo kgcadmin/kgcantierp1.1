@@ -2,6 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { Calendar as CalendarIcon, Clock, Users, CalendarDays, Bookmark, Settings, Edit2, List, Grid, Layers, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Timetable = () => {
   const { timetable, attendance, courses, faculty, addTimetable, generateTimetable, calendar, editCalendarEvent, addCalendarEvent, deleteCalendarEvent, exams, communication, batches, updateBatch, editTimetableSlot, bulkReplaceTimetable, markAttendance, enrollments, students, currentUser } = useContext(AppContext);
@@ -18,7 +19,13 @@ const Timetable = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [modalEvents, setModalEvents] = useState(null);
   const [showAddEvent, setShowAddEvent] = useState(false);
-
+  const [activeModal, setActiveModal] = useState(null); // 'schedule' | 'generate' | 'replace' | 'edit-slot'
+  const [modalContext, setModalContext] = useState(null);
+  
+  const { academicYear, setAcademicYear } = useContext(AppContext);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  
   // Attendance specific states
   const [attendanceMode, setAttendanceMode] = useState('overview'); // 'overview' | 'mark'
   const [markDate, setMarkDate] = useState('2026-04-21');
@@ -92,50 +99,106 @@ const Timetable = () => {
       });
     });
 
-    // Sort by date ascending
-    return allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, [calendar, exams, communication, courses]);
+    // 4. Filter by Period or Year
+    return allEvents
+      .filter(event => {
+        const evDate = new Date(event.date);
+        
+        // If specific period is set
+        if (startDate || endDate) {
+          const start = startDate ? new Date(startDate) : new Date('1900-01-01');
+          const end = endDate ? new Date(endDate) : new Date('2100-12-31');
+          return evDate >= start && evDate <= end;
+        }
 
-  const handleScheduleSpecific = (day, time) => {
-    if (!activeBatch) { alert("Please select a batch first."); return; }
-    const courseId = window.prompt("Enter Course ID (e.g., CRS01):", selectedBatchObj?.courseId || '');
-    const subject = window.prompt("Enter Subject Code (e.g., CS101):");
-    const facultyId = window.prompt("Enter Faculty ID (e.g., FAC001):");
-    const room = window.prompt("Enter Room (e.g., RM101):");
-    
-    if (courseId && subject && facultyId && room) {
-      addTimetable({ batchId: activeBatch, day, time, courseId, subject, facultyId, room });
+        // Default: Filter by current academic year (e.g. "2026-27" -> Sept 2026 to Aug 2027)
+        const [startYear] = academicYear.split('-').map(y => parseInt(y.length === 2 ? '20' + y : y));
+        const academicStart = new Date(`${startYear}-01-01`); // Simplified: just show that year's events
+        const academicEnd = new Date(`${startYear + 1}-12-31`);
+        return evDate >= academicStart && evDate <= academicEnd;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [calendar, exams, communication, courses, academicYear, startDate, endDate]);
+
+  const handleModalSave = (data) => {
+    if (activeModal === 'schedule') {
+      const { day, time } = modalContext || {};
+      addTimetable({ 
+        batchId: activeBatch, 
+        day: data.day || day, 
+        time: data.time || time, 
+        ...data 
+      });
+    } else if (activeModal === 'edit-slot') {
+      editTimetableSlot(modalContext.id, { 
+        ...data, 
+        credits: Number(data.credits) 
+      });
+    } else if (activeModal === 'generate') {
+      generateTimetable(Number(data.maxClasses), activeBatch, selectedBatchObj?.courseId);
+    } else if (activeModal === 'replace') {
+      bulkReplaceTimetable(activeBatch, data.type, data.oldVal, data.newVal);
     }
+    setActiveModal(null);
+    setModalContext(null);
   };
 
-  const handleSchedule = () => {
-    if (!activeBatch) { alert("Please select a batch first."); return; }
-    
-    const day = window.prompt("Enter Day (e.g., Monday):");
-    const time = window.prompt("Enter Time (e.g., 09:00 AM - 10:30 AM):");
-    // Default course to the batch's course
-    const courseId = window.prompt("Enter Course ID (e.g., CRS01):", selectedBatchObj?.courseId || '');
-    const subject = window.prompt("Enter Subject Code (e.g., CS101):");
-    const facultyId = window.prompt("Enter Faculty ID (e.g., FAC001):");
-    const room = window.prompt("Enter Room (e.g., RM101):");
-    
-    if (day && time && courseId && subject && facultyId && room) {
-      addTimetable({ batchId: activeBatch, day, time, courseId, subject, facultyId, room });
-    }
-  };
-
-  const handleGenerate = () => {
-    if (!activeBatch) { alert("Please select a batch first."); return; }
-    const maxClasses = window.prompt("Enter Max Classes Per Teacher Per Day (default: 2):", "2");
-    if (maxClasses && !isNaN(maxClasses)) {
-      if (window.confirm(`WARNING: This will overwrite the current timetable for ${selectedBatchObj?.name || 'this batch'}. Are you sure?`)) {
-        generateTimetable(Number(maxClasses), activeBatch, selectedBatchObj?.courseId);
-      }
+  const getModalFields = () => {
+    switch (activeModal) {
+      case 'schedule':
+        return [
+          ...(modalContext ? [] : [{ name: 'day', label: 'Day', required: true, type: 'select', options: getBatchConfig().days.map(d => ({ value: d, label: d })) }]),
+          ...(modalContext ? [] : [{ name: 'time', label: 'Time Slot', required: true, type: 'select', options: getTimeSlots().map(t => ({ value: t, label: t })) }]),
+          { name: 'courseId', label: 'Course ID', required: true, defaultValue: selectedBatchObj?.courseId || '' },
+          { name: 'subject', label: 'Subject Code', required: true, placeholder: 'e.g. CS101' },
+          { 
+            name: 'facultyId', 
+            label: 'Faculty', 
+            type: 'select', 
+            required: true, 
+            options: faculty.map(f => ({ value: f.id, label: f.name })) 
+          },
+          { name: 'room', label: 'Room/Lab', required: true, placeholder: 'e.g. RM101' }
+        ];
+      case 'edit-slot':
+        return [
+          { name: 'subject', label: 'Subject Code', required: true, defaultValue: modalContext?.subject },
+          { 
+            name: 'facultyId', 
+            label: 'Faculty', 
+            type: 'select', 
+            required: true, 
+            defaultValue: modalContext?.facultyId,
+            options: faculty.map(f => ({ value: f.id, label: f.name })) 
+          },
+          { name: 'room', label: 'Room/Lab', required: true, defaultValue: modalContext?.room }
+        ];
+      case 'generate':
+        return [
+          { name: 'maxClasses', label: 'Max Classes Per Teacher Per Day', type: 'number', required: true, defaultValue: 2 }
+        ];
+      case 'replace':
+        return [
+          { 
+            name: 'type', 
+            label: 'Replacement Type', 
+            type: 'select', 
+            required: true, 
+            options: [
+              { value: 'faculty', label: 'Faculty' },
+              { value: 'subject', label: 'Subject' }
+            ] 
+          },
+          { name: 'oldVal', label: 'Old Value (ID/Code)', required: true },
+          { name: 'newVal', label: 'New Value (ID/Code)', required: true }
+        ];
+      default:
+        return [];
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Timetable & Attendance</h1>
@@ -143,10 +206,10 @@ const Timetable = () => {
         </div>
         {activeTab === 'schedule' && currentUser?.role === 'Admin' && (
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button onClick={handleGenerate} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={() => setActiveModal('generate')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#388e3c', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <Settings size={18} /> Auto-Generate
             </button>
-            <button onClick={handleSchedule} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={() => setActiveModal('schedule')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <CalendarIcon size={18} /> Schedule Class
             </button>
           </div>
@@ -205,7 +268,7 @@ const Timetable = () => {
                   <input type="number" value={getBatchConfig().periodsPerDay} onChange={(e) => updateBatch(activeBatch, { timetableConfig: { ...getBatchConfig(), periodsPerDay: Number(e.target.value) }})} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)' }} />
                 </div>
                 <div>
-                   <button onClick={handleGenerate} style={{ width: '100%', padding: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontWeight: 600 }}>Auto-Generate Schedule</button>
+                   <button onClick={() => setActiveModal('generate')} style={{ width: '100%', padding: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', fontWeight: 600 }}>Auto-Generate Schedule</button>
                 </div>
               </div>
 
@@ -235,14 +298,7 @@ const Timetable = () => {
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Bulk Replace Tool</label>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <button onClick={() => {
-                    const type = window.prompt("Replace 'faculty' or 'subject'?", "faculty");
-                    if (type !== 'faculty' && type !== 'subject') return;
-                    const oldVal = window.prompt(`Enter old ${type} ID/Code:`);
-                    if (!oldVal) return;
-                    const newVal = window.prompt(`Enter new ${type} ID/Code:`);
-                    if (oldVal && newVal) bulkReplaceTimetable(activeBatch, type, oldVal, newVal);
-                  }} style={{ padding: '0.5rem 1rem', background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                  <button onClick={() => setActiveModal('replace')} style={{ padding: '0.5rem 1rem', background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.875rem' }}>
                     <Edit2 size={14} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} /> Replace Faculty/Subject
                   </button>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Replaces all instances in the current active batch schedule.</span>
@@ -271,11 +327,8 @@ const Timetable = () => {
                             <div 
                               onClick={() => {
                                 if (currentUser?.role === 'Student' || currentUser?.role === 'Faculty') return;
-                                const subject = window.prompt("Edit Subject Code:", slot.subject);
-                                if (!subject) return;
-                                const facultyId = window.prompt("Edit Faculty ID:", slot.facultyId);
-                                const room = window.prompt("Edit Room:", slot.room);
-                                if (subject && facultyId && room) editTimetableSlot(slot.id, { subject, facultyId, room });
+                                setModalContext(slot);
+                                setActiveModal('edit-slot');
                               }}
                               style={{ background: 'var(--surface-hover)', padding: '0.5rem', borderRadius: '0.25rem', textAlign: 'left', borderLeft: '3px solid var(--primary)', cursor: (currentUser?.role === 'Student' || currentUser?.role === 'Faculty') ? 'default' : 'pointer', position: 'relative' }}
                               title={(currentUser?.role === 'Student' || currentUser?.role === 'Faculty') ? '' : "Click to Edit"}
@@ -288,7 +341,7 @@ const Timetable = () => {
                             </div>
                           ) : (
                             currentUser?.role === 'Admin' && (
-                              <button onClick={() => handleScheduleSpecific(day, time)} style={{ border: '1px dashed var(--border-color)', background: 'transparent', width: '100%', height: '100%', minHeight: '60px', borderRadius: '0.25rem', color: 'var(--text-tertiary)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background='var(--surface-hover)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>+ Add Class</button>
+                              <button onClick={() => { setModalContext({day, time}); setActiveModal('schedule'); }} style={{ border: '1px dashed var(--border-color)', background: 'transparent', width: '100%', height: '100%', minHeight: '60px', borderRadius: '0.25rem', color: 'var(--text-tertiary)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background='var(--surface-hover)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>+ Add Class</button>
                             )
                           )}
                         </td>
@@ -457,12 +510,42 @@ const Timetable = () => {
         <Card style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Academic Calendar 2026-2027</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ display: 'flex', background: 'var(--surface-hover)', padding: '0.25rem', borderRadius: '0.5rem' }}>
-                <button onClick={() => setCalendarView('list')} style={{ background: calendarView === 'list' ? 'var(--surface)' : 'transparent', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: calendarView === 'list' ? 'var(--primary)' : 'var(--text-secondary)' }}><List size={16} /> List</button>
-                <button onClick={() => setCalendarView('monthly')} style={{ background: calendarView === 'monthly' ? 'var(--surface)' : 'transparent', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: calendarView === 'monthly' ? 'var(--primary)' : 'var(--text-secondary)' }}><Grid size={16} /> Monthly</button>
-                <button onClick={() => setCalendarView('yearly')} style={{ background: calendarView === 'yearly' ? 'var(--surface)' : 'transparent', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: calendarView === 'yearly' ? 'var(--primary)' : 'var(--text-secondary)' }}><Layers size={16} /> Yearly</button>
-              </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', background: 'var(--surface-hover)', padding: '1rem', borderRadius: '0.5rem', alignItems: 'flex-end' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Academic Year</label>
+              <select 
+                value={academicYear} 
+                onChange={(e) => setAcademicYear(e.target.value)}
+                style={{ padding: '0.5rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }}
+              >
+                <option value="2025-26">2025-26</option>
+                <option value="2026-27">2026-27</option>
+                <option value="2027-28">2027-28</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>View Period (Start)</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ padding: '0.4rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>End Date</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ padding: '0.4rem', borderRadius: '0.25rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+            </div>
+            <button 
+              onClick={() => { setStartDate(''); setEndDate(''); }}
+              style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '0.25rem', cursor: 'pointer', fontSize: '0.75rem' }}
+            >Reset Period</button>
+            <div style={{ flex: 1 }}></div>
+            <div style={{ display: 'flex', background: 'var(--surface)', padding: '0.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
+              <button onClick={() => setCalendarView('list')} style={{ background: calendarView === 'list' ? 'var(--surface-hover)' : 'transparent', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: calendarView === 'list' ? 'var(--primary)' : 'var(--text-secondary)', fontSize: '0.875rem' }}><List size={16} /> List</button>
+              <button onClick={() => setCalendarView('monthly')} style={{ background: calendarView === 'monthly' ? 'var(--surface-hover)' : 'transparent', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: calendarView === 'monthly' ? 'var(--primary)' : 'var(--text-secondary)', fontSize: '0.875rem' }}><Grid size={16} /> Monthly</button>
+              <button onClick={() => setCalendarView('yearly')} style={{ background: calendarView === 'yearly' ? 'var(--surface-hover)' : 'transparent', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.25rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: calendarView === 'yearly' ? 'var(--primary)' : 'var(--text-secondary)', fontSize: '0.875rem' }}><Layers size={16} /> Yearly</button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Academic Calendar {academicYear}</h2>
+            <div>
               {currentUser?.role !== 'Student' && (
                 <button 
                   onClick={() => setShowAddEvent(true)}
@@ -472,6 +555,7 @@ const Timetable = () => {
                 </button>
               )}
             </div>
+          </div>
           </div>
 
           {calendarView === 'list' && (
@@ -733,6 +817,13 @@ const Timetable = () => {
           </div>
         </div>
       )}
+      <AddEntryModal 
+        isOpen={!!activeModal}
+        onClose={() => { setActiveModal(null); setModalContext(null); }}
+        onSave={handleModalSave}
+        title={activeModal === 'schedule' ? 'Schedule New Class' : activeModal === 'edit-slot' ? 'Edit Class Slot' : activeModal === 'generate' ? 'Auto-Generate Timetable' : 'Bulk Replace Resources'}
+        fields={getModalFields()}
+      />
     </div>
   );
 };

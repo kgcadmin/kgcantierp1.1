@@ -3,11 +3,13 @@ import { Home, Users, Search, Plus, MapPin, FileText } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Hostel = () => {
   const { hostel, students, addRoomOccupant, addVisitor, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('rooms');
   const [showReports, setShowReports] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const getStudentName = (id) => students.find(s => s.id === id)?.name || id;
 
@@ -19,21 +21,24 @@ const Hostel = () => {
     ? hostel.visitors.filter(v => v.studentId === currentUser.linkedId)
     : hostel.visitors;
 
-  const handleAction = () => {
+  const handleSaveAction = (data) => {
     if (activeTab === 'rooms') {
-      const roomId = window.prompt("Enter Room ID (e.g., RM102):");
-      const studentId = window.prompt("Enter Student ID to allocate (e.g., STU003):");
-      if (roomId && studentId) addRoomOccupant(roomId, studentId);
+      if (data.roomId && data.studentId) addRoomOccupant(data.roomId, data.studentId);
     } else {
-      const name = window.prompt("Enter Visitor Name:");
-      const relation = window.prompt("Enter Relation (e.g., Father):");
-      const studentId = window.prompt("Enter Student ID visiting:");
-      if (name && studentId) addVisitor({ name, relation, studentId, date: new Date().toISOString().split('T')[0], timeIn: 'Just Now', timeOut: '' });
+      if (data.name && data.studentId) {
+        addVisitor({ 
+          ...data, 
+          date: new Date().toISOString().split('T')[0], 
+          timeIn: 'Just Now', 
+          timeOut: '' 
+        });
+      }
     }
+    setShowAddModal(false);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Hostel Management</h1>
@@ -41,7 +46,7 @@ const Hostel = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {currentUser?.role !== 'Student' && (
-            <button onClick={handleAction} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <Plus size={18} /> {activeTab === 'rooms' ? 'Allocate Room' : 'Log Visitor'}
             </button>
           )}
@@ -150,6 +155,27 @@ const Hostel = () => {
         filters={[
           { key: 'status', label: 'Status', options: [{ value: 'Available', label: 'Available' }, { value: 'Full', label: 'Full' }] },
           { key: 'block', label: 'Block', options: Array.from(new Set(relevantRooms.map(r => r.block))).filter(Boolean).map(b => ({ value: b, label: b })) }
+        ]}
+      />
+
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleSaveAction}
+        title={activeTab === 'rooms' ? 'Allocate Room' : 'Log Visitor'}
+        fields={activeTab === 'rooms' ? [
+          { 
+            name: 'roomId', 
+            label: 'Room', 
+            type: 'select', 
+            required: true, 
+            options: hostel.rooms.filter(r => r.status !== 'Full').map(r => ({ value: r.id, label: `Room ${r.id} (${r.block})` })) 
+          },
+          { name: 'studentId', label: 'Student ID', required: true, placeholder: 'e.g. STU001' }
+        ] : [
+          { name: 'name', label: 'Visitor Name', required: true, placeholder: 'e.g. John Smith' },
+          { name: 'relation', label: 'Relation', required: true, placeholder: 'e.g. Father' },
+          { name: 'studentId', label: 'Visiting Student ID', required: true, placeholder: 'e.g. STU001' }
         ]}
       />
     </div>

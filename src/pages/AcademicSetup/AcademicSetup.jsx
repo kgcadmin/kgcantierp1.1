@@ -3,38 +3,61 @@ import { Book, Grid, Layers, Building2, Plus, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './AcademicSetup.module.css';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const AcademicSetup = () => {
   const { 
     departments, categories, degrees, subjects, addAcademicEntry, 
-    setDepartments, setCategories, setDegrees, setSubjects,
+    deleteDepartment, deleteCategory, deleteDegree, deleteSubject,
     currentUser 
   } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('departments');
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const handleAddEntry = () => {
-    if (activeTab === 'departments') {
-      const name = window.prompt("Enter Department Name:");
-      const head = window.prompt("Enter Head of Department:");
-      if (name && head) addAcademicEntry('departments', { name, head });
-    } else if (activeTab === 'categories') {
-      const name = window.prompt("Enter Category Name:");
-      if (name) addAcademicEntry('categories', { name });
-    } else if (activeTab === 'degrees') {
-      const name = window.prompt("Enter Degree Name:");
-      const categoryId = window.prompt("Enter Category ID (e.g., CAT01):");
-      const departmentId = window.prompt("Enter Department ID (e.g., DPT01):");
-      if (name && categoryId && departmentId) addAcademicEntry('degrees', { name, categoryId, departmentId });
-    } else if (activeTab === 'subjects') {
-      const name = window.prompt("Enter Subject Name:");
-      const code = window.prompt("Enter Subject Code:");
-      const credits = window.prompt("Enter Credits:");
-      if (name && code && credits) addAcademicEntry('subjects', { name, code, credits: Number(credits), syllabus: 'New Syllabus', books: 'New Books' });
+  const getFields = () => {
+    switch (activeTab) {
+      case 'departments':
+        return [
+          { name: 'name', label: 'Department Name', required: true, placeholder: 'e.g. Mechanical Engineering' },
+          { name: 'head', label: 'Head of Department', required: true, placeholder: 'e.g. Dr. Sarah Jenkins' }
+        ];
+      case 'categories':
+        return [
+          { name: 'name', label: 'Category Name', required: true, placeholder: 'e.g. Postgraduate' }
+        ];
+      case 'degrees':
+        return [
+          { name: 'name', label: 'Degree Name', required: true, placeholder: 'e.g. M.Tech' },
+          { name: 'categoryId', label: 'Category ID', required: true, placeholder: 'e.g. CAT01' },
+          { name: 'departmentId', label: 'Department ID', required: true, placeholder: 'e.g. DPT01' }
+        ];
+      case 'subjects':
+        return [
+          { name: 'name', label: 'Subject Name', required: true, placeholder: 'e.g. Thermodynamics' },
+          { name: 'code', label: 'Subject Code', required: true, placeholder: 'e.g. ME101' },
+          { name: 'credits', label: 'Credits', type: 'number', required: true, placeholder: 'e.g. 4' }
+        ];
+      default:
+        return [];
     }
   };
 
+  const handleSave = (data) => {
+    if (activeTab === 'subjects') {
+      addAcademicEntry('subjects', { 
+        ...data, 
+        credits: Number(data.credits), 
+        syllabus: 'New Syllabus defined', 
+        books: 'Recommended textbook list' 
+      });
+    } else {
+      addAcademicEntry(activeTab, data);
+    }
+    setShowAddModal(false);
+  };
+
   return (
-    <div className={styles.setupPage}>
+    <div className={`${styles.setupPage} page-animate`}>
       <div className={`${styles.header} mobile-stack`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
           <div>
@@ -42,7 +65,7 @@ const AcademicSetup = () => {
             <p className={styles.subtitle}>Centralized management of departments, categories, degrees, and subjects.</p>
           </div>
           {currentUser?.role !== 'Management' && (
-            <button onClick={handleAddEntry} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <Plus size={18} /> Add Entry
             </button>
           )}
@@ -85,7 +108,7 @@ const AcademicSetup = () => {
                       <td>{d.name}</td>
                       <td>{d.head}</td>
                       <td>
-                        <button className={styles.deleteBtn} onClick={() => setDepartments(departments.filter(item => item.id !== d.id))}>
+                        <button className={styles.deleteBtn} onClick={() => deleteDepartment(d.id)}>
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -107,7 +130,7 @@ const AcademicSetup = () => {
                     <span className={styles.idBadge}>{c.id}</span>
                     <span className={styles.itemName}>{c.name}</span>
                   </div>
-                  <button className={styles.deleteBtn} onClick={() => setCategories(categories.filter(item => item.id !== c.id))}>
+                  <button className={styles.deleteBtn} onClick={() => deleteCategory(c.id)}>
                     <Trash2 size={16} />
                   </button>
                 </li>
@@ -138,7 +161,7 @@ const AcademicSetup = () => {
                       <td>{d.categoryId}</td>
                       <td>{d.departmentId}</td>
                       <td>
-                        <button className={styles.deleteBtn} onClick={() => setDegrees(degrees.filter(item => item.id !== d.id))}>
+                        <button className={styles.deleteBtn} onClick={() => deleteDegree(d.id)}>
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -158,7 +181,7 @@ const AcademicSetup = () => {
                   <span className={styles.subjectCode}>{s.code}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span className={styles.creditsBadge}>{s.credits} Credits</span>
-                    <button className={styles.deleteBtnSmall} onClick={() => setSubjects(subjects.filter(item => item.id !== s.id))}>
+                    <button className={styles.deleteBtnSmall} onClick={() => deleteSubject(s.id)}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -172,13 +195,21 @@ const AcademicSetup = () => {
                 </div>
               </Card>
             ))}
-            <Card className={styles.addCard} onClick={handleAddEntry}>
+            <Card className={styles.addCard} onClick={() => setShowAddModal(true)}>
               <Plus size={32} />
               <span>Add New Subject</span>
             </Card>
           </div>
         )}
       </div>
+
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleSave}
+        title={`Add ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1, -1)}`}
+        fields={getFields()}
+      />
     </div>
   );
 };

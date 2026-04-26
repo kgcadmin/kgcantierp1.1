@@ -3,37 +3,59 @@ import { Wallet, PieChart, Plus, FileText } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Finance = () => {
-  const { finance, addExpense, currentUser, addLoan } = useContext(AppContext);
+  const { finance, addExpense, currentUser, addLoan, refillPettyCash } = useContext(AppContext);
   const [showReports, setShowReports] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [modalType, setModalType] = useState(null); // 'expense' | 'loan' | 'refill'
 
 
-  const handleAddExpense = () => {
-    const description = window.prompt("Enter Expense Description:");
-    const amount = window.prompt("Enter Amount:");
-    const category = window.prompt("Enter Category (e.g., Supplies, Maintenance):");
-    
-    if (description && amount && category) {
-      addExpense({ description, amount: Number(amount), category, date: new Date().toISOString().split('T')[0] });
+  const getFields = () => {
+    switch (modalType) {
+      case 'expense':
+        return [
+          { name: 'description', label: 'Description', required: true, placeholder: 'e.g. Office Supplies' },
+          { name: 'amount', label: 'Amount (₹)', type: 'number', required: true, placeholder: 'e.g. 1500' },
+          { name: 'category', label: 'Category', required: true, placeholder: 'e.g. Supplies' }
+        ];
+      case 'loan':
+        return [
+          { name: 'employeeId', label: 'Employee ID', required: true, placeholder: 'e.g. FAC001' },
+          { name: 'type', label: 'Loan Type', required: true, placeholder: 'e.g. Advance Salary' },
+          { name: 'amount', label: 'Total Amount (₹)', type: 'number', required: true, placeholder: 'e.g. 50000' },
+          { name: 'installment', label: 'Monthly Installment (₹)', type: 'number', required: true, placeholder: 'e.g. 5000' }
+        ];
+      case 'refill':
+        return [
+          { name: 'amount', label: 'Refill Amount (₹)', type: 'number', required: true, placeholder: 'e.g. 10000' }
+        ];
+      default:
+        return [];
     }
   };
 
-  const handleAddLoan = () => {
-    const employeeId = window.prompt("Enter Employee ID:");
-    const type = window.prompt("Enter Loan Type (e.g., Advance Salary, Computer Loan):");
-    const amount = window.prompt("Enter Total Amount:");
-    const installment = window.prompt("Enter Monthly Installment:");
-    
-    if (employeeId && type && amount && installment) {
-      addLoan({ employeeId, type, amount: Number(amount), remaining: Number(amount), installment: Number(installment), status: 'Active' });
+  const handleModalSave = (data) => {
+    if (modalType === 'expense') {
+      addExpense({ ...data, amount: Number(data.amount), date: new Date().toISOString().split('T')[0] });
+    } else if (modalType === 'loan') {
+      addLoan({ 
+        ...data, 
+        amount: Number(data.amount), 
+        remaining: Number(data.amount), 
+        installment: Number(data.installment), 
+        status: 'Active' 
+      });
+    } else if (modalType === 'refill') {
+      refillPettyCash(data.amount);
     }
+    setModalType(null);
   };
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Finance Management System</h1>
@@ -42,10 +64,10 @@ const Finance = () => {
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {currentUser?.role !== 'Management' && (
             <>
-              <button onClick={handleAddExpense} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+              <button onClick={() => setModalType('expense')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                 <Plus size={18} /> Record Expense
               </button>
-              <button onClick={handleAddLoan} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f59e0b', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+              <button onClick={() => setModalType('loan')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f59e0b', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                 <Plus size={18} /> Add Loan
               </button>
             </>
@@ -79,7 +101,10 @@ const Finance = () => {
             <p style={{ margin: 0, opacity: 0.8, fontSize: '0.875rem' }}>Last Refill: {finance.pettyCash.lastRefill}</p>
             
             {currentUser?.role !== 'Management' && (
-              <button style={{ marginTop: '2rem', width: '100%', padding: '0.75rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+              <button 
+                onClick={() => setModalType('refill')}
+                style={{ marginTop: '2rem', width: '100%', padding: '0.75rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
+              >
                 Request Refill
               </button>
             )}
@@ -178,6 +203,14 @@ const Finance = () => {
         filters={[
           { key: 'category', label: 'Category', options: Array.from(new Set(finance.expenses.map(e => e.category))).filter(Boolean).map(c => ({ value: c, label: c })) }
         ]}
+      />
+
+      <AddEntryModal 
+        isOpen={!!modalType}
+        onClose={() => setModalType(null)}
+        onSave={handleModalSave}
+        title={modalType === 'refill' ? 'Petty Cash Refill' : modalType === 'loan' ? 'New Loan/Advance' : 'Record New Expense'}
+        fields={getFields()}
       />
     </div>
   );

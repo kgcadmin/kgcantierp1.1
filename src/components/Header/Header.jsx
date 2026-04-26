@@ -1,13 +1,13 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Settings, Menu } from 'lucide-react';
+import { Bell, User, LogOut, Settings, Menu, Calendar } from 'lucide-react';
 
 import styles from './Header.module.css';
 import { AppContext } from '../../context/AppContext';
 
 const Header = ({ onMenuClick }) => {
 
-  const { currentUser, logout, recentActivities } = useContext(AppContext);
+  const { currentUser, logout, recentActivities, academicYear, setAcademicYear } = useContext(AppContext);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +37,19 @@ const Header = ({ onMenuClick }) => {
       <div className={styles.logoPlaceholder} style={{ flex: 1 }}></div>
 
       <div className={styles.actions}>
+        <div className={styles.yearSelector}>
+          <Calendar size={16} color="var(--primary)" />
+          <select 
+            value={academicYear} 
+            onChange={(e) => setAcademicYear(e.target.value)}
+            className={styles.yearSelect}
+          >
+            <option value="2025-26">2025-26</option>
+            <option value="2026-27">2026-27</option>
+            <option value="2027-28">2027-28</option>
+          </select>
+        </div>
+
         {/* Notification Bell */}
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button

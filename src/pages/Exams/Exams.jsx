@@ -3,6 +3,7 @@ import { PenTool, CheckCircle, Clock, Plus, Download, FileText } from 'lucide-re
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Exams = () => {
   const { exams, courses, addExam, currentUser, enrollments, batches } = useContext(AppContext);
@@ -10,6 +11,7 @@ const Exams = () => {
   const [showReports, setShowReports] = useState(false);
   const [courseFilter, setCourseFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const getCourseTitle = (id) => courses.find(c => c.id === id)?.title || id;
 
@@ -40,14 +42,10 @@ const Exams = () => {
   const upcomingCount = relevantExams.filter(e => e.status === 'Scheduled').length;
   const evaluatedCount = relevantExams.filter(e => e.status === 'Evaluated').length;
 
-  const handleScheduleExam = () => {
-    const title = window.prompt("Enter Exam Title (e.g., Midterm: Biology):");
-    const courseId = window.prompt("Enter Course ID (e.g., CRS01):");
-    const date = window.prompt("Enter Date (YYYY-MM-DD):");
-    const type = window.prompt("Enter Type (Descriptive, Objective):");
-    
-    if (title && courseId && date && type) {
-      addExam({ title, courseId, date, type, status: 'Scheduled' });
+  const handleScheduleSubmit = (data) => {
+    if (data.title && data.courseId && data.date && data.type) {
+      addExam({ ...data, status: 'Scheduled' });
+      setShowAddModal(false);
     }
   };
 
@@ -56,7 +54,7 @@ const Exams = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Exam Management System</h1>
@@ -64,7 +62,7 @@ const Exams = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Faculty'].includes(currentUser?.role) && (
-            <button onClick={handleScheduleExam} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <Plus size={18} /> Schedule Exam
             </button>
           )}
@@ -173,6 +171,35 @@ const Exams = () => {
           { key: 'status', label: 'Status', options: Array.from(new Set(relevantExams.map(e => e.status))).filter(Boolean).map(s => ({ value: s, label: s })) },
           { key: 'type', label: 'Type', options: Array.from(new Set(relevantExams.map(e => e.type))).filter(Boolean).map(t => ({ value: t, label: t })) },
           { key: 'courseId', label: 'Course', options: Array.from(new Set(relevantExams.map(e => e.courseId))).filter(Boolean).map(c => ({ value: c, label: getCourseTitle(c) })) }
+        ]}
+      />
+
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleScheduleSubmit}
+        title="Schedule New Examination"
+        fields={[
+          { name: 'title', label: 'Exam Title', required: true, placeholder: 'e.g. Midterm: Data Structures' },
+          { 
+            name: 'courseId', 
+            label: 'Course', 
+            type: 'select', 
+            required: true, 
+            options: courses.map(c => ({ value: c.id, label: c.title })) 
+          },
+          { name: 'date', label: 'Exam Date', type: 'date', required: true },
+          { 
+            name: 'type', 
+            label: 'Exam Type', 
+            type: 'select', 
+            required: true, 
+            options: [
+              { value: 'Descriptive', label: 'Descriptive' },
+              { value: 'Objective', label: 'Objective' },
+              { value: 'Practical', label: 'Practical' }
+            ] 
+          }
         ]}
       />
     </div>

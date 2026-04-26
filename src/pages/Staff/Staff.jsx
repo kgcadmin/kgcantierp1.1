@@ -5,14 +5,16 @@ import { AppContext } from '../../context/AppContext';
 import styles from '../Students/Students.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ProfileView from '../../components/ProfileView/ProfileView';
+import AddEntryModal from '../../components/AddEntryModal';
 
 const Staff = () => {
-  const { staff, addStaff, editStaff, deleteStaff, currentUser, handleAddStaff: addStaffPrompt, handleImportCSV: importStaffCSV } = useContext(AppContext);
+  const { staff, addStaff, editStaff, deleteStaff, currentUser, processCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [showReports, setShowReports] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const uniqueDepts = Array.from(new Set(staff.map(f => f.department))).filter(Boolean);
   const uniqueStatuses = Array.from(new Set(staff.map(f => f.status))).filter(Boolean);
@@ -26,10 +28,19 @@ const Staff = () => {
     return matchesSearch && matchesDept && matchesStatus;
   });
 
-  // Handlers moved to AppContext
+  const handleAddSubmit = (data) => {
+    const id = `STF00${staff.length + 1}`;
+    addStaff({
+      ...data,
+      id,
+      status: 'Active',
+      password: `Pass@${id}`,
+      personalDetails: {}
+    });
+  };
 
   return (
-    <div className={styles.studentsPage}>
+    <div className={`${styles.studentsPage} page-animate`}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Staff Directory</h1>
@@ -38,14 +49,14 @@ const Staff = () => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['Admin', 'Management'].includes(currentUser?.role) && (
             <>
-              <button onClick={addStaffPrompt} className={styles.primaryBtn}>
+              <button onClick={() => setShowAddModal(true)} className={styles.primaryBtn}>
                 <Plus size={18} />
                 <span>Add Staff Member</span>
               </button>
               <label className={styles.primaryBtn} style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
                 <Upload size={18} />
                 <span>Import CSV</span>
-                <input type="file" accept=".csv" onChange={importStaffCSV} style={{ display: 'none' }} />
+                <input type="file" accept=".csv" onChange={(e) => processCSV(e, 'staff')} style={{ display: 'none' }} />
               </label>
             </>
           )}
@@ -154,6 +165,19 @@ const Staff = () => {
           />
         )}
       </div>
+
+      <AddEntryModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddSubmit}
+        title="Add New Staff"
+        fields={[
+          { name: 'name', label: 'Full Name', required: true, placeholder: 'e.g. Michael Brown' },
+          { name: 'email', label: 'Personal Email (for login)', required: true, placeholder: 'e.g. michael@gmail.com' },
+          { name: 'department', label: 'Department', required: true, placeholder: 'e.g. Administration' },
+          { name: 'role', label: 'Role', required: true, placeholder: 'e.g. Accountant' }
+        ]}
+      />
 
       <ReportExportModal 
         isOpen={showReports}
