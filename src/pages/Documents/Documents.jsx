@@ -95,6 +95,7 @@ const Documents = () => {
       dateAdded: new Date().toISOString().split('T')[0],
       size: (uploadData.file.size / 1024).toFixed(1) + ' KB',
       fileType: uploadData.file.type,
+      fileUrl: URL.createObjectURL(uploadData.file), // Fallback to local URL
       hasLocalFile: true,
     };
 
@@ -104,11 +105,9 @@ const Documents = () => {
     if (shouldUpload) {
       api.upload(uploadData.file).then(res => {
         if (res && res.url && !res.error) {
-          // Use relative URL for better compatibility with SSL/Nginx
-          const relativeUrl = res.url.replace(/^https?:\/\/[^/]+/, '');
           addDocument({
             ...docMeta,
-            fileUrl: relativeUrl,
+            fileUrl: res.url, // Use relative URL returned by server
             fileType: res.mimetype || docMeta.fileType // Use server-detected mimetype if available
           });
           showToast('Document uploaded and synced successfully!');
@@ -117,12 +116,12 @@ const Documents = () => {
         }
       }).catch(err => {
         console.error('Upload failed:', err);
-        showToast(`Upload failed: ${err.message}. Saving locally.`);
+        showToast(`Sync failed: ${err.message}. Available in current session.`);
         addDocument(docMeta);
       });
     } else {
       addDocument(docMeta);
-      showToast('Document saved to local storage.');
+      showToast('Document saved in session.');
     }
     setShowUploadModal(false);
     setUploadData({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });

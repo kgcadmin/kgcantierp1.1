@@ -87,6 +87,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
       dateAdded: new Date().toISOString().split('T')[0],
       size: (file.size / 1024).toFixed(1) + ' KB',
       fileType: file.type,
+      fileUrl: URL.createObjectURL(file), // Default to local blob URL
       hasLocalFile: true
     };
 
@@ -95,10 +96,9 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     if (shouldUpload) {
       api.upload(file).then(res => {
         if (res && res.url && !res.error) {
-          const relativeUrl = res.url.replace(/^https?:\/\/[^/]+/, '');
           addDocument({
             ...docMeta,
-            fileUrl: relativeUrl,
+            fileUrl: res.url, // Update with server URL (now relative)
             fileType: res.mimetype || docMeta.fileType
           });
           showToast('Document uploaded and synced!');
@@ -108,10 +108,10 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
       }).catch(err => {
         console.error('Profile doc upload failed:', err);
         addDocument(docMeta);
-        showToast(`Upload failed: ${err.message}. Saved locally.`);
+        showToast(`Sync failed: ${err.message}. Available in current session.`);
       });
     } else {
-      addDocument({ ...docMeta, fileUrl: URL.createObjectURL(file) });
+      addDocument(docMeta);
       showToast('Document saved in session.');
     }
     e.target.value = '';

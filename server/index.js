@@ -143,9 +143,10 @@ const upload = multer({ storage });
 app.post('/api/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).send('No file uploaded.');
   console.log(`📂 File Uploaded: ${req.file.filename} (${req.file.mimetype}, ${req.file.size} bytes)`);
-  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  // Return a relative URL directly to prevent protocol/host mismatch issues
+  const relativeUrl = `/uploads/${req.file.filename}`;
   res.json({ 
-    url: fileUrl, 
+    url: relativeUrl, 
     filename: req.file.filename, 
     size: req.file.size,
     mimetype: req.file.mimetype 
