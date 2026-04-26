@@ -666,6 +666,7 @@ export const AppContextProvider = ({ children }) => {
     setSubjects(prev => prev.filter(s => s.id !== id));
     syncToVPS('subjects', null, id, 'DELETE');
   };
+  const addCourse = (crs) => {
     const id = `CRS0${courses.length + 1}${Date.now().toString().slice(-2)}`;
     const newCourse = { ...crs, id };
     setCourses(prev => [...prev, newCourse]);
