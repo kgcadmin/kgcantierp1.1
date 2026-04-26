@@ -6,7 +6,6 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import AddEntryModal from '../../components/AddEntryModal';
 
 const Hostel = () => {
-const Hostel = () => {
   const { hostel, students, addRoomOccupant, addVisitor, addRoom, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('rooms');
   const [showReports, setShowReports] = useState(false);
