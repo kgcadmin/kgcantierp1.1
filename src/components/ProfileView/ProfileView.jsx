@@ -20,6 +20,11 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   
   const fileInputRef = useRef(null);
 
+  // CRITICAL FIX: Sync local formData if the data prop changes (switching students/faculty)
+  useEffect(() => {
+    setFormData({ ...data });
+  }, [data]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
