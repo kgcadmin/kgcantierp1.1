@@ -324,17 +324,17 @@ const SystemManagement = () => {
                 <h3 style={{ margin: '0 0 1rem 0' }}>Scheduler Summary</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                    <div style={{ padding: '1rem', background: 'var(--surface-hover)', borderRadius: '0.5rem' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{systemHealth.schedulerSummary.active}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{systemHealth?.schedulerSummary?.active || 0}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Active Tasks</div>
                    </div>
                    <div style={{ padding: '1rem', background: 'var(--surface-hover)', borderRadius: '0.5rem' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{systemHealth.schedulerSummary.running}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{systemHealth?.schedulerSummary?.running || 0}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Running Now</div>
                    </div>
                 </div>
                 <div style={{ marginTop: '1.5rem' }}>
-                   <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>Last Backup: <strong>{systemHealth.lastBackup}</strong></div>
-                   <div style={{ fontSize: '0.875rem' }}>System Status: <span style={{ color: '#2e7d32', fontWeight: 600 }}>{systemHealth.status}</span></div>
+                   <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>Last Backup: <strong>{systemHealth?.lastBackup || 'N/A'}</strong></div>
+                   <div style={{ fontSize: '0.875rem' }}>System Status: <span style={{ color: '#2e7d32', fontWeight: 600 }}>{systemHealth?.status || 'Unknown'}</span></div>
                 </div>
              </Card>
 
@@ -344,13 +344,13 @@ const SystemManagement = () => {
                    <div style={{ flex: 1, height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
                       <div style={{ width: '98%', background: '#4caf50' }}></div>
                       <div style={{ width: '2%', background: '#f44336' }}></div>
-                   </div>
-                   <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>99.5% Success</span>
-                </div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                   <div>Total Executions: {systemHealth.executions.total}</div>
-                   <div>Failed: {systemHealth.executions.failed}</div>
-                </div>
+                    </div>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>99.5% Success</span>
+                 </div>
+                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    <div>Total Executions: {systemHealth?.executions?.total || 0}</div>
+                    <div>Failed: {systemHealth?.executions?.failed || 0}</div>
+                 </div>
              </Card>
 
              <Card style={{ padding: '1.5rem', gridColumn: 'span 2' }}>
@@ -365,13 +365,16 @@ const SystemManagement = () => {
                          </tr>
                       </thead>
                       <tbody>
-                         {systemHealth.errors.map(err => (
+                         {systemHealth?.errors?.map(err => (
                             <tr key={err.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem' }}>{err.time}</td>
                                <td style={{ padding: '0.75rem 0.5rem' }}><span style={{ color: '#d32f2f', fontWeight: 600 }}>{err.type}</span></td>
                                <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>{err.message}</td>
                             </tr>
                          ))}
+                         {(!systemHealth?.errors || systemHealth.errors.length === 0) && (
+                            <tr><td colSpan="3" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No recent errors.</td></tr>
+                         )}
                       </tbody>
                    </table>
                 </div>

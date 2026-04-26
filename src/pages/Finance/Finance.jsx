@@ -97,8 +97,8 @@ const Finance = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', opacity: 0.9 }}>
               <Wallet size={20} /> <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 500 }}>Petty Cash Balance</h2>
             </div>
-            <h1 style={{ fontSize: '3rem', margin: '0 0 0.5rem 0', fontWeight: 700 }}>₹{finance.pettyCash.balance.toLocaleString()}</h1>
-            <p style={{ margin: 0, opacity: 0.8, fontSize: '0.875rem' }}>Last Refill: {finance.pettyCash.lastRefill}</p>
+            <h1 style={{ fontSize: '3rem', margin: '0 0 0.5rem 0', fontWeight: 700 }}>₹{finance?.pettyCash?.balance?.toLocaleString() || '0'}</h1>
+            <p style={{ margin: 0, opacity: 0.8, fontSize: '0.875rem' }}>Last Refill: {finance?.pettyCash?.lastRefill || 'Never'}</p>
             
             {currentUser?.role !== 'Management' && (
               <button 
@@ -128,7 +128,7 @@ const Finance = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {finance.expenses.map(exp => (
+                  {finance?.expenses?.map(exp => (
                     <tr key={exp.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{exp.id}</td>
                       <td style={{ padding: '1rem 0.75rem', color: 'var(--text-primary)' }}>{exp.description}</td>
@@ -137,10 +137,13 @@ const Finance = () => {
                           {exp.category}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: '#d32f2f' }}>₹{exp.amount.toLocaleString()}</td>
+                      <td style={{ padding: '1rem 0.75rem', fontWeight: 600, color: '#d32f2f' }}>₹{exp.amount?.toLocaleString()}</td>
                       <td style={{ padding: '1rem 0.75rem', color: 'var(--text-secondary)' }}>{exp.date}</td>
                     </tr>
                   ))}
+                  {(!finance?.expenses || finance.expenses.length === 0) && (
+                    <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No recent expenses.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -201,7 +204,7 @@ const Finance = () => {
           { key: 'date', label: 'Date' }
         ]}
         filters={[
-          { key: 'category', label: 'Category', options: Array.from(new Set(finance.expenses.map(e => e.category))).filter(Boolean).map(c => ({ value: c, label: c })) }
+          { key: 'category', label: 'Category', options: Array.from(new Set(finance?.expenses?.map(e => e.category) || [])).filter(Boolean).map(c => ({ value: c, label: c })) }
         ]}
       />
 
