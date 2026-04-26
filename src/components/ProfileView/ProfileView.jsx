@@ -638,8 +638,6 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                 (() => {
                   const fullUrl = showPreview.fileUrl.startsWith('http') ? showPreview.fileUrl : `${window.location.origin}${showPreview.fileUrl.startsWith('/') ? '' : '/'}${showPreview.fileUrl}`;
                   
-                  let currentType = showPreview.fileType;
-                  if (!currentType && showPreview.title) {
                   if (showPreview.fileType?.startsWith('image/')) {
                     return (
                       <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
@@ -665,7 +663,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                       <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
                         <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
                         <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
-                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
+                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType || 'Unknown Type'})</p>
                         <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', marginTop: '1rem', display: 'inline-block' }}>Open Direct Link</a>
                       </div>
                     );

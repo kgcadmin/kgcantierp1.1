@@ -421,10 +421,6 @@ const Documents = () => {
             <div style={{ flex: 1, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', overflow: 'hidden' }}>
               {showPreview.fileUrl ? (
                 (() => {
-                  const fullUrl = showPreview.fileUrl.startsWith('http') ? showPreview.fileUrl : `${window.location.origin}${showPreview.fileUrl}`;
-                  // Guess fileType from extension if missing (useful for items loaded from DB without mimetype)
-                  let currentType = showPreview.fileType;
-                  if (!currentType && showPreview.title) {
                   const fullUrl = showPreview.fileUrl.startsWith('http') ? showPreview.fileUrl : `${window.location.origin}${showPreview.fileUrl.startsWith('/') ? '' : '/'}${showPreview.fileUrl}`;
                   
                   if (showPreview.fileType?.startsWith('image/')) {
@@ -452,7 +448,7 @@ const Documents = () => {
                       <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
                         <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
                         <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
-                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
+                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType || 'Unknown Type'})</p>
                         <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', marginTop: '1rem', display: 'inline-block' }}>Open Direct Link</a>
                       </div>
                     );
