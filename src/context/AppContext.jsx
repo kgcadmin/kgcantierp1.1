@@ -571,6 +571,16 @@ export const AppContextProvider = ({ children }) => {
   };
 
 
+  const addRoom = (roomData) => {
+    const newHostel = {
+      ...hostel,
+      rooms: [...(hostel?.rooms || []), { ...roomData, occupants: [], status: 'Available' }]
+    };
+    setHostel(newHostel);
+    syncToVPS('hostel', newHostel, 'hostel-global', 'PUT');
+    addActivity(`created new hostel room: ${roomData.id}`, ['Admin']);
+  };
+
   const addRoomOccupant = (roomId, studentId) => {
     const newHostel = {
       ...hostel,
@@ -891,7 +901,7 @@ export const AppContextProvider = ({ children }) => {
     calendar, setCalendar, editCalendarEvent, addCalendarEvent, deleteCalendarEvent,
     attendance, setAttendance, markAttendance,
     library, setLibrary, addLibraryBook, deleteLibraryBook,
-    hostel, setHostel, addRoomOccupant, addVisitor,
+    hostel, setHostel, addRoomOccupant, addVisitor, addRoom,
     documents, setDocuments, addDocument, deleteDocument,
     communication, setCommunication, addTask, addNotice,
     systemHealth, promoteBatch, addLoan,

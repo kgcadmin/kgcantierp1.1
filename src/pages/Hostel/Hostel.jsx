@@ -6,10 +6,12 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import AddEntryModal from '../../components/AddEntryModal';
 
 const Hostel = () => {
-  const { hostel, students, addRoomOccupant, addVisitor, currentUser } = useContext(AppContext);
+const Hostel = () => {
+  const { hostel, students, addRoomOccupant, addVisitor, addRoom, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('rooms');
   const [showReports, setShowReports] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [modalType, setModalType] = useState('allocate'); // 'allocate', 'visitor', 'create'
 
   // Use fallbacks to ensure the page doesn't crash OR get stuck on "Loading"
   const rooms = hostel?.rooms || [];
@@ -26,8 +28,15 @@ const Hostel = () => {
     : visitors;
 
   const handleSaveAction = (data) => {
-    if (activeTab === 'rooms') {
+    if (modalType === 'allocate') {
       if (data.roomId && data.studentId) addRoomOccupant(data.roomId, data.studentId);
+    } else if (modalType === 'create') {
+      addRoom({
+        id: data.id,
+        block: data.block,
+        type: data.type,
+        capacity: data.capacity
+      });
     } else {
       if (data.name && data.studentId) {
         addVisitor({ 
@@ -49,8 +58,13 @@ const Hostel = () => {
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Room allotments, fees, and visitor logs.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {currentUser?.role === 'Admin' && activeTab === 'rooms' && (
+            <button onClick={() => { setModalType('create'); setShowAddModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-hover)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+              <Plus size={18} /> Add New Room
+            </button>
+          )}
           {currentUser?.role !== 'Student' && (
-            <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={() => { setModalType(activeTab === 'rooms' ? 'allocate' : 'visitor'); setShowAddModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
               <Plus size={18} /> {activeTab === 'rooms' ? 'Allocate Room' : 'Log Visitor'}
             </button>
           )}
@@ -166,8 +180,13 @@ const Hostel = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleSaveAction}
-        title={activeTab === 'rooms' ? 'Allocate Room' : 'Log Visitor'}
-        fields={activeTab === 'rooms' ? [
+        title={modalType === 'create' ? 'Add New Room' : (modalType === 'allocate' ? 'Allocate Room' : 'Log Visitor')}
+        fields={modalType === 'create' ? [
+          { name: 'id', label: 'Room Number', required: true, placeholder: 'e.g. 101' },
+          { name: 'block', label: 'Block', required: true, placeholder: 'e.g. A' },
+          { name: 'type', label: 'Type', required: true, placeholder: 'e.g. Double Sharing' },
+          { name: 'capacity', label: 'Total Capacity', type: 'number', required: true, placeholder: 'e.g. 2' }
+        ] : (modalType === 'allocate' ? [
           { 
             name: 'roomId', 
             label: 'Room', 
@@ -180,7 +199,7 @@ const Hostel = () => {
           { name: 'name', label: 'Visitor Name', required: true, placeholder: 'e.g. John Smith' },
           { name: 'relation', label: 'Relation', required: true, placeholder: 'e.g. Father' },
           { name: 'studentId', label: 'Visiting Student ID', required: true, placeholder: 'e.g. STU001' }
-        ]}
+        ])}
       />
     </div>
   );
