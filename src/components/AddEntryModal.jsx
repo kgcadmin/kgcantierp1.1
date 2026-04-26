@@ -45,12 +45,13 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         style={{
           width: '500px',
           maxWidth: '100%',
+          minHeight: '400px', // Prevent collapsing
           padding: '2.5rem',
           position: 'relative',
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-light)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          marginBottom: '2rem' // Bottom margin for scrolling space
+          marginBottom: '2rem'
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -69,10 +70,12 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
           <X size={24} />
         </button>
 
-        <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-main)' }}>{title}</h2>
+        <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: 700 }}>{title}</h2>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {fields.map(field => (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {(!fields || fields.length === 0) ? (
+            <p style={{ color: 'var(--text-muted)' }}>Preparing form fields...</p>
+          ) : fields.map(field => (
             <div key={field.name}>
               <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                 {field.label}
