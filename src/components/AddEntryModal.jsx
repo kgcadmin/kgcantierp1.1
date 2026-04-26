@@ -29,101 +29,140 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'rgba(15, 23, 42, 0.9)',
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'flex-start', // Start from top so it never cuts off the title
-        justifyContent: 'center',
         zIndex: 10000,
-        padding: '5rem 2rem', // Large top padding for breathing room
-        overflowY: 'auto'
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        overflowY: 'auto', // Enable scrolling on the backdrop layer
+        background: 'rgba(10, 15, 25, 0.9)', // Solid, dark premium backdrop
+        backdropFilter: 'blur(10px)',
+        padding: '40px 20px' // Healthy margin from the top of the screen
       }}
       onClick={onClose}
     >
-      <Card 
-        className="page-animate"
+      <div 
         style={{
-          width: '500px',
+          width: '550px',
           maxWidth: '100%',
-          minHeight: '400px', // Prevent collapsing
-          padding: '2.5rem',
-          position: 'relative',
           background: 'var(--bg-surface)',
+          borderRadius: '20px',
           border: '1px solid var(--border-light)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          marginBottom: '2rem'
+          boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.6)',
+          padding: '40px',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '30px'
         }}
         onClick={e => e.stopPropagation()}
       >
-        <button 
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-muted)',
-            cursor: 'pointer'
-          }}
-        >
-          <X size={24} />
-        </button>
+        {/* Header Section */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0, color: 'var(--text-main)', fontSize: '24px', fontWeight: 700 }}>{title}</h2>
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'var(--bg-surface-hover)',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '10px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+          >
+            <X size={24} />
+          </button>
+        </div>
 
-        <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: 700 }}>{title}</h2>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {(!fields || fields.length === 0) ? (
-            <p style={{ color: 'var(--text-muted)' }}>Preparing form fields...</p>
-          ) : fields.map(field => (
-            <div key={field.name}>
-              <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                {field.label}
-              </label>
-              {field.type === 'select' ? (
-                <select 
-                  required={field.required}
-                  value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  style={{ width: '100%' }}
-                >
-                  <option value="">Select {field.label}</option>
-                  {field.options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              ) : field.type === 'textarea' ? (
-                <textarea 
-                  required={field.required}
-                  value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  rows={3}
-                  style={{ width: '100%' }}
-                />
-              ) : (
-                <input 
-                  type={field.type || 'text'}
-                  required={field.required}
-                  value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  style={{ width: '100%' }}
-                />
-              )}
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          {fields && fields.length > 0 ? (
+            fields.map(field => (
+              <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  {field.label}
+                </label>
+                {field.type === 'select' ? (
+                  <select 
+                    required={field.required}
+                    value={formData[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    style={{ 
+                      width: '100%', 
+                      background: 'var(--bg-base)', 
+                      border: '1px solid var(--border-light)', 
+                      color: '#ffffff', 
+                      padding: '12px 16px', 
+                      borderRadius: '10px',
+                      fontSize: '15px'
+                    }}
+                  >
+                    <option value="">Select {field.label}</option>
+                    {field.options?.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : field.type === 'textarea' ? (
+                  <textarea 
+                    required={field.required}
+                    value={formData[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    rows={4}
+                    style={{ 
+                      width: '100%', 
+                      background: 'var(--bg-base)', 
+                      border: '1px solid var(--border-light)', 
+                      color: '#ffffff', 
+                      padding: '12px 16px', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      resize: 'vertical' 
+                    }}
+                  />
+                ) : (
+                  <input 
+                    type={field.type || 'text'}
+                    required={field.required}
+                    value={formData[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    style={{ 
+                      width: '100%', 
+                      background: 'var(--bg-base)', 
+                      border: '1px solid var(--border-light)', 
+                      color: '#ffffff', 
+                      padding: '12px 16px', 
+                      borderRadius: '10px',
+                      fontSize: '15px'
+                    }}
+                  />
+                )}
+              </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+              Loading form components...
             </div>
-          ))}
+          )}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          {/* Footer Actions */}
+          <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
             <button 
               type="button" 
               onClick={onClose}
               style={{
                 flex: 1,
-                padding: '0.75rem',
-                borderRadius: '8px',
+                padding: '14px',
+                borderRadius: '12px',
                 background: 'var(--bg-surface-hover)',
-                color: 'white'
+                color: 'var(--text-main)',
+                fontWeight: 600,
+                fontSize: '15px'
               }}
             >
               Cancel
@@ -132,18 +171,20 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
               type="submit"
               style={{
                 flex: 2,
-                padding: '0.75rem',
-                borderRadius: '8px',
+                padding: '14px',
+                borderRadius: '12px',
                 background: 'var(--primary)',
-                color: 'white',
-                fontWeight: 600
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '15px',
+                boxShadow: '0 10px 20px -5px rgba(79, 70, 229, 0.4)'
               }}
             >
-              Save Entry
+              Save Details
             </button>
           </div>
         </form>
-      </Card>
+      </div>
     </div>
   );
 };
