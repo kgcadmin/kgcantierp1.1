@@ -72,44 +72,45 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     if (!file) return;
     
     const docId = `DOC${Date.now()}`;
-    // Store in memory for immediate access
     fileStore.set(docId, file);
 
-    const docMeta = {
-      id: docId,
-      title: file.name,
-      category: 'Profile Attachment',
-      type: 'Upload',
-      visibility: 'Student-Specific',
-      studentId: formData.id,
-      dateAdded: new Date().toISOString().split('T')[0],
-      size: (file.size / 1024).toFixed(1) + ' KB',
-      fileType: file.type,
-      fileUrl: URL.createObjectURL(file), // Default to local blob URL
-      hasLocalFile: true
-    };
-
-    // Attempt upload to server
     const shouldUpload = import.meta.env.PROD || import.meta.env.VITE_API_URL;
     if (shouldUpload) {
       api.upload(file).then(res => {
-        if (res && res.url && !res.error) {
+        if (res && res.success) {
           addDocument({
-            ...docMeta,
-            fileUrl: res.url, // Use relative URL from server
-            fileType: res.mimetype || docMeta.fileType
+            id: docId,
+            title: file.name,
+            category: 'Profile Attachment',
+            type: 'Upload',
+            visibility: 'Student-Specific',
+            studentId: formData.id,
+            dateAdded: new Date().toISOString().split('T')[0],
+            size: (file.size / 1024).toFixed(1) + ' KB',
+            fileUrl: res.url,
+            fileType: res.mimetype || file.type
           });
-          showToast('Document uploaded and synced!');
+          showToast('Profile document uploaded!');
         } else {
           throw new Error(res?.message || 'Upload failed');
         }
       }).catch(err => {
-        console.error('Profile doc upload failed:', err);
-        addDocument(docMeta);
-        showToast(`Sync failed: ${err.message}. Available in current session.`);
+        console.error('Profile Upload Error:', err);
+        showToast(`Upload failed: ${err.message}`);
       });
     } else {
-      addDocument(docMeta);
+      addDocument({
+        id: docId,
+        title: file.name,
+        category: 'Profile Attachment',
+        type: 'Upload',
+        visibility: 'Student-Specific',
+        studentId: formData.id,
+        dateAdded: new Date().toISOString().split('T')[0],
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        fileUrl: URL.createObjectURL(file),
+        fileType: file.type
+      });
       showToast('Document saved in session.');
     }
     e.target.value = '';

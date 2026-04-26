@@ -81,46 +81,48 @@ const Documents = () => {
     const finalTitle = uploadData.title.includes('.') ? uploadData.title : `${uploadData.title}.${extension}`;
     const docId = `DOC${Date.now()}`;
 
-    // Store in-memory for immediate preview/download in current session
-    fileStore.set(docId, uploadData.file);
+    fileStore.set(docId, uploadData.file); // Keep local cache for instant preview
 
-    const docMeta = {
-      id: docId,
-      title: finalTitle,
-      category: uploadData.category || 'General',
-      type: uploadData.type,
-      visibility: uploadData.visibility,
-      studentId: uploadData.visibility === 'Student-Specific' ? uploadData.studentId : null,
-      dateAdded: new Date().toISOString().split('T')[0],
-      size: (uploadData.file.size / 1024).toFixed(1) + ' KB',
-      fileType: uploadData.file.type,
-      fileUrl: URL.createObjectURL(uploadData.file), // Fallback to local URL
-      hasLocalFile: true,
-    };
-
-    // Always attempt upload if we are in production or have an API URL
     const shouldUpload = import.meta.env.PROD || import.meta.env.VITE_API_URL;
 
     if (shouldUpload) {
       api.upload(uploadData.file).then(res => {
-        if (res && res.url && !res.error) {
+        if (res && res.success) {
           addDocument({
-            ...docMeta,
-            fileUrl: res.url, // Use relative URL returned by server
-            fileType: res.mimetype || docMeta.fileType // Use server-detected mimetype if available
+            id: docId,
+            title: finalTitle,
+            category: uploadData.category || 'General',
+            type: uploadData.type,
+            visibility: uploadData.visibility,
+            studentId: uploadData.visibility === 'Student-Specific' ? uploadData.studentId : null,
+            dateAdded: new Date().toISOString().split('T')[0],
+            size: (uploadData.file.size / 1024).toFixed(1) + ' KB',
+            fileUrl: res.url, // Standard relative path from server
+            fileType: res.mimetype || uploadData.file.type
           });
-          showToast('Document uploaded and synced successfully!');
+          showToast('Document uploaded successfully!');
         } else {
-          throw new Error(res?.message || 'Upload failed');
+          throw new Error(res?.message || 'Server rejected the file');
         }
       }).catch(err => {
-        console.error('Upload failed:', err);
-        showToast(`Sync failed: ${err.message}. Available in current session.`);
-        addDocument(docMeta);
+        console.error('Upload Error:', err);
+        showToast(`Upload failed: ${err.message}`);
       });
     } else {
-      addDocument(docMeta);
-      showToast('Document saved in session.');
+      // Local mode
+      addDocument({
+        id: docId,
+        title: finalTitle,
+        category: uploadData.category || 'General',
+        type: uploadData.type,
+        visibility: uploadData.visibility,
+        studentId: uploadData.visibility === 'Student-Specific' ? uploadData.studentId : null,
+        dateAdded: new Date().toISOString().split('T')[0],
+        size: (uploadData.file.size / 1024).toFixed(1) + ' KB',
+        fileUrl: URL.createObjectURL(uploadData.file),
+        fileType: uploadData.file.type
+      });
+      showToast('Saved to local session.');
     }
     setShowUploadModal(false);
     setUploadData({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });

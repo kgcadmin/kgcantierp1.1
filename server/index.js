@@ -133,25 +133,59 @@ app.delete('/api/recovery/permanent/:collection/:id', async (req, res) => {
   }
 });
 
-// File Upload Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage });
+// --- FRESH START: ROBUST FILE UPLOAD SYSTEM ---
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).send('No file uploaded.');
-  console.log(`📂 File Uploaded: ${req.file.filename} (${req.file.mimetype}, ${req.file.size} bytes)`);
-  // Return a relative URL directly to prevent protocol/host mismatch issues
-  const relativeUrl = `/uploads/${req.file.filename}`;
-  res.json({ 
-    url: relativeUrl, 
-    filename: req.file.filename, 
-    size: req.file.size,
-    mimetype: req.file.mimetype 
-  });
+// Multer Storage Configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
 });
+
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB Limit
+});
+
+// Single clean upload endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: true, message: 'No file received' });
+    }
+
+    console.log(`✅ Upload Success: ${req.file.filename}`);
+    
+    // Return relative path for Nginx compatibility
+    res.json({
+      success: true,
+      url: `/uploads/${req.file.filename}`,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('❌ Upload Error:', error);
+    res.status(500).json({ error: true, message: 'Server upload failed' });
+  }
+});
+// --- END FRESH START ---
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+// Crash Protection
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+});
