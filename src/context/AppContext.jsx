@@ -34,6 +34,9 @@ import { api } from '../utils/api';
 
 export const AppContext = createContext();
 
+// Shared in-memory store for File objects (survives navigations, not refreshes)
+export const fileStore = new Map();
+
 export const AppContextProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
     const savedUsers = localStorage.getItem('edusec_users');

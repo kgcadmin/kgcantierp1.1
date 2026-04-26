@@ -1,10 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { User, Mail, Phone, Building, ShieldCheck, Download, Trash2, Edit2, Save, X, ChevronDown, Calendar, Globe, Award, BookOpen, MapPin, Activity, Plus, FileText, Book, Grid, Layers, Building2 } from 'lucide-react';
 import Card from '../Card/Card';
-import { AppContext } from '../../context/AppContext';
+import { AppContext, fileStore } from '../../context/AppContext';
 import styles from './ProfileView.module.css';
-
-const fileStore = new Map();
 
 const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   const { 
@@ -118,16 +116,26 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   };
 
   const handlePreview = (doc) => {
-    // If we have a fileUrl (blob URL), use it
-    if (doc.fileUrl) {
+    const file = fileStore.get(doc.id);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setShowPreview({ ...doc, fileUrl: url });
+    } else if (doc.fileUrl && doc.fileUrl !== '/') {
       setShowPreview(doc);
     } else {
-      showToast('Preview not available for this record');
+      showToast('File not yet synced or missing');
     }
   };
 
   const handleDownload = async (doc) => {
-    if (!doc.fileUrl) {
+    const file = fileStore.get(doc.id);
+    let targetUrl = doc.fileUrl;
+    
+    if (file) {
+      targetUrl = URL.createObjectURL(file);
+    }
+
+    if (!targetUrl || targetUrl === '/') {
       showToast('No file available for download');
       return;
     }

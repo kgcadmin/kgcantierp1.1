@@ -2,10 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users } from 'lucide-react';
 import { api } from '../../utils/api';
 import Card from '../../components/Card/Card';
-import { AppContext } from '../../context/AppContext';
-
-// In-memory store for actual File objects (survives component re-renders but not page refresh)
-const fileStore = new Map();
+import { AppContext, fileStore } from '../../context/AppContext';
 
 const Documents = () => {
   const { documents, addDocument, deleteDocument, currentUser } = useContext(AppContext);
@@ -18,14 +15,15 @@ const Documents = () => {
   const [toast, setToast] = useState(null);
 
   const handlePreview = (doc) => {
+    // Check if we have the actual file in memory
     const file = fileStore.get(doc.id);
     if (file) {
       const url = URL.createObjectURL(file);
       setShowPreview({ ...doc, fileUrl: url });
-    } else if (doc.fileUrl) {
+    } else if (doc.fileUrl && doc.fileUrl !== '/') {
       setShowPreview(doc);
     } else {
-      setShowPreview(doc);
+      showToast('File not yet synced or missing');
     }
   };
 
