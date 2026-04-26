@@ -29,24 +29,28 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         left: 0,
         right: 0,
         bottom: 0,
+        background: 'rgba(15, 23, 42, 0.9)',
+        backdropFilter: 'blur(10px)',
+        display: 'flex',
+        alignItems: 'center',   // Vertical center
+        justifyContent: 'center', // Horizontal center
         zIndex: 10000,
-        overflowY: 'auto', // Backdrop handles ALL scrolling
-        background: 'rgba(8, 12, 20, 0.95)',
-        backdropFilter: 'blur(12px)',
-        padding: '20px' // Basic safety padding
+        padding: '20px'
       }}
       onClick={onClose}
     >
       <div 
+        className="page-animate" // Re-using the existing fade-in-up animation
         style={{
+          background: 'var(--bg-surface)',
+          padding: '40px',
+          borderRadius: '24px',
           width: '550px',
           maxWidth: '100%',
-          margin: '80px auto', // Perfectly stable top/bottom spacing
-          background: 'var(--bg-surface)',
-          borderRadius: '24px',
+          maxHeight: '90vh',      // Never taller than 90% of screen
+          overflowY: 'auto',       // Scroll inside if too tall
           border: '1px solid var(--border-light)',
-          boxShadow: '0 40px 100px -20px rgba(0, 0, 0, 0.8)',
-          padding: '40px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
