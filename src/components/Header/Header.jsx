@@ -115,7 +115,7 @@ const Header = ({ onMenuClick }) => {
               </button>
               <button
                 className={styles.dropdownItem}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e65100', borderTop: '1px solid var(--border-light)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--danger)', borderTop: '1px solid var(--border-light)' }}
                 onClick={logout}
               >
                 <LogOut size={16} /> Secure Logout

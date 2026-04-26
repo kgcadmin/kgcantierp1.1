@@ -80,12 +80,12 @@ const SystemManagement = () => {
         </button>
       </div>
       
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '2px', whiteSpace: 'nowrap' }}>
         {['Settings', 'Branding', 'Forms', 'Roles', 'Notifications', 'Schedulers', 'Health'].map(tab => (
           <button 
             key={tab} 
             onClick={() => setActiveTab(tab.toLowerCase())}
-            style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', borderBottom: activeTab === tab.toLowerCase() ? '2px solid var(--primary)' : 'none', color: activeTab === tab.toLowerCase() ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: activeTab === tab.toLowerCase() ? 600 : 500, cursor: 'pointer' }}
+            style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', borderBottom: activeTab === tab.toLowerCase() ? '2px solid var(--primary)' : 'none', color: activeTab === tab.toLowerCase() ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: activeTab === tab.toLowerCase() ? 600 : 500, cursor: 'pointer', flexShrink: 0 }}
           >
             {tab}
           </button>
@@ -314,6 +314,44 @@ const SystemManagement = () => {
                 />
                 <label htmlFor="smsNotif" style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>Enable SMS Notifications (Absences, Emergency Alerts)</label>
               </div>
+            </div>
+          </Card>
+        )}
+        {activeTab === 'schedulers' && (
+          <Card style={{ padding: '1.5rem', gridColumn: 'span 2' }}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
+              <Clock size={20} /> System Schedulers & Cron Jobs
+            </h2>
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <th style={{ padding: '1rem 0.5rem' }}>Job Name</th>
+                    <th style={{ padding: '1rem 0.5rem' }}>Schedule</th>
+                    <th style={{ padding: '1rem 0.5rem' }}>Next Run</th>
+                    <th style={{ padding: '1rem 0.5rem' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { name: 'Daily Backup', cron: '0 0 * * *', next: 'Tonight 12:00 AM', status: 'Active' },
+                    { name: 'Fee Reminder Bot', cron: '0 9 * * 1', next: 'Next Monday 9:00 AM', status: 'Active' },
+                    { name: 'Attendance Sync', cron: '*/30 * * * *', next: 'In 12 mins', status: 'Running' },
+                    { name: 'Payroll Processor', cron: '0 0 1 * *', next: 'May 1st', status: 'Idle' }
+                  ].map((job, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '1rem 0.5rem', fontWeight: 500 }}>{job.name}</td>
+                      <td style={{ padding: '1rem 0.5rem', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>{job.cron}</td>
+                      <td style={{ padding: '1rem 0.5rem', color: 'var(--text-secondary)' }}>{job.next}</td>
+                      <td style={{ padding: '1rem 0.5rem' }}>
+                        <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, background: job.status === 'Active' ? '#e8f5e9' : job.status === 'Running' ? '#e3f2fd' : '#f5f5f5', color: job.status === 'Active' ? '#2e7d32' : job.status === 'Running' ? '#1976d2' : '#616161' }}>
+                          {job.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Card>
         )}

@@ -88,7 +88,9 @@
 .navItem.active {
   background: var(--primary-light);
   color: var(--primary);
-  border-left: 3px solid var(--primary);
+  border-left: 4px solid var(--primary);
+  box-shadow: inset 0 0 10px rgba(79, 70, 229, 0.1);
+  font-weight: 600;
 }
 
 .logoutContainer {
