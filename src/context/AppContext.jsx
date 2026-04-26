@@ -403,16 +403,24 @@ export const AppContextProvider = ({ children }) => {
 
 
   const updateBatchStatus = (id, newStatus, historyEntry) => {
-    setBatches(batches.map(b => b.id === id ? {
-      ...b, 
-      status: newStatus, 
-      history: [...b.history, historyEntry]
-    } : b));
+    const updated = batches.find(b => b.id === id);
+    if (updated) {
+      const newBatch = { ...updated, status: newStatus, history: [...updated.history, historyEntry] };
+      setBatches(batches.map(b => b.id === id ? newBatch : b));
+      syncToVPS('batches', newBatch, id, 'PUT');
+    }
   };
 
   const promoteBatch = (batchId, nextBatchId) => {
     const batchStudents = enrollments.filter(e => e.batchId === batchId).map(e => e.studentId);
-    setStudents(students.map(s => batchStudents.includes(s.id) ? { ...s, year: 'Promoted' } : s)); // Simple logic for demo
+    setStudents(prev => prev.map(s => {
+      if (batchStudents.includes(s.id)) {
+        const updated = { ...s, year: 'Promoted' };
+        syncToVPS('students', updated, s.id, 'PUT');
+        return updated;
+      }
+      return s;
+    }));
     batchStudents.forEach(sid => enrollStudent(sid, nextBatchId));
     addActivity(`promoted batch ${batchId} to ${nextBatchId}`, ['Admin', 'Management']);
   };
@@ -420,13 +428,14 @@ export const AppContextProvider = ({ children }) => {
 
   const enrollStudent = (studentId, batchId) => {
     const newEnrollment = {
-      id: `ENR0${enrollments.length + 1}`,
+      id: `ENR0${enrollments.length + 1}${Date.now().toString().slice(-3)}`,
       studentId,
       batchId,
       date: new Date().toISOString().split('T')[0],
       status: 'Enrolled'
     };
-    setEnrollments([...enrollments, newEnrollment]);
+    setEnrollments(prev => [...prev, newEnrollment]);
+    syncToVPS('enrollments', newEnrollment);
     addActivity(`enrolled student ${studentId} in batch ${batchId}`, ['Admin', 'Student']);
   };
 
@@ -462,6 +471,7 @@ export const AppContextProvider = ({ children }) => {
       }
     };
     setFinance(newFinance);
+    syncToVPS('finance', newFinance, 'finance-global', 'PUT');
     addActivity(`refilled petty cash: +₹${amount}`, ['Admin', 'Management']);
   };
   const deleteFee = (id) => {
@@ -469,7 +479,9 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('fees', null, id, 'DELETE');
   };
   const addExam = (exam) => {
-    setExams([...exams, { ...exam, id: `EXM00${exams.length + 1}` }]);
+    const newExam = { ...exam, id: `EXM00${exams.length + 1}${Date.now().toString().slice(-2)}` };
+    setExams(prev => [...prev, newExam]);
+    syncToVPS('exams', newExam);
     addActivity(`scheduled a new exam: ${exam.title}`, ['Admin', 'Student', 'Faculty']);
   };
   const deleteExam = (id) => {
@@ -477,8 +489,10 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('exams', null, id, 'DELETE');
   };
   const addTask = (task) => {
-    const newCommunication = { ...communication, tasks: [...communication.tasks, { ...task, id: `TSK00${communication.tasks.length + 1}` }] };
+    const newTask = { ...task, id: `TSK00${communication.tasks.length + 1}${Date.now().toString().slice(-2)}` };
+    const newCommunication = { ...communication, tasks: [...communication.tasks, newTask] };
     setCommunication(newCommunication);
+    syncToVPS('communication', newCommunication, 'communication-global', 'PUT');
     addActivity(`assigned a task to ${task.assignee}`, ['Admin', 'Faculty', 'Student']);
   };
   const deleteTask = (id) => {
@@ -491,32 +505,36 @@ export const AppContextProvider = ({ children }) => {
   };
 
   const addLoan = (loan) => {
-    setFinance(prev => ({
-      ...prev,
-      loans: [...prev.loans, { ...loan, id: `LON00${prev.loans.length + 1}` }]
-    }));
+    const newLoan = { ...loan, id: `LON00${finance.loans.length + 1}${Date.now().toString().slice(-2)}` };
+    const newFinance = { ...finance, loans: [...finance.loans, newLoan] };
+    setFinance(newFinance);
+    syncToVPS('finance', newFinance, 'finance-global', 'PUT');
     addActivity(`approved a ${loan.type} for ${loan.employeeId}`, ['Admin', 'Management']);
   };
 
 
   const addRoomOccupant = (roomId, studentId) => {
-    setHostel(prev => ({
-      ...prev,
-      rooms: prev.rooms.map(r => r.id === roomId ? { ...r, occupants: [...r.occupants, studentId], status: r.occupants.length + 1 >= parseInt(r.type) ? 'Full' : 'Available' } : r)
-    }));
+    const newHostel = {
+      ...hostel,
+      rooms: hostel.rooms.map(r => r.id === roomId ? { ...r, occupants: [...r.occupants, studentId], status: r.occupants.length + 1 >= parseInt(r.type) ? 'Full' : 'Available' } : r)
+    };
+    setHostel(newHostel);
+    syncToVPS('hostel', newHostel, 'hostel-global', 'PUT');
     addActivity(`allocated room ${roomId} to student ${studentId}`, ['Admin', 'Student']);
   };
 
   const addVisitor = (visitor) => {
-    setHostel(prev => ({
-      ...prev,
-      visitors: [...prev.visitors, { ...visitor, id: `VIS00${prev.visitors.length + 1}` }]
-    }));
+    const newVisitor = { ...visitor, id: `VIS00${hostel.visitors.length + 1}` };
+    const newHostel = { ...hostel, visitors: [...hostel.visitors, newVisitor] };
+    setHostel(newHostel);
+    syncToVPS('hostel', newHostel, 'hostel-global', 'PUT');
     addActivity(`logged a visitor for student ${visitor.studentId}`, ['Admin', 'Office Staff']);
   };
   const addNotice = (notice) => {
-    const newCommunication = { ...communication, notices: [...communication.notices, { ...notice, id: `NOT00${communication.notices.length + 1}` }] };
+    const newNotice = { ...notice, id: `NOT00${communication.notices.length + 1}` };
+    const newCommunication = { ...communication, notices: [...communication.notices, newNotice] };
     setCommunication(newCommunication);
+    syncToVPS('communication', newCommunication, 'communication-global', 'PUT');
     let audienceMap = ['Admin'];
     if (notice.audience === 'All') audienceMap = ['Admin', 'Student', 'Faculty', 'Management', 'Office Staff'];
     if (notice.audience === 'Students') audienceMap = ['Admin', 'Student'];
@@ -529,24 +547,34 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('communication', newComm, 'communication-global', 'PUT');
   };
   const approveLeave = (leaveId) => {
-    setLeaves(leaves.map(l => l.id === leaveId ? { ...l, status: 'Approved' } : l));
+    const updated = leaves.map(l => l.id === leaveId ? { ...l, status: 'Approved' } : l);
+    setLeaves(updated);
+    const leave = updated.find(l => l.id === leaveId);
+    if (leave) syncToVPS('leaves', leave, leaveId, 'PUT');
   };
   const deleteLeave = (id) => {
     setLeaves(prev => prev.filter(l => l.id !== id));
     syncToVPS('leaves', null, id, 'DELETE');
   };
   const requestLeave = (leave) => {
-    setLeaves([...leaves, { ...leave, id: `LVE00${leaves.length + 1}` }]);
+    const newLeave = { ...leave, id: `LVE00${leaves.length + 1}${Date.now().toString().slice(-2)}` };
+    setLeaves(prev => [...prev, newLeave]);
+    syncToVPS('leaves', newLeave);
     addActivity(`requested leave for ${leave.days} days`, ['Admin', 'Faculty']);
   };
   
   
   const addCourse = (crs) => {
-    const id = `CRS0${courses.length + 1}`;
-    setCourses([...courses, { ...crs, id }]);
+    const id = `CRS0${courses.length + 1}${Date.now().toString().slice(-2)}`;
+    const newCourse = { ...crs, id };
+    setCourses(prev => [...prev, newCourse]);
+    syncToVPS('courses', newCourse);
     addActivity(`added a new course: ${crs.title}`, ['Admin', 'Management', 'Faculty']);
   };
-  const editCourse = (id, updatedCrs) => setCourses(courses.map(c => c.id === id ? { ...c, ...updatedCrs } : c));
+  const editCourse = (id, updatedCrs) => {
+    setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updatedCrs } : c));
+    syncToVPS('courses', { ...updatedCrs, id }, id, 'PUT');
+  };
   const deleteCourse = (id) => {
     const crs = courses.find(c => c.id === id);
     setCourses(courses.filter(c => c.id !== id));
@@ -556,7 +584,9 @@ export const AppContextProvider = ({ children }) => {
   
   const addDocument = (doc) => {
     const id = doc.id || `DOC00${documents.length + 1}`;
-    setDocuments([...documents, { ...doc, id }]);
+    const newDoc = { ...doc, id };
+    setDocuments(prev => [...prev, newDoc]);
+    syncToVPS('documents', newDoc);
     
     let audience = ['Admin', 'Office Staff'];
     if (doc.visibility === 'Public') audience = [...audience, 'Student', 'Faculty'];
@@ -572,18 +602,30 @@ export const AppContextProvider = ({ children }) => {
     if (doc) addActivity(`deleted document: ${doc.title}`, ['Admin', 'Office Staff']);
   };
   
-  const addTimetable = (slot) => setTimetable([...timetable, { ...slot, id: `TT00${timetable.length + 1}` }]);
-  const addPayroll = (record) => setPayroll([...payroll, { ...record, id: `PAY00${payroll.length + 1}` }]);
+  const addTimetable = (slot) => {
+    const newSlot = { ...slot, id: `TT00${timetable.length + 1}${Date.now().toString().slice(-2)}` };
+    setTimetable(prev => [...prev, newSlot]);
+    syncToVPS('timetable', newSlot);
+  };
+  const addPayroll = (record) => {
+    const newRecord = { ...record, id: `PAY00${payroll.length + 1}${Date.now().toString().slice(-2)}` };
+    setPayroll(prev => [...prev, newRecord]);
+    syncToVPS('payroll', newRecord);
+  };
   const deletePayroll = (id) => {
     setPayroll(prev => prev.filter(p => p.id !== id));
     syncToVPS('payroll', null, id, 'DELETE');
   };
   
   const addAcademicEntry = (type, entry) => {
-    if (type === 'departments') setDepartments([...departments, { ...entry, id: `DPT0${departments.length + 1}` }]);
-    if (type === 'categories') setCategories([...categories, { ...entry, id: `CAT0${categories.length + 1}` }]);
-    if (type === 'degrees') setDegrees([...degrees, { ...entry, id: `DEG0${degrees.length + 1}` }]);
-    if (type === 'subjects') setSubjects([...subjects, { ...entry, id: `SUB0${subjects.length + 1}` }]);
+    const prefix = type === 'departments' ? 'DPT' : type === 'categories' ? 'CAT' : type === 'degrees' ? 'DEG' : 'SUB';
+    const id = `${prefix}0${eval(type).length + 1}${Date.now().toString().slice(-2)}`;
+    const newEntry = { ...entry, id };
+    if (type === 'departments') setDepartments(prev => [...prev, newEntry]);
+    if (type === 'categories') setCategories(prev => [...prev, newEntry]);
+    if (type === 'degrees') setDegrees(prev => [...prev, newEntry]);
+    if (type === 'subjects') setSubjects(prev => [...prev, newEntry]);
+    syncToVPS(type, newEntry);
   };
 
   const deleteDepartment = (id) => {
@@ -607,25 +649,38 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('batches', null, id, 'DELETE');
   };
 
-  const editCalendarEvent = (id, updatedEvent) => setCalendar(calendar.map(c => c.id === id ? { ...c, ...updatedEvent } : c));
-  const addCalendarEvent = (newEvent) => setCalendar([...calendar, { ...newEvent, id: `CAL00${calendar.length + 1}` }]);
+  const editCalendarEvent = (id, updatedEvent) => {
+    setCalendar(prev => prev.map(c => c.id === id ? { ...c, ...updatedEvent } : c));
+    syncToVPS('calendar', { ...updatedEvent, id }, id, 'PUT');
+  };
+  const addCalendarEvent = (newEvent) => {
+    const event = { ...newEvent, id: `CAL00${calendar.length + 1}${Date.now().toString().slice(-2)}` };
+    setCalendar(prev => [...prev, event]);
+    syncToVPS('calendar', event);
+  };
   const deleteCalendarEvent = (id) => {
     setCalendar(calendar.filter(c => c.id !== id));
     syncToVPS('calendar', null, id, 'DELETE');
   };
 
-  const addLibraryBook = (book) => setLibrary([...library, { ...book, id: `LIB00${library.length + 1}` }]);
+  const addLibraryBook = (book) => {
+    const newBook = { ...book, id: `LIB00${library.length + 1}${Date.now().toString().slice(-2)}` };
+    setLibrary(prev => [...prev, newBook]);
+    syncToVPS('library', newBook);
+  };
   const deleteLibraryBook = (id) => {
     setLibrary(library.filter(l => l.id !== id));
     syncToVPS('library', null, id, 'DELETE');
   };
 
   const updateBatch = (batchId, updatedFields) => {
-    setBatches(batches.map(b => b.id === batchId ? { ...b, ...updatedFields } : b));
+    setBatches(prev => prev.map(b => b.id === batchId ? { ...b, ...updatedFields } : b));
+    syncToVPS('batches', { ...updatedFields, id: batchId }, batchId, 'PUT');
   };
 
   const editTimetableSlot = (id, newDetails) => {
-    setTimetable(timetable.map(t => t.id === id ? { ...t, ...newDetails } : t));
+    setTimetable(prev => prev.map(t => t.id === id ? { ...t, ...newDetails } : t));
+    syncToVPS('timetable', { ...newDetails, id }, id, 'PUT');
   };
 
   const bulkReplaceTimetable = (batchId, type, oldVal, newVal) => {
@@ -642,10 +697,14 @@ export const AppContextProvider = ({ children }) => {
     const existingIndex = attendance.findIndex(a => a.batchId === batchId && a.date === date && a.subjectId === subjectId);
     if (existingIndex >= 0) {
       const newAttendance = [...attendance];
-      newAttendance[existingIndex] = { ...newAttendance[existingIndex], records };
+      const updated = { ...newAttendance[existingIndex], records };
+      newAttendance[existingIndex] = updated;
       setAttendance(newAttendance);
+      syncToVPS('attendance', updated, updated.id, 'PUT');
     } else {
-      setAttendance([...attendance, { id: `ATD0${attendance.length + 1}`, batchId, date, records, subjectId }]);
+      const newRecord = { id: `ATD0${attendance.length + 1}${Date.now().toString().slice(-2)}`, batchId, date, records, subjectId };
+      setAttendance(prev => [...prev, newRecord]);
+      syncToVPS('attendance', newRecord);
     }
     addActivity(`marked attendance for ${subjectId || 'batch'} in ${batchId}`, ['Admin', 'Faculty', 'Student']);
   };
@@ -668,7 +727,8 @@ export const AppContextProvider = ({ children }) => {
 
     const rooms = ['Hall A', 'Hall B', 'Lab 1', 'Lab 2', 'Room 101'];
     
-    // Keep existing timetable for OTHER batches, only clear the current batch
+    // Clear existing for this batch on VPS first (pseudo logic since we don't have bulk delete)
+    // For now we'll just add new ones. 
     let newTimetable = timetable.filter(t => t.batchId !== batchId);
     let ttId = timetable.length + 1;
 
@@ -678,13 +738,10 @@ export const AppContextProvider = ({ children }) => {
 
       times.forEach(time => {
         let availableRooms = [...rooms];
-        
-        // Schedule 1 class per time slot for this specific batch
         const availableFaculty = faculty.filter(f => dailyLoad[f.id] < maxClassesPerTeacher && f.status === 'Active');
         
         if (availableFaculty.length > 0 && availableRooms.length > 0) {
           const fac = availableFaculty[Math.floor(Math.random() * availableFaculty.length)];
-          
           let subject = subjects[0].code;
           if (fac.coursesTaught && fac.coursesTaught.length > 0) {
             subject = fac.coursesTaught[Math.floor(Math.random() * fac.coursesTaught.length)];
@@ -694,8 +751,8 @@ export const AppContextProvider = ({ children }) => {
           const room = availableRooms[roomIndex];
           availableRooms.splice(roomIndex, 1);
 
-          newTimetable.push({
-            id: `TT00${ttId++}`,
+          const slot = {
+            id: `TT00${ttId++}${Date.now().toString().slice(-2)}`,
             batchId,
             courseId,
             subject,
@@ -703,8 +760,9 @@ export const AppContextProvider = ({ children }) => {
             day,
             time,
             room
-          });
-
+          };
+          newTimetable.push(slot);
+          syncToVPS('timetable', slot);
           dailyLoad[fac.id]++;
         }
       });
