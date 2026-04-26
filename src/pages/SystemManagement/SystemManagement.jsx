@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Shield, Bell, Settings as SettingsIcon, Save, Upload, Image as ImageIcon, Layout, Plus, Trash2, ChevronRight } from 'lucide-react';
+import { Shield, Bell, Settings as SettingsIcon, Save, Upload, Image as ImageIcon, Layout, Plus, Trash2, ChevronRight, Clock } from 'lucide-react';
 
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
