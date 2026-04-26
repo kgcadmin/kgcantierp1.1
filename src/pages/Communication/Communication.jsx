@@ -10,14 +10,14 @@ const Communication = () => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const relevantTasks = currentUser?.role === 'Student' 
-    ? communication.tasks.filter(t => t.assignee === currentUser.linkedId)
+    ? communication?.tasks?.filter(t => t.assignee === currentUser.linkedId) || []
     : currentUser?.role === 'Faculty'
-    ? communication.tasks.filter(t => t.assignee === currentUser.linkedId)
-    : communication.tasks;
+    ? communication?.tasks?.filter(t => t.assignee === currentUser.linkedId) || []
+    : communication?.tasks || [];
 
   const relevantNotices = currentUser?.role === 'Student'
-    ? communication.notices.filter(n => n.audience === 'All' || n.audience === 'Students')
-    : communication.notices;
+    ? communication?.notices?.filter(n => n.audience === 'All' || n.audience === 'Students') || []
+    : communication?.notices || [];
 
   const getFacultyName = (id) => faculty.find(f => f.id === id)?.name || id;
 
@@ -72,7 +72,7 @@ const Communication = () => {
                 </tr>
               </thead>
               <tbody>
-                {relevantTasks.map(task => (
+                {(relevantTasks || []).map(task => (
                   <tr key={task.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '1rem 0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{task.id}</td>
                     <td style={{ padding: '1rem 0.75rem', color: 'var(--text-primary)', fontWeight: 500 }}>{task.title}</td>

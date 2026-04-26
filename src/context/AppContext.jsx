@@ -131,60 +131,94 @@ export const AppContextProvider = ({ children }) => {
   // Initialize data from API if VITE_API_URL is set
   useEffect(() => {
     const fetchData = async () => {
+      const getSingle = (arr, fallback) => (arr && arr.length > 0) ? arr[0] : null;
+
       const apiStudents = await api.get('students');
-      if (apiStudents) setStudents(apiStudents);
+      if (apiStudents?.length > 0) setStudents(apiStudents);
+
       const apiFaculty = await api.get('faculty');
-      if (apiFaculty) setFaculty(apiFaculty);
+      if (apiFaculty?.length > 0) setFaculty(apiFaculty);
+
       const apiStaff = await api.get('staff');
-      if (apiStaff) setStaff(apiStaff);
+      if (apiStaff?.length > 0) setStaff(apiStaff);
+
       const apiCourses = await api.get('courses');
-      if (apiCourses) setCourses(apiCourses);
+      if (apiCourses?.length > 0) setCourses(apiCourses);
+
       const apiDepartments = await api.get('departments');
-      if (apiDepartments) setDepartments(apiDepartments);
+      if (apiDepartments?.length > 0) setDepartments(apiDepartments);
+
       const apiCategories = await api.get('categories');
-      if (apiCategories) setCategories(apiCategories);
+      if (apiCategories?.length > 0) setCategories(apiCategories);
+
       const apiDegrees = await api.get('degrees');
-      if (apiDegrees) setDegrees(apiDegrees);
+      if (apiDegrees?.length > 0) setDegrees(apiDegrees);
+
       const apiSubjects = await api.get('subjects');
-      if (apiSubjects) setSubjects(apiSubjects);
+      if (apiSubjects?.length > 0) setSubjects(apiSubjects);
+
       const apiBatches = await api.get('batches');
-      if (apiBatches) setBatches(apiBatches);
+      if (apiBatches?.length > 0) setBatches(apiBatches);
+
       const apiEnrollments = await api.get('enrollments');
-      if (apiEnrollments) setEnrollments(apiEnrollments);
+      if (apiEnrollments?.length > 0) setEnrollments(apiEnrollments);
+
       const apiConfig = await api.get('config');
-      if (apiConfig) setSystemConfig(apiConfig);
+      const singleConfig = getSingle(apiConfig);
+      if (singleConfig) setSystemConfig(prev => ({ ...prev, ...singleConfig }));
+
       const apiFees = await api.get('fees');
-      if (apiFees) setFees(apiFees);
+      if (apiFees?.length > 0) setFees(apiFees);
+
       const apiPayroll = await api.get('payroll');
-      if (apiPayroll) setPayroll(apiPayroll);
+      if (apiPayroll?.length > 0) setPayroll(apiPayroll);
+
       const apiLeaves = await api.get('leaves');
-      if (apiLeaves) setLeaves(apiLeaves);
+      if (apiLeaves?.length > 0) setLeaves(apiLeaves);
+
       const apiFinance = await api.get('finance');
-      if (apiFinance) setFinance(apiFinance);
+      const singleFinance = getSingle(apiFinance);
+      if (singleFinance) setFinance(prev => ({ ...prev, ...singleFinance }));
+
       const apiExams = await api.get('exams');
-      if (apiExams) setExams(apiExams);
+      if (apiExams?.length > 0) setExams(apiExams);
+
       const apiTimetable = await api.get('timetable');
-      if (apiTimetable) setTimetable(apiTimetable);
+      if (apiTimetable?.length > 0) setTimetable(apiTimetable);
+
       const apiAttendance = await api.get('attendance');
-      if (apiAttendance) setAttendance(apiAttendance);
+      if (apiAttendance?.length > 0) setAttendance(apiAttendance);
+
       const apiLibrary = await api.get('library');
-      if (apiLibrary) setLibrary(apiLibrary);
+      if (apiLibrary?.length > 0) setLibrary(apiLibrary);
+
       const apiHostel = await api.get('hostel');
-      if (apiHostel) setHostel(apiHostel);
+      const singleHostel = getSingle(apiHostel);
+      if (singleHostel) setHostel(prev => ({ ...prev, ...singleHostel }));
+
       const apiDocs = await api.get('documents');
-      if (apiDocs) setDocuments(apiDocs);
+      if (apiDocs?.length > 0) setDocuments(apiDocs);
+
       const apiComm = await api.get('communication');
-      if (apiComm) setCommunication(apiComm);
+      const singleComm = getSingle(apiComm);
+      if (singleComm) setCommunication(prev => ({ ...prev, ...singleComm }));
+
       const apiCalendar = await api.get('calendar');
-      if (apiCalendar) setCalendar(apiCalendar);
+      if (apiCalendar?.length > 0) setCalendar(apiCalendar);
+
       const apiHealth = await api.get('health');
-      if (apiHealth) setSystemHealth(apiHealth);
+      const singleHealth = getSingle(apiHealth);
+      if (singleHealth) setSystemHealth(prev => ({ ...prev, ...singleHealth }));
+
       const apiActivities = await api.get('activities');
-      if (apiActivities) setRecentActivities(apiActivities);
+      if (apiActivities?.length > 0) setRecentActivities(apiActivities);
+
       const apiTemplate = await api.get('profileTemplate');
-      if (apiTemplate) setProfileTemplate(apiTemplate);
+      const singleTemplate = getSingle(apiTemplate);
+      if (singleTemplate) setProfileTemplate(prev => ({ ...prev, ...singleTemplate }));
+
       const apiUsers = await api.get('users');
-      if (apiUsers) setUsers(apiUsers);
+      if (apiUsers?.length > 0) setUsers(apiUsers);
     };
     fetchData();
   }, []);

@@ -9,10 +9,10 @@ const Timetable = () => {
   const [activeTab, setActiveTab] = useState('schedule');
   
   const initialBatch = currentUser?.role === 'Student' 
-    ? enrollments.find(e => e.studentId === currentUser.linkedId)?.batchId || batches[0]?.id 
+    ? enrollments?.find(e => e.studentId === currentUser.linkedId)?.batchId || batches?.[0]?.id 
     : currentUser?.role === 'Faculty'
-    ? batches.find(b => b.facultyId === currentUser.linkedId)?.id || batches[0]?.id
-    : batches[0]?.id || '';
+    ? batches?.find(b => b.facultyId === currentUser.linkedId)?.id || batches?.[0]?.id
+    : batches?.[0]?.id || '';
     
   const [activeBatch, setActiveBatch] = useState(initialBatch);
   const [calendarView, setCalendarView] = useState('list'); // 'list', 'monthly', 'yearly'
@@ -29,28 +29,28 @@ const Timetable = () => {
   // Attendance specific states
   const [attendanceMode, setAttendanceMode] = useState('overview'); // 'overview' | 'mark'
   const [markDate, setMarkDate] = useState('2026-04-21');
-  const [markBatch, setMarkBatch] = useState(batches[0]?.id || '');
+  const [markBatch, setMarkBatch] = useState(batches?.[0]?.id || '');
   const [currentRecords, setCurrentRecords] = useState({});
 
   React.useEffect(() => {
     if (activeTab === 'attendance' && attendanceMode === 'mark') {
-      const existing = attendance.find(a => a.batchId === markBatch && a.date === markDate);
+      const existing = attendance?.find(a => a.batchId === markBatch && a.date === markDate);
       if (existing && existing.records) {
         setCurrentRecords(existing.records);
       } else {
-        const batchStudents = enrollments.filter(e => e.batchId === markBatch).map(e => e.studentId);
+        const batchStudents = enrollments?.filter(e => e.batchId === markBatch).map(e => e.studentId);
         const initRecs = {};
-        batchStudents.forEach(id => initRecs[id] = 'Present'); // Default to Present
+        batchStudents?.forEach(id => initRecs[id] = 'Present'); // Default to Present
         setCurrentRecords(initRecs);
       }
     }
   }, [markBatch, markDate, attendanceMode, activeTab, attendance, enrollments]);
 
-  const getCourseTitle = (id) => courses.find(c => c.id === id)?.title || id;
-  const getFacultyName = (id) => faculty.find(f => f.id === id)?.name || id;
+  const getCourseTitle = (id) => courses?.find(c => c.id === id)?.title || id;
+  const getFacultyName = (id) => faculty?.find(f => f.id === id)?.name || id;
 
-  const filteredTimetable = timetable.filter(t => t.batchId === activeBatch);
-  const selectedBatchObj = batches.find(b => b.id === activeBatch);
+  const filteredTimetable = timetable?.filter(t => t.batchId === activeBatch);
+  const selectedBatchObj = batches?.find(b => b.id === activeBatch);
 
   const getBatchConfig = () => {
     return selectedBatchObj?.timetableConfig || { startTime: '09:00', durationMinutes: 90, periodsPerDay: 3, days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] };
@@ -73,10 +73,10 @@ const Timetable = () => {
 
   const getCombinedCalendarEvents = useMemo(() => {
     // 1. Base Academic Calendar
-    const allEvents = [...calendar];
+    const allEvents = [...(calendar || [])];
     
     // 2. Add Exams
-    exams.forEach(exam => {
+    exams?.forEach(exam => {
       allEvents.push({
         id: exam.id,
         title: exam.title,
@@ -88,7 +88,7 @@ const Timetable = () => {
     });
 
     // 3. Add Notices/Announcements
-    communication.notices.forEach(notice => {
+    communication?.notices?.forEach(notice => {
       allEvents.push({
         id: notice.id,
         title: notice.title,
@@ -156,7 +156,7 @@ const Timetable = () => {
             label: 'Faculty', 
             type: 'select', 
             required: true, 
-            options: faculty.map(f => ({ value: f.id, label: f.name })) 
+            options: faculty?.map(f => ({ value: f.id, label: f.name })) 
           },
           { name: 'room', label: 'Room/Lab', required: true, placeholder: 'e.g. RM101' }
         ];
@@ -169,7 +169,7 @@ const Timetable = () => {
             type: 'select', 
             required: true, 
             defaultValue: modalContext?.facultyId,
-            options: faculty.map(f => ({ value: f.id, label: f.name })) 
+            options: faculty?.map(f => ({ value: f.id, label: f.name })) 
           },
           { name: 'room', label: 'Room/Lab', required: true, defaultValue: modalContext?.room }
         ];
@@ -247,7 +247,7 @@ const Timetable = () => {
                 disabled={currentUser?.role === 'Student'}
                 style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--surface)', color: 'var(--text-primary)', opacity: currentUser?.role === 'Student' ? 0.7 : 1 }}
               >
-                {batches.filter(b => currentUser?.role === 'Faculty' ? b.facultyId === currentUser.linkedId : true).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                {batches?.filter(b => currentUser?.role === 'Faculty' ? b.facultyId === currentUser.linkedId : true).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
           </div>
@@ -320,7 +320,7 @@ const Timetable = () => {
                   <tr key={time}>
                     <td style={{ padding: '0.75rem', border: '1px solid var(--border-color)', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{time}</td>
                     {getBatchConfig().days.map(day => {
-                      const slot = filteredTimetable.find(t => t.day === day && t.time === time);
+                      const slot = filteredTimetable?.find(t => t.day === day && t.time === time);
                       return (
                         <td key={day} style={{ padding: '0.5rem', border: '1px solid var(--border-color)', height: '80px', verticalAlign: 'top', width: `${100 / getBatchConfig().days.length}%` }}>
                           {slot ? (
@@ -377,8 +377,8 @@ const Timetable = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {attendance.filter(a => a.batchId === activeBatch).sort((a,b) => new Date(b.date) - new Date(a.date)).map(record => {
-                    const status = record.records[currentUser.linkedId];
+                  {attendance?.filter(a => a.batchId === activeBatch).sort((a,b) => new Date(b.date) - new Date(a.date)).map(record => {
+                    const status = record.records?.[currentUser.linkedId];
                     if (!status) return null;
                     return (
                       <tr key={record.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
