@@ -62,8 +62,8 @@ export const api = {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       return await res.json();
     } catch (err) {
-      console.error(`API Upload failed:`, err.message);
-      return null;
+      console.error(`API Upload failed:`, err);
+      return { error: true, message: err.message };
     }
   },
   getRecovery: async () => {

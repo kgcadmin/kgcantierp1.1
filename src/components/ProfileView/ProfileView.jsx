@@ -94,7 +94,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     const shouldUpload = import.meta.env.PROD || import.meta.env.VITE_API_URL;
     if (shouldUpload) {
       api.upload(file).then(res => {
-        if (res && res.url) {
+        if (res && res.url && !res.error) {
           const relativeUrl = res.url.replace(/^https?:\/\/[^/]+/, '');
           addDocument({
             ...docMeta,
@@ -102,11 +102,13 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
             fileType: res.mimetype || docMeta.fileType
           });
           showToast('Document uploaded and synced!');
+        } else {
+          throw new Error(res?.message || 'Upload failed');
         }
       }).catch(err => {
         console.error('Profile doc upload failed:', err);
         addDocument(docMeta);
-        showToast('Saved locally, sync failed.');
+        showToast(`Upload failed: ${err.message}. Saved locally.`);
       });
     } else {
       addDocument({ ...docMeta, fileUrl: URL.createObjectURL(file) });

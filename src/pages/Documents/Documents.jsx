@@ -103,7 +103,7 @@ const Documents = () => {
 
     if (shouldUpload) {
       api.upload(uploadData.file).then(res => {
-        if (res && res.url) {
+        if (res && res.url && !res.error) {
           // Use relative URL for better compatibility with SSL/Nginx
           const relativeUrl = res.url.replace(/^https?:\/\/[^/]+/, '');
           addDocument({
@@ -112,10 +112,12 @@ const Documents = () => {
             fileType: res.mimetype || docMeta.fileType // Use server-detected mimetype if available
           });
           showToast('Document uploaded and synced successfully!');
+        } else {
+          throw new Error(res?.message || 'Upload failed');
         }
       }).catch(err => {
         console.error('Upload failed:', err);
-        showToast('Sync failed, but file is available in current session.');
+        showToast(`Upload failed: ${err.message}. Saving locally.`);
         addDocument(docMeta);
       });
     } else {

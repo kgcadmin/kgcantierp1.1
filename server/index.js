@@ -135,7 +135,7 @@ app.delete('/api/recovery/permanent/:collection/:id', async (req, res) => {
 
 // File Upload Configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
