@@ -437,20 +437,13 @@ export const AppContextProvider = ({ children }) => {
     }
     syncToVPS('staff', null, id, 'DELETE');
   };
-  const addCourse = (c) => {
-    const id = c.id || `CRS00${courses.length + 1}`;
-    const newCourse = { ...c, id };
-    setCourses(prev => [...prev, newCourse]);
-    syncToVPS('courses', newCourse);
-    addActivity(`added a new course: ${c.name}`, ['Admin', 'Management']);
-  };
-  const editCourse = (id, updated) => {
-    setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
-    syncToVPS('courses', { ...updated, id }, id, 'PUT');
-  };
-  const deleteCourse = (id) => {
-    setCourses(prev => prev.filter(c => c.id !== id));
-    syncToVPS('courses', null, id, 'DELETE');
+  const updateBatchStatus = (id, newStatus, historyEntry) => {
+    const updated = batches.find(b => b.id === id);
+    if (updated) {
+      const newBatch = { ...updated, status: newStatus, history: [...updated.history, historyEntry] };
+      setBatches(batches.map(b => b.id === id ? newBatch : b));
+      syncToVPS('batches', newBatch, id, 'PUT');
+    }
   };
 
   const addBatch = (b) => {
@@ -467,21 +460,10 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('batches', newBatch);
     addActivity(`created new batch: ${b.name}`, ['Admin', 'Management']);
   };
-  const updateBatch = (id, updated) => {
-    setBatches(prev => prev.map(b => b.id === id ? { ...b, ...updated } : b));
-    syncToVPS('batches', { ...updated, id }, id, 'PUT');
-  };
+
   const deleteBatch = (id) => {
     setBatches(prev => prev.filter(b => b.id !== id));
     syncToVPS('batches', null, id, 'DELETE');
-  };
-  const updateBatchStatus = (id, newStatus, historyEntry) => {
-    const updated = batches.find(b => b.id === id);
-    if (updated) {
-      const newBatch = { ...updated, status: newStatus, history: [...updated.history, historyEntry] };
-      setBatches(batches.map(b => b.id === id ? newBatch : b));
-      syncToVPS('batches', newBatch, id, 'PUT');
-    }
   };
 
   const promoteBatch = (batchId, nextBatchId) => {
@@ -720,37 +702,6 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('payroll', null, id, 'DELETE');
   };
   
-  const addAcademicEntry = (type, entry) => {
-    const prefix = type === 'departments' ? 'DPT' : type === 'categories' ? 'CAT' : type === 'degrees' ? 'DEG' : 'SUB';
-    const id = `${prefix}0${eval(type).length + 1}${Date.now().toString().slice(-2)}`;
-    const newEntry = { ...entry, id };
-    if (type === 'departments') setDepartments(prev => [...prev, newEntry]);
-    if (type === 'categories') setCategories(prev => [...prev, newEntry]);
-    if (type === 'degrees') setDegrees(prev => [...prev, newEntry]);
-    if (type === 'subjects') setSubjects(prev => [...prev, newEntry]);
-    syncToVPS(type, newEntry);
-  };
-
-  const deleteDepartment = (id) => {
-    setDepartments(prev => prev.filter(d => d.id !== id));
-    syncToVPS('departments', null, id, 'DELETE');
-  };
-  const deleteCategory = (id) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
-    syncToVPS('categories', null, id, 'DELETE');
-  };
-  const deleteDegree = (id) => {
-    setDegrees(prev => prev.filter(d => d.id !== id));
-    syncToVPS('degrees', null, id, 'DELETE');
-  };
-  const deleteSubject = (id) => {
-    setSubjects(prev => prev.filter(s => s.id !== id));
-    syncToVPS('subjects', null, id, 'DELETE');
-  };
-  const deleteBatch = (id) => {
-    setBatches(prev => prev.filter(b => b.id !== id));
-    syncToVPS('batches', null, id, 'DELETE');
-  };
 
   const editCalendarEvent = (id, updatedEvent) => {
     setCalendar(prev => prev.map(c => c.id === id ? { ...c, ...updatedEvent } : c));
