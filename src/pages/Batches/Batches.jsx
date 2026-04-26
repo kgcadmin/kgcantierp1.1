@@ -7,7 +7,7 @@ import ReportExportModal from '../../components/ReportExportModal/ReportExportMo
 import AddEntryModal from '../../components/AddEntryModal';
 
 const Batches = () => {
-  const { batches, deleteBatch, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
+  const { batches, addBatch, deleteBatch, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
 
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [showReports, setShowReports] = useState(false);
@@ -33,15 +33,7 @@ const Batches = () => {
   };
 
   const handleAddSubmit = (data) => {
-    const newBatch = {
-      id: `BAT0${batches.length + 1}`,
-      ...data,
-      status: 'Active',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      history: [{ date: new Date().toISOString().split('T')[0], action: 'Batch created' }]
-    };
-    setBatches([...batches, newBatch]);
+    addBatch(data);
     setShowAddModal(false);
   };
 

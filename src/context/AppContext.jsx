@@ -437,10 +437,44 @@ export const AppContextProvider = ({ children }) => {
     }
     syncToVPS('staff', null, id, 'DELETE');
   };
+  const addCourse = (c) => {
+    const id = c.id || `CRS00${courses.length + 1}`;
+    const newCourse = { ...c, id };
+    setCourses(prev => [...prev, newCourse]);
+    syncToVPS('courses', newCourse);
+    addActivity(`added a new course: ${c.name}`, ['Admin', 'Management']);
+  };
+  const editCourse = (id, updated) => {
+    setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+    syncToVPS('courses', { ...updated, id }, id, 'PUT');
+  };
+  const deleteCourse = (id) => {
+    setCourses(prev => prev.filter(c => c.id !== id));
+    syncToVPS('courses', null, id, 'DELETE');
+  };
 
-
-
-  const updateBatchStatus = (id, newStatus, historyEntry) => {
+  const addBatch = (b) => {
+    const id = b.id || `BAT00${batches.length + 1}${Date.now().toString().slice(-2)}`;
+    const newBatch = { 
+      ...b, 
+      id,
+      status: 'Active',
+      startDate: b.startDate || new Date().toISOString().split('T')[0],
+      endDate: b.endDate || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      history: b.history || [{ date: new Date().toISOString().split('T')[0], action: 'Batch created' }]
+    };
+    setBatches(prev => [...prev, newBatch]);
+    syncToVPS('batches', newBatch);
+    addActivity(`created new batch: ${b.name}`, ['Admin', 'Management']);
+  };
+  const updateBatch = (id, updated) => {
+    setBatches(prev => prev.map(b => b.id === id ? { ...b, ...updated } : b));
+    syncToVPS('batches', { ...updated, id }, id, 'PUT');
+  };
+  const deleteBatch = (id) => {
+    setBatches(prev => prev.filter(b => b.id !== id));
+    syncToVPS('batches', null, id, 'DELETE');
+  };
     const updated = batches.find(b => b.id === id);
     if (updated) {
       const newBatch = { ...updated, status: newStatus, history: [...updated.history, historyEntry] };
@@ -600,9 +634,38 @@ export const AppContextProvider = ({ children }) => {
     syncToVPS('leaves', newLeave);
     addActivity(`requested leave for ${leave.days} days`, ['Admin', 'Faculty']);
   };
-  
-  
-  const addCourse = (crs) => {
+  const addAcademicEntry = (type, entry) => {
+    const idMap = { departments: 'DPT', categories: 'CAT', degrees: 'DEG', subjects: 'SUB' };
+    const prefix = idMap[type] || 'ENT';
+    const list = type === 'departments' ? departments : type === 'categories' ? categories : type === 'degrees' ? degrees : subjects;
+    const id = `${prefix}00${list.length + 1}${Date.now().toString().slice(-2)}`;
+    const newEntry = { ...entry, id };
+    
+    if (type === 'departments') setDepartments(prev => [...prev, newEntry]);
+    else if (type === 'categories') setCategories(prev => [...prev, newEntry]);
+    else if (type === 'degrees') setDegrees(prev => [...prev, newEntry]);
+    else if (type === 'subjects') setSubjects(prev => [...prev, newEntry]);
+    
+    syncToVPS(type, newEntry);
+    addActivity(`added a new ${type.slice(0, -1)}: ${entry.name}`, ['Admin', 'Management']);
+  };
+
+  const deleteDepartment = (id) => {
+    setDepartments(prev => prev.filter(d => d.id !== id));
+    syncToVPS('departments', null, id, 'DELETE');
+  };
+  const deleteCategory = (id) => {
+    setCategories(prev => prev.filter(c => c.id !== id));
+    syncToVPS('categories', null, id, 'DELETE');
+  };
+  const deleteDegree = (id) => {
+    setDegrees(prev => prev.filter(d => d.id !== id));
+    syncToVPS('degrees', null, id, 'DELETE');
+  };
+  const deleteSubject = (id) => {
+    setSubjects(prev => prev.filter(s => s.id !== id));
+    syncToVPS('subjects', null, id, 'DELETE');
+  };
     const id = `CRS0${courses.length + 1}${Date.now().toString().slice(-2)}`;
     const newCourse = { ...crs, id };
     setCourses(prev => [...prev, newCourse]);
@@ -858,7 +921,7 @@ export const AppContextProvider = ({ children }) => {
     degrees, setDegrees,
     subjects, setSubjects,
     addAcademicEntry,
-    batches, updateBatchStatus, updateBatch,
+    batches, addBatch, updateBatchStatus, updateBatch,
     enrollments, enrollStudent,
     systemConfig, setSystemConfig,
     feeStructures, setFeeStructures, addFeeStructure,
