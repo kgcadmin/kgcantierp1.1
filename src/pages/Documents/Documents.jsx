@@ -425,23 +425,25 @@ const Documents = () => {
                   // Guess fileType from extension if missing (useful for items loaded from DB without mimetype)
                   let currentType = showPreview.fileType;
                   if (!currentType && showPreview.title) {
-                    const ext = showPreview.title.split('.').pop().toLowerCase();
-                    if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) currentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-                    else if (ext === 'pdf') currentType = 'application/pdf';
-                  }
-
-                  if (currentType?.startsWith('image/')) {
+                  const fullUrl = showPreview.fileUrl.startsWith('http') ? showPreview.fileUrl : `${window.location.origin}${showPreview.fileUrl.startsWith('/') ? '' : '/'}${showPreview.fileUrl}`;
+                  
+                  if (showPreview.fileType?.startsWith('image/')) {
                     return (
                       <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
                         <img src={fullUrl} alt={showPreview.title} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                       </div>
                     );
-                  } else if (currentType === 'application/pdf') {
+                  } else if (showPreview.fileType === 'application/pdf') {
                     return (
                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <iframe src={fullUrl} title={showPreview.title} style={{ width: '100%', height: '100%', border: 'none' }} />
+                        <iframe 
+                          src={fullUrl} 
+                          title={showPreview.title} 
+                          style={{ width: '100%', height: '100%', border: 'none' }}
+                          sandbox="allow-scripts allow-same-origin allow-forms"
+                        />
                         <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.5)', textAlign: 'center' }}>
-                          <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontSize: '0.75rem', textDecoration: 'underline' }}>PDF not loading? Open in New Tab</a>
+                          <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontSize: '0.75rem', textDecoration: 'underline' }}>PDF blocked or not loading? Click to Open</a>
                         </div>
                       </div>
                     );
@@ -450,7 +452,7 @@ const Documents = () => {
                       <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
                         <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
                         <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
-                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({currentType || 'Unknown Type'})</p>
+                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
                         <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', marginTop: '1rem', display: 'inline-block' }}>Open Direct Link</a>
                       </div>
                     );

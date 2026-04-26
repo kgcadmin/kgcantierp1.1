@@ -4,6 +4,8 @@ import Card from '../Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './ProfileView.module.css';
 
+const fileStore = new Map();
+
 const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   const { 
     documents, addDocument, deleteDocument, attendance,
@@ -70,11 +72,12 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   const handleDocFileSelected = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
     const docId = `DOC${Date.now()}`;
-    // Import fileStore from Documents module is not possible cross-module,
-    // so we store the file as a blob URL in the document record instead
-    const fileUrl = URL.createObjectURL(file);
-    addDocument({
+    // Store in memory for immediate access
+    fileStore.set(docId, file);
+
+    const docMeta = {
       id: docId,
       title: file.name,
       category: 'Profile Attachment',
@@ -84,12 +87,32 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
       dateAdded: new Date().toISOString().split('T')[0],
       size: (file.size / 1024).toFixed(1) + ' KB',
       fileType: file.type,
-      fileUrl,
-      hasLocalFile: true // Mark as uploaded locally
-    });
-    // Reset input so same file can be re-selected
+      hasLocalFile: true
+    };
+
+    // Attempt upload to server
+    const shouldUpload = import.meta.env.PROD || import.meta.env.VITE_API_URL;
+    if (shouldUpload) {
+      api.upload(file).then(res => {
+        if (res && res.url) {
+          const relativeUrl = res.url.replace(/^https?:\/\/[^/]+/, '');
+          addDocument({
+            ...docMeta,
+            fileUrl: relativeUrl,
+            fileType: res.mimetype || docMeta.fileType
+          });
+          showToast('Document uploaded and synced!');
+        }
+      }).catch(err => {
+        console.error('Profile doc upload failed:', err);
+        addDocument(docMeta);
+        showToast('Saved locally, sync failed.');
+      });
+    } else {
+      addDocument({ ...docMeta, fileUrl: URL.createObjectURL(file) });
+      showToast('Document saved in session.');
+    }
     e.target.value = '';
-    showToast('Document uploaded successfully!');
   };
 
   const handlePreview = (doc) => {
@@ -612,19 +635,42 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
             </div>
             <div style={{ flex: 1, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', overflow: 'hidden' }}>
               {showPreview.fileUrl ? (
-                showPreview.fileType?.startsWith('image/') ? (
-                  <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                    <img src={showPreview.fileUrl} alt={showPreview.title} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
-                  </div>
-                ) : showPreview.fileType === 'application/pdf' ? (
-                  <iframe src={showPreview.fileUrl} title={showPreview.title} style={{ width: '100%', height: '100%', border: 'none' }} />
-                ) : (
-                  <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
-                    <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
-                    <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
-                    <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
-                  </div>
-                )
+                (() => {
+                  const fullUrl = showPreview.fileUrl.startsWith('http') ? showPreview.fileUrl : `${window.location.origin}${showPreview.fileUrl.startsWith('/') ? '' : '/'}${showPreview.fileUrl}`;
+                  
+                  let currentType = showPreview.fileType;
+                  if (!currentType && showPreview.title) {
+                  if (showPreview.fileType?.startsWith('image/')) {
+                    return (
+                      <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                        <img src={fullUrl} alt={showPreview.title} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '0.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                      </div>
+                    );
+                  } else if (showPreview.fileType === 'application/pdf') {
+                    return (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <iframe 
+                          src={fullUrl} 
+                          title={showPreview.title} 
+                          style={{ width: '100%', height: '100%', border: 'none' }}
+                          sandbox="allow-scripts allow-same-origin allow-forms"
+                        />
+                        <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.5)', textAlign: 'center' }}>
+                          <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontSize: '0.75rem', textDecoration: 'underline' }}>PDF blocked or not loading? Click to Open</a>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
+                        <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+                        <p style={{ fontSize: '1.1rem' }}>Preview not available for this file type</p>
+                        <p style={{ fontSize: '0.875rem' }}>{showPreview.title} ({showPreview.fileType})</p>
+                        <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', marginTop: '1rem', display: 'inline-block' }}>Open Direct Link</a>
+                      </div>
+                    );
+                  }
+                })()
               ) : (
                 <div style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '2rem' }}>
                   <FileText size={80} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
