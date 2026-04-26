@@ -32,23 +32,25 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         background: 'rgba(15, 23, 42, 0.9)',
         backdropFilter: 'blur(10px)',
         display: 'flex',
-        alignItems: 'center',   // Vertical center
-        justifyContent: 'center', // Horizontal center
+        alignItems: 'flex-start',   // Correct Fix: Start from top
+        justifyContent: 'center',
+        overflowY: 'auto',          // Allow whole screen scroll
         zIndex: 10000,
-        padding: '20px'
+        padding: '1rem'
       }}
       onClick={onClose}
     >
       <div 
-        className="page-animate" // Re-using the existing fade-in-up animation
+        className="page-animate"
         style={{
           background: 'var(--bg-surface)',
           padding: '40px',
           borderRadius: '24px',
           width: '550px',
           maxWidth: '100%',
-          maxHeight: '90vh',      // Never taller than 90% of screen
-          overflowY: 'auto',       // Scroll inside if too tall
+          maxHeight: '90vh',        // Safety limit
+          overflowY: 'auto',         // Internal scroll safety
+          marginTop: '40px',        // mt-10 equivalent
           border: '1px solid var(--border-light)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
           position: 'relative',
