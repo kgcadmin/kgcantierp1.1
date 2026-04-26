@@ -30,13 +30,10 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         right: 0,
         bottom: 0,
         zIndex: 10000,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        overflowY: 'auto', // Enable scrolling on the backdrop layer
-        background: 'rgba(10, 15, 25, 0.9)', // Solid, dark premium backdrop
-        backdropFilter: 'blur(10px)',
-        padding: '40px 20px' // Healthy margin from the top of the screen
+        overflowY: 'auto', // Backdrop handles ALL scrolling
+        background: 'rgba(8, 12, 20, 0.95)',
+        backdropFilter: 'blur(12px)',
+        padding: '20px' // Basic safety padding
       }}
       onClick={onClose}
     >
@@ -44,10 +41,11 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
         style={{
           width: '550px',
           maxWidth: '100%',
+          margin: '80px auto', // Perfectly stable top/bottom spacing
           background: 'var(--bg-surface)',
-          borderRadius: '20px',
+          borderRadius: '24px',
           border: '1px solid var(--border-light)',
-          boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.6)',
+          boxShadow: '0 40px 100px -20px rgba(0, 0, 0, 0.8)',
           padding: '40px',
           position: 'relative',
           display: 'flex',
