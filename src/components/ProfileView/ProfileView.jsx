@@ -658,14 +658,13 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
                   } else if (showPreview.fileType === 'application/pdf') {
                     return (
                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <iframe 
+                        <embed 
                           src={fullUrl} 
-                          title={showPreview.title} 
+                          type="application/pdf"
                           style={{ width: '100%', height: '100%', border: 'none' }}
-                          sandbox="allow-scripts allow-same-origin allow-forms"
                         />
                         <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.5)', textAlign: 'center' }}>
-                          <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontSize: '0.75rem', textDecoration: 'underline' }}>PDF blocked or not loading? Click to Open</a>
+                          <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontSize: '0.75rem', textDecoration: 'underline' }}>PDF not loading? Click to Open in New Tab</a>
                         </div>
                       </div>
                     );
