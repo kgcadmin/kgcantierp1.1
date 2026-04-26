@@ -75,17 +75,24 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     const docId = `DOC${Date.now()}`;
     fileStore.set(docId, file);
 
+    const isStaff = type === 'Staff' || type === 'Faculty';
+    const visibilityType = isStaff ? 'Staff-Specific' : 'Student-Specific';
+    
+    console.log(`🚀 Starting Profile Upload: Type=${type}, Visibility=${visibilityType}, ID=${formData.id}`);
+
     const shouldUpload = import.meta.env.PROD || import.meta.env.VITE_API_URL;
     if (shouldUpload) {
       api.upload(file).then(res => {
         if (res && res.success) {
+          console.log('✅ Server Upload Success:', res.url);
           addDocument({
             id: docId,
             title: file.name,
             category: 'Profile Attachment',
             type: 'Upload',
-            visibility: 'Student-Specific',
-            studentId: String(formData.id),
+            visibility: visibilityType,
+            studentId: !isStaff ? String(formData.id) : null,
+            staffId: isStaff ? String(formData.id) : null,
             dateAdded: new Date().toISOString().split('T')[0],
             size: (file.size / 1024).toFixed(1) + ' KB',
             fileUrl: res.url,
@@ -96,7 +103,7 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
           throw new Error(res?.message || 'Upload failed');
         }
       }).catch(err => {
-        console.error('Profile Upload Error:', err);
+        console.error('❌ Profile Upload Error:', err);
         showToast(`Upload failed: ${err.message}`);
       });
     } else {
@@ -105,8 +112,9 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
         title: file.name,
         category: 'Profile Attachment',
         type: 'Upload',
-        visibility: 'Student-Specific',
-        studentId: String(formData.id),
+        visibility: visibilityType,
+        studentId: !isStaff ? String(formData.id) : null,
+        staffId: isStaff ? String(formData.id) : null,
         dateAdded: new Date().toISOString().split('T')[0],
         size: (file.size / 1024).toFixed(1) + ' KB',
         fileUrl: URL.createObjectURL(file),
@@ -198,7 +206,10 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
     }
   };
 
-  const userDocuments = documents?.filter(d => String(d.studentId) === String(formData?.id)) || [];
+  const userDocuments = documents?.filter(d => 
+    String(d.studentId) === String(formData?.id) || 
+    String(d.staffId) === String(formData?.id)
+  ) || [];
   const userAttendance = attendance?.filter(a => a.records && a.records[formData?.id]) || [];
 
   const tabs = [
