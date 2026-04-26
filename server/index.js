@@ -134,9 +134,17 @@ app.delete('/api/recovery/permanent/:collection/:id', async (req, res) => {
 });
 
 // --- FRESH START: ROBUST FILE UPLOAD SYSTEM ---
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+let uploadDir;
+try {
+  uploadDir = path.join(__dirname, 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log('📁 Uploads directory created at:', uploadDir);
+  }
+} catch (err) {
+  console.error('❌ Failed to create/access uploads directory:', err.message);
+  // Fallback to a temp dir if possible, or at least don't crash
+  uploadDir = '/tmp/uploads'; 
 }
 
 // Multer Storage Configuration
