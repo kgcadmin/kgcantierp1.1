@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, Settings, Building2, CalendarDays, Wallet, FileText, Banknote, PenTool, Clock, Home, Library, MessageSquare, ShieldAlert, UserCheck, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, Settings, Building2, Layers, Wallet, FileText, Banknote, PenTool, Clock, Home, CheckCircle2, Library, MessageSquare, ShieldAlert, UserCheck, RotateCcw, TrendingUp } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import styles from './Sidebar.module.css';
 
