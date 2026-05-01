@@ -168,7 +168,7 @@ const Finance = () => {
                      </tr>
                   </thead>
                   <tbody>
-                     {finance.loans?.map(loan => (
+                     {finance?.loans?.map(loan => (
                         <tr key={loan.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                            <td style={{ padding: '1rem 0.75rem' }}>{loan.id}</td>
                            <td style={{ padding: '1rem 0.75rem' }}>{loan.employeeId}</td>
@@ -181,7 +181,7 @@ const Finance = () => {
                            </td>
                         </tr>
                      ))}
-                     {(!finance.loans || finance.loans.length === 0) && (
+                     {(!finance?.loans || finance.loans.length === 0) && (
                         <tr><td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No active loans found.</td></tr>
                      )}
                   </tbody>
@@ -195,7 +195,7 @@ const Finance = () => {
         isOpen={showReports}
         onClose={() => setShowReports(false)}
         title="Finance Expense"
-        data={finance.expenses}
+        data={finance?.expenses || []}
         columns={[
           { key: 'id', label: 'Transaction ID' },
           { key: 'description', label: 'Description' },

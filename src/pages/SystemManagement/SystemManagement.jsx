@@ -32,7 +32,7 @@ const SystemManagement = () => {
     if (activeModal === 'section') {
       setEditingTemplate({
         ...editingTemplate,
-        sections: [...editingTemplate.sections, { 
+        sections: [...(editingTemplate?.sections || []), { 
           id: data.title.toLowerCase().replace(/\s+/g, '_'), 
           title: data.title, 
           fields: [] 
@@ -45,7 +45,7 @@ const SystemManagement = () => {
         label: data.label, 
         type: data.type || 'text' 
       };
-      const newSections = [...editingTemplate.sections];
+      const newSections = [...(editingTemplate?.sections || [])];
       newSections[sectionIndex].fields.push(newField);
       setEditingTemplate({ ...editingTemplate, sections: newSections });
     }
@@ -104,7 +104,7 @@ const SystemManagement = () => {
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Timezone</label>
               <select 
-                value={config.timezone}
+                value={config?.timezone || ''}
                 onChange={e => setConfig({...config, timezone: e.target.value})}
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
               >
@@ -117,7 +117,7 @@ const SystemManagement = () => {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Currency Format</label>
               <input 
                 type="text" 
-                value={config.currency}
+                value={config?.currency || ''}
                 onChange={e => setConfig({...config, currency: e.target.value})}
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
               />
@@ -137,7 +137,7 @@ const SystemManagement = () => {
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>College Full Name</label>
                   <input 
                     type="text" 
-                    value={config.collegeName}
+                    value={config?.collegeName || ''}
                     onChange={e => setConfig({...config, collegeName: e.target.value})}
                     placeholder="e.g. Kashibai Ganpat College"
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
@@ -147,7 +147,7 @@ const SystemManagement = () => {
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Short Name / Abbreviation</label>
                   <input 
                     type="text" 
-                    value={config.collegeShortName}
+                    value={config?.collegeShortName || ''}
                     onChange={e => setConfig({...config, collegeShortName: e.target.value})}
                     placeholder="e.g. KGC"
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
@@ -165,7 +165,7 @@ const SystemManagement = () => {
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>College Logo</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '60px', height: '60px', border: '1px dashed var(--border-color)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'var(--bg-surface)' }}>
-                      {config.collegeLogo ? <img src={config.collegeLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={24} style={{ opacity: 0.3 }} />}
+                      {config?.collegeLogo ? <img src={config.collegeLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={24} style={{ opacity: 0.3 }} />}
                     </div>
                     <label style={{ cursor: 'pointer', padding: '0.5rem 1rem', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
                       Change Logo
@@ -177,7 +177,7 @@ const SystemManagement = () => {
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Favicon (.ico, .svg, .png)</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '32px', height: '32px', border: '1px dashed var(--border-color)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'var(--bg-surface)' }}>
-                      {config.collegeFavicon ? <img src={config.collegeFavicon} alt="Favicon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={16} style={{ opacity: 0.3 }} />}
+                      {config?.collegeFavicon ? <img src={config.collegeFavicon} alt="Favicon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={16} style={{ opacity: 0.3 }} />}
                     </div>
                     <label style={{ cursor: 'pointer', padding: '0.5rem 1rem', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
                       Change Favicon
@@ -208,7 +208,7 @@ const SystemManagement = () => {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                {editingTemplate.sections.map((section, sIdx) => (
+                {(editingTemplate?.sections || []).map((section, sIdx) => (
                   <div key={section.id} style={{ padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.02)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                       <h3 style={{ fontSize: '1rem', color: 'var(--primary)', fontWeight: 600 }}>{section.title}</h3>
@@ -236,7 +236,7 @@ const SystemManagement = () => {
                           <button 
                             onClick={() => {
                               if (window.confirm(`Remove field "${field.label}"?`)) {
-                                const newSections = [...editingTemplate.sections];
+                                const newSections = [...(editingTemplate?.sections || [])];
                                 newSections[sIdx].fields.splice(fIdx, 1);
                                 setEditingTemplate({ ...editingTemplate, sections: newSections });
                               }
@@ -271,7 +271,7 @@ const SystemManagement = () => {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Max Login Attempts</label>
               <input 
                 type="number" 
-                value={config.loginAttempts}
+                value={config?.loginAttempts || ''}
                 onChange={e => setConfig({...config, loginAttempts: parseInt(e.target.value)})}
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
               />
@@ -279,7 +279,7 @@ const SystemManagement = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
               <input 
                 type="checkbox" 
-                checked={config.maintenanceMode}
+                checked={config?.maintenanceMode || false}
                 onChange={e => setConfig({...config, maintenanceMode: e.target.checked})}
                 id="maint"
               />
@@ -299,7 +299,7 @@ const SystemManagement = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input 
                   type="checkbox" 
-                  checked={config.emailNotifications}
+                  checked={config?.emailNotifications || false}
                   onChange={e => setConfig({...config, emailNotifications: e.target.checked})}
                   id="emailNotif"
                 />
@@ -308,7 +308,7 @@ const SystemManagement = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input 
                   type="checkbox" 
-                  checked={config.smsNotifications}
+                  checked={config?.smsNotifications || false}
                   onChange={e => setConfig({...config, smsNotifications: e.target.checked})}
                   id="smsNotif"
                 />
