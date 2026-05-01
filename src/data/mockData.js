@@ -1,9 +1,10 @@
 export const usersData = [
-  { id: 'USR001', email: 'admin@kashibaiganpatcollege.com', password: 'password', role: 'Admin', name: 'Super Admin' },
-  { id: 'USR002', email: 'management@edu.com', password: 'password', role: 'Management', name: 'Director Board' },
-  { id: 'USR003', email: 'office@kashibaiganpatcollege.com', password: 'password', role: 'Office Staff', name: 'Registrar Office' },
-  { id: 'USR004', email: 'faculty@edu.com', password: 'password', role: 'Faculty', name: 'Dr. Alan Smith', linkedId: 'FAC001' },
-  { id: 'USR005', email: 'student@edu.com', password: 'password', role: 'Student', name: 'Alice Freeman', linkedId: 'STU001' }
+  { id: 'AXTO001', email: 'axto@kashibaiganpatcollege.com', password: 'Axto@SuperAdmin2026', role: 'Admin', name: 'System Administrator', isSuperAdmin: true, lastPasswordChange: null },
+  { id: 'USR001', email: 'admin@kashibaiganpatcollege.com', password: 'password', role: 'Admin', name: 'Super Admin', lastPasswordChange: null },
+  { id: 'USR002', email: 'management@edu.com', password: 'password', role: 'Management', name: 'Director Board', lastPasswordChange: null },
+  { id: 'USR003', email: 'office@kashibaiganpatcollege.com', password: 'password', role: 'Office Staff', name: 'Registrar Office', lastPasswordChange: null },
+  { id: 'USR004', email: 'faculty@edu.com', password: 'password', role: 'Faculty', name: 'Dr. Alan Smith', linkedId: 'FAC001', lastPasswordChange: null },
+  { id: 'USR005', email: 'student@edu.com', password: 'password', role: 'Student', name: 'Alice Freeman', linkedId: 'STU001', lastPasswordChange: null }
 ];
 
 export const dashboardStats = [

@@ -49,19 +49,112 @@ export const AppContextProvider = ({ children }) => {
     return users[0]; // Default to Admin
   });
   
+  // Session tracking (max 3 devices)
+  const [sessions, setSessions] = useState(() => {
+    const saved = localStorage.getItem('edusec_sessions');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Two-factor auth pending state
+  const [pendingTwoFAUser, setPendingTwoFAUser] = useState(null);
+
+  const SUPER_ADMIN_EMAIL = 'axto@kashibaiganpatcollege.com';
+  const TWO_FA_ROLES = ['Admin', 'Faculty', 'Office Staff', 'Management'];
+  const PASSWORD_CHANGE_DAYS = 90;
+  const MAX_SESSIONS = 3;
+
+  const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  const getSessionKey = (userId) => `sessions_${userId}`;
+
+  const registerSession = (userId) => {
+    const key = getSessionKey(userId);
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const newSessions = [...existing, { token, createdAt: new Date().toISOString() }];
+    // Keep only latest MAX_SESSIONS
+    const trimmed = newSessions.slice(-MAX_SESSIONS);
+    localStorage.setItem(key, JSON.stringify(trimmed));
+    return token;
+  };
+
+  const getActiveSessionCount = (userId) => {
+    const key = getSessionKey(userId);
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    return existing.length;
+  };
+
   const login = (email, password) => {
     const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      setCurrentUser(user);
-      localStorage.setItem('nexus_user', JSON.stringify(user));
-      return true;
+    if (!user) return { status: 'invalid' };
+
+    // Check session limit
+    const sessionCount = getActiveSessionCount(user.id);
+    if (sessionCount >= MAX_SESSIONS) {
+      return { status: 'session_limit', count: sessionCount };
     }
-    return false;
+
+    // 2FA for privileged roles (not students)
+    if (TWO_FA_ROLES.includes(user.role)) {
+      const otp = generateOTP();
+      const otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+      setPendingTwoFAUser({ user, otp, otpExpiry });
+      return { status: '2fa', user, otp }; // otp returned so Login page can display it
+    }
+
+    // Direct login for Students
+    registerSession(user.id);
+    setCurrentUser(user);
+    localStorage.setItem('nexus_user', JSON.stringify(user));
+    return { status: 'ok' };
+  };
+
+  const verifyOTP = (enteredOTP) => {
+    if (!pendingTwoFAUser) return { status: 'no_pending' };
+    const { user, otp, otpExpiry } = pendingTwoFAUser;
+    if (Date.now() > otpExpiry) {
+      setPendingTwoFAUser(null);
+      return { status: 'expired' };
+    }
+    if (enteredOTP.trim() !== otp) return { status: 'invalid' };
+    // OTP correct — complete login
+    registerSession(user.id);
+    setCurrentUser(user);
+    localStorage.setItem('nexus_user', JSON.stringify(user));
+    setPendingTwoFAUser(null);
+    return { status: 'ok' };
   };
 
   const logout = () => {
     setCurrentUser(null);
+    setPendingTwoFAUser(null);
     localStorage.removeItem('nexus_user');
+  };
+
+  const changePassword = (currentPassword, newPassword) => {
+    if (!currentUser) return { ok: false, message: 'Not logged in.' };
+    if (currentUser.password !== currentPassword) return { ok: false, message: 'Current password is incorrect.' };
+
+    const isSuperAdmin = currentUser.email === SUPER_ADMIN_EMAIL || currentUser.isSuperAdmin;
+
+    if (!isSuperAdmin) {
+      const lastChange = currentUser.lastPasswordChange;
+      if (lastChange) {
+        const daysSince = (Date.now() - new Date(lastChange).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSince < PASSWORD_CHANGE_DAYS) {
+          const nextAllowed = new Date(new Date(lastChange).getTime() + PASSWORD_CHANGE_DAYS * 24 * 60 * 60 * 1000);
+          return { ok: false, message: `Password can only be changed once every ${PASSWORD_CHANGE_DAYS} days. Next allowed: ${nextAllowed.toDateString()}.` };
+        }
+      }
+    }
+
+    const now = new Date().toISOString();
+    const updatedUser = { ...currentUser, password: newPassword, lastPasswordChange: now };
+    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    setUsers(updatedUsers);
+    setCurrentUser(updatedUser);
+    localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
+    return { ok: true, message: 'Password updated successfully.' };
   };
 
   // Helper to load from localStorage or fallback to initial
@@ -935,7 +1028,10 @@ export const AppContextProvider = ({ children }) => {
     recoveredItems, refreshRecoveryData, restoreItem, permanentDeleteItem,
     academicYear, setAcademicYear,
     deleteDepartment, deleteCategory, deleteDegree, deleteSubject, deleteBatch,
-    deleteExam, deleteTask, deleteNotice, deleteFee, deletePayroll, deleteLeave
+    deleteExam, deleteTask, deleteNotice, deleteFee, deletePayroll, deleteLeave,
+    // Security
+    pendingTwoFAUser, verifyOTP, changePassword,
+    sessions, SUPER_ADMIN_EMAIL, MAX_SESSIONS, PASSWORD_CHANGE_DAYS
   }), [
     currentUser, students, faculty, staff, courses, departments, categories, degrees, subjects, 
     batches, enrollments, systemConfig, feeStructures, fees, payroll, leaves, finance, exams, 

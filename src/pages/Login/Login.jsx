@@ -1,31 +1,90 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { GraduationCap, Mail, Lock } from 'lucide-react';
+import { GraduationCap, Mail, Lock, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import styles from './Login.module.css';
+
+const maskEmail = (email) => {
+  if (!email) return '';
+  const [user, domain] = email.split('@');
+  const masked = user.charAt(0) + '***';
+  const [d1, ...rest] = domain.split('.');
+  return `${masked}@${d1.charAt(0)}***.${rest.join('.')}`;
+};
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [step, setStep] = useState('credentials'); // 'credentials' | '2fa'
+  const [otp, setOtp] = useState('');
+  const [displayedOTP, setDisplayedOTP] = useState('');
+  const [otpTimer, setOtpTimer] = useState(300); // 5 min countdown
+  const [sessionError, setSessionError] = useState('');
+
   const navigate = useNavigate();
-  const { login, currentUser, systemConfig } = useContext(AppContext);
+  const { login, currentUser, systemConfig, verifyOTP, pendingTwoFAUser } = useContext(AppContext);
   const location = useLocation();
-  // Where to go after login — defaults to /dashboard
   const from = location.state?.from || '/dashboard';
+
+  // Countdown timer for OTP
+  useEffect(() => {
+    if (step !== '2fa') return;
+    if (otpTimer <= 0) {
+      setStep('credentials');
+      setError('OTP expired. Please login again.');
+      return;
+    }
+    const t = setTimeout(() => setOtpTimer(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [step, otpTimer]);
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (login(email, password)) {
-      navigate(from, { replace: true });
-    } else {
+    setError('');
+    setSessionError('');
+    const result = login(email, password);
+
+    if (result.status === 'invalid') {
       setError('Invalid email or password');
+    } else if (result.status === 'session_limit') {
+      setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
+    } else if (result.status === '2fa') {
+      setDisplayedOTP(result.otp);
+      setOtpTimer(300);
+      setStep('2fa');
+    } else if (result.status === 'ok') {
+      navigate(from, { replace: true });
     }
   };
 
-  if (currentUser) {
-    return <Navigate to={from} replace />;
-  }
+  const handleVerifyOTP = (e) => {
+    e.preventDefault();
+    setError('');
+    const result = verifyOTP(otp);
+    if (result.status === 'ok') {
+      navigate(from, { replace: true });
+    } else if (result.status === 'expired') {
+      setStep('credentials');
+      setError('OTP expired. Please login again.');
+    } else {
+      setError('Incorrect code. Please try again.');
+    }
+  };
+
+  const handleResendOTP = () => {
+    // Re-trigger login to get a new OTP
+    const result = login(email, password);
+    if (result.status === '2fa') {
+      setDisplayedOTP(result.otp);
+      setOtpTimer(300);
+      setError('');
+    }
+  };
+
+  if (currentUser) return <Navigate to={from} replace />;
+
+  const fmtTimer = `${Math.floor(otpTimer / 60)}:${String(otpTimer % 60).padStart(2, '0')}`;
 
   return (
     <div className={styles.loginContainer}>
@@ -39,46 +98,113 @@ const Login = () => {
           <h1 className={`${styles.logoText} gradient-text`}>{systemConfig?.collegeShortName || 'KGC'} ERP</h1>
         </div>
 
-        <p className={styles.subtitle}>Sign in to access your institutional portal</p>
-        
-        <form onSubmit={handleLogin}>
-          <div className={styles.formGroup}>
-            <label>Email Address</label>
-            <div className={styles.inputWrapper}>
-              <Mail className={styles.inputIcon} />
-              <input 
-                type="email" 
-                placeholder="email@institution.edu" 
-                className={styles.inputField}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+        {step === 'credentials' && (
+          <>
+            <p className={styles.subtitle}>Sign in to access your institutional portal</p>
+            <form onSubmit={handleLogin}>
+              <div className={styles.formGroup}>
+                <label>Email Address</label>
+                <div className={styles.inputWrapper}>
+                  <Mail className={styles.inputIcon} />
+                  <input
+                    type="email"
+                    placeholder="email@institution.edu"
+                    className={styles.inputField}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Password</label>
+                <div className={styles.inputWrapper}>
+                  <Lock className={styles.inputIcon} />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className={styles.inputField}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', marginBottom: '1rem', fontSize: '0.875rem', background: 'rgba(239,68,68,0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                  <AlertCircle size={16} /> {error}
+                </div>
+              )}
+              {sessionError && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: '#f59e0b', marginBottom: '1rem', fontSize: '0.875rem', background: 'rgba(245,158,11,0.1)', padding: '0.75rem', borderRadius: '0.5rem', lineHeight: 1.4 }}>
+                  <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} /> {sessionError}
+                </div>
+              )}
+
+              <button type="submit" className={styles.submitBtn}>Sign In</button>
+            </form>
+          </>
+        )}
+
+        {step === '2fa' && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                <ShieldCheck size={28} color="white" />
+              </div>
+              <h2 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 700 }}>Two-Factor Verification</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+                A 6-digit code was sent to <strong>{maskEmail(email)}</strong>
+              </p>
             </div>
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label>Password</label>
-            <div className={styles.inputWrapper}>
-              <Lock className={styles.inputIcon} />
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                className={styles.inputField}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+
+            {/* Debug/Demo box — remove in production when real email is connected */}
+            <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '0.75rem', padding: '0.875rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 0.25rem', fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Demo Mode — Code (sent via email in production)</p>
+              <p style={{ margin: 0, fontSize: '2rem', fontWeight: 700, letterSpacing: '0.5rem', color: 'var(--primary)' }}>{displayedOTP}</p>
             </div>
-          </div>
 
-          {error && <p style={{ color: '#d32f2f', textAlign: 'center', marginBottom: '1rem' }}>{error}</p>}
-          <button type="submit" className={styles.submitBtn}>
-            Sign In
-          </button>
-        </form>
+            <form onSubmit={handleVerifyOTP}>
+              <div className={styles.formGroup}>
+                <label>Enter Verification Code</label>
+                <div className={styles.inputWrapper}>
+                  <ShieldCheck className={styles.inputIcon} />
+                  <input
+                    type="text"
+                    placeholder="000000"
+                    className={styles.inputField}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    autoFocus
+                    required
+                    style={{ letterSpacing: '0.4rem', fontSize: '1.25rem', textAlign: 'center' }}
+                  />
+                </div>
+              </div>
 
+              {error && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', marginBottom: '1rem', fontSize: '0.875rem', background: 'rgba(239,68,68,0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                  <AlertCircle size={16} /> {error}
+                </div>
+              )}
 
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                <span>Expires in <strong style={{ color: otpTimer < 60 ? '#ef4444' : 'var(--primary)' }}>{fmtTimer}</strong></span>
+                <button type="button" onClick={handleResendOTP} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
+                  <RefreshCw size={13} /> Resend Code
+                </button>
+              </div>
+
+              <button type="submit" className={styles.submitBtn}>Verify & Sign In</button>
+              <button type="button" onClick={() => { setStep('credentials'); setError(''); setOtp(''); }} style={{ width: '100%', marginTop: '0.75rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.75rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+                ← Back to Login
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

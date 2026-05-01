@@ -1,7 +1,6 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Settings, Menu, Calendar } from 'lucide-react';
-
+import { Bell, User, LogOut, Settings, Menu, Calendar, ShieldCheck } from 'lucide-react';
 import styles from './Header.module.css';
 import { AppContext } from '../../context/AppContext';
 
@@ -9,14 +8,57 @@ const Header = ({ onMenuClick }) => {
 
   const { 
     currentUser, logout, recentActivities, academicYear, setAcademicYear,
-    leaves, finance, communication, exams
+    leaves, finance, communication, exams, SUPER_ADMIN_EMAIL
   } = useContext(AppContext);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [inactiveCountdown, setInactiveCountdown] = useState(null); // null = active, N = counting down
+  const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;  // 5 minutes
+  const WARN_BEFORE_MS = 30 * 1000;            // warn at 30 seconds left
   const navigate = useNavigate();
+  const inactivityTimer = useRef(null);
+  const warnTimer = useRef(null);
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+
+  // ── Inactivity timeout ──
+  const resetTimers = useCallback(() => {
+    setInactiveCountdown(null);
+    clearTimeout(inactivityTimer.current);
+    clearTimeout(warnTimer.current);
+
+    warnTimer.current = setTimeout(() => {
+      // Start 30-second countdown
+      setInactiveCountdown(30);
+    }, INACTIVITY_LIMIT_MS - WARN_BEFORE_MS);
+
+    inactivityTimer.current = setTimeout(() => {
+      logout();
+      navigate('/login', { replace: true, state: { reason: 'inactivity' } });
+    }, INACTIVITY_LIMIT_MS);
+  }, [logout, navigate]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    const handler = () => resetTimers();
+    events.forEach(ev => window.addEventListener(ev, handler, { passive: true }));
+    resetTimers(); // kick off on mount
+    return () => {
+      events.forEach(ev => window.removeEventListener(ev, handler));
+      clearTimeout(inactivityTimer.current);
+      clearTimeout(warnTimer.current);
+    };
+  }, [currentUser, resetTimers]);
+
+  // Countdown tick
+  useEffect(() => {
+    if (inactiveCountdown === null) return;
+    if (inactiveCountdown <= 0) return;
+    const t = setTimeout(() => setInactiveCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [inactiveCountdown]);
 
   // Close both dropdowns when clicking anywhere outside them
   useEffect(() => {
@@ -95,6 +137,7 @@ const Header = ({ onMenuClick }) => {
   const dynamicNotifs = getNotifications();
 
   return (
+    <>
     <header className={`glass-panel ${styles.header}`}>
       <button className={styles.menuBtn} onClick={onMenuClick}>
         <Menu size={24} />
@@ -184,7 +227,14 @@ const Header = ({ onMenuClick }) => {
           {showProfileMenu && (
             <div className={styles.dropdown}>
               <div className={styles.dropdownHeader} style={{ background: 'var(--surface-hover)' }}>
-                <p style={{ margin: 0, fontWeight: 600 }}>{currentUser?.name}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <p style={{ margin: 0, fontWeight: 600 }}>{currentUser?.name}</p>
+                  {currentUser?.email === SUPER_ADMIN_EMAIL && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '2rem', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white' }}>
+                      <ShieldCheck size={10} /> SUPER ADMIN
+                    </span>
+                  )}
+                </div>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{currentUser?.email}</p>
               </div>
               <button
@@ -206,6 +256,27 @@ const Header = ({ onMenuClick }) => {
         </div>
       </div>
     </header>
+
+    {/* ── Inactivity Warning Overlay ── */}
+    {inactiveCountdown !== null && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '1.25rem', padding: '2.5rem', textAlign: 'center', maxWidth: '380px', width: '90%', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
+            <ShieldCheck size={32} color="#ef4444" />
+          </div>
+          <h2 style={{ margin: '0 0 0.5rem', color: 'var(--text-primary)', fontSize: '1.25rem' }}>Still there?</h2>
+          <p style={{ color: 'var(--text-secondary)', margin: '0 0 1rem', fontSize: '0.9rem' }}>You will be logged out due to inactivity in</p>
+          <div style={{ fontSize: '3.5rem', fontWeight: 800, color: '#ef4444', margin: '0 0 1.5rem', fontVariantNumeric: 'tabular-nums' }}>{inactiveCountdown}s</div>
+          <button
+            onClick={() => resetTimers()}
+            style={{ width: '100%', padding: '0.875rem', borderRadius: '0.75rem', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}
+          >
+            I'm here — Stay Logged In
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

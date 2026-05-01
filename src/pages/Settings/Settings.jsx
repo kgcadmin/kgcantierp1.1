@@ -6,9 +6,10 @@ import ModuleGuide from '../../components/ModuleGuide';
 import styles from './Settings.module.css';
 
 const Settings = () => {
-  const { currentUser, users, setUsers } = React.useContext(AppContext);
+  const { currentUser, changePassword, SUPER_ADMIN_EMAIL, PASSWORD_CHANGE_DAYS } = React.useContext(AppContext);
   const [activeTab, setActiveTab] = useState('profile');
   const [theme, setTheme] = useState('light');
+  const [pwdMsg, setPwdMsg] = useState(null); // { ok, text }
   
   const [passwordForm, setPasswordForm] = useState({
     current: '',
@@ -19,23 +20,27 @@ const Settings = () => {
 
   const handlePasswordChange = () => {
     if (!passwordForm.current || !passwordForm.new) {
-      alert("Please fill in all fields.");
-      return;
-    }
-    if (passwordForm.current !== currentUser.password) {
-      alert("Current password is incorrect.");
+      setPwdMsg({ ok: false, text: 'Please fill in all fields.' });
       return;
     }
     if (passwordForm.new !== passwordForm.confirm) {
-      alert("New passwords do not match.");
+      setPwdMsg({ ok: false, text: 'New passwords do not match.' });
       return;
     }
-    
-    const updatedUsers = users.map(u => u.id === currentUser.id ? { ...u, password: passwordForm.new } : u);
-    setUsers(updatedUsers);
-    alert("Password updated successfully!");
-    setPasswordForm({ current: '', new: '', confirm: '' });
+    if (passwordForm.new.length < 8) {
+      setPwdMsg({ ok: false, text: 'New password must be at least 8 characters.' });
+      return;
+    }
+    const result = changePassword(passwordForm.current, passwordForm.new);
+    setPwdMsg({ ok: result.ok, text: result.message });
+    if (result.ok) setPasswordForm({ current: '', new: '', confirm: '' });
   };
+
+  const isSuperAdmin = currentUser?.email === SUPER_ADMIN_EMAIL || currentUser?.isSuperAdmin;
+  const lastChange = currentUser?.lastPasswordChange;
+  const daysSinceChange = lastChange ? Math.floor((Date.now() - new Date(lastChange).getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const canChangeNow = isSuperAdmin || daysSinceChange === null || daysSinceChange >= PASSWORD_CHANGE_DAYS;
+  const nextAllowed = lastChange ? new Date(new Date(lastChange).getTime() + PASSWORD_CHANGE_DAYS * 24 * 60 * 60 * 1000).toDateString() : null;
 
   return (
     <div className={`${styles.settingsPage} page-animate`}>
@@ -104,6 +109,22 @@ const Settings = () => {
           {activeTab === 'security' && (
             <Card className={styles.settingsCard}>
               <h2 className={styles.cardTitle}>Change Password</h2>
+              {/* Password Policy Info */}
+              {!isSuperAdmin && (
+                <div style={{ padding: '0.875rem 1rem', borderRadius: '0.75rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', marginBottom: '1rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '0.25rem' }}>🔒 Password Policy</strong>
+                  Password can only be changed once every <strong>{PASSWORD_CHANGE_DAYS} days</strong>.
+                  {!canChangeNow && nextAllowed && (
+                    <div style={{ marginTop: '0.25rem', color: '#f59e0b' }}>Next change allowed on: <strong>{nextAllowed}</strong></div>
+                  )}
+                  {lastChange && canChangeNow && <div style={{ marginTop: '0.25rem', color: '#10b981' }}>✓ You are eligible to change your password.</div>}
+                </div>
+              )}
+              {isSuperAdmin && (
+                <div style={{ padding: '0.875rem 1rem', borderRadius: '0.75rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '1rem', fontSize: '0.8125rem', color: '#10b981' }}>
+                  <strong>⚡ Super Admin Override</strong> — You can change the password at any time.
+                </div>
+              )}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Current Password</label>
                 <div style={{ position: 'relative' }}>
@@ -112,6 +133,7 @@ const Settings = () => {
                     className={styles.input} 
                     value={passwordForm.current}
                     onChange={(e) => setPasswordForm({...passwordForm, current: e.target.value})}
+                    disabled={!canChangeNow}
                   />
                   <button 
                     onClick={() => setShowPass(!showPass)} 
@@ -128,6 +150,8 @@ const Settings = () => {
                   className={styles.input} 
                   value={passwordForm.new}
                   onChange={(e) => setPasswordForm({...passwordForm, new: e.target.value})}
+                  disabled={!canChangeNow}
+                  placeholder="Min. 8 characters"
                 />
               </div>
               <div className={styles.formGroup}>
@@ -137,9 +161,20 @@ const Settings = () => {
                   className={styles.input} 
                   value={passwordForm.confirm}
                   onChange={(e) => setPasswordForm({...passwordForm, confirm: e.target.value})}
+                  disabled={!canChangeNow}
                 />
               </div>
-              <button className={styles.primaryBtn} onClick={handlePasswordChange} style={{ width: '100%', marginTop: '1rem', justifyContent: 'center' }}>
+              {pwdMsg && (
+                <div style={{ padding: '0.75rem 1rem', borderRadius: '0.5rem', background: pwdMsg.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: pwdMsg.ok ? '#10b981' : '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                  {pwdMsg.text}
+                </div>
+              )}
+              <button 
+                className={styles.primaryBtn} 
+                onClick={handlePasswordChange} 
+                style={{ width: '100%', marginTop: '1rem', justifyContent: 'center', opacity: canChangeNow ? 1 : 0.5, cursor: canChangeNow ? 'pointer' : 'not-allowed' }}
+                disabled={!canChangeNow}
+              >
                 Update Password
               </button>
             </Card>
