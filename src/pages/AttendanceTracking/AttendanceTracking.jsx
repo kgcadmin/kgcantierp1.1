@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import Card from '../../components/Card/Card';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const AttendanceTracking = () => {
   const { 
@@ -171,7 +172,13 @@ const AttendanceTracking = () => {
   }, [activeTab, selectedBatch, markDate, selectedSubject, attendance, currentBatchStudents]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Track student attendance, generate reports, and identify students with low attendance."
+        staffText="Mark student attendance and view attendance history."
+        studentText="View your personal attendance history and overall attendance rate."
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Attendance Tracking</h1>

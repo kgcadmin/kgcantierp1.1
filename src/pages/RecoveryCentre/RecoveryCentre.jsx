@@ -2,10 +2,11 @@ import React, { useContext, useEffect, useState } from 'react';
 import { RotateCcw, Trash2, ShieldAlert, Clock, Search, Filter } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import Card from '../../components/Card/Card';
+import ModuleGuide from '../../components/ModuleGuide';
 import styles from './RecoveryCentre.module.css';
 
 const RecoveryCentre = () => {
-  const { recoveredItems, refreshRecoveryData, restoreItem, permanentDeleteItem } = useContext(AppContext);
+  const { recoveredItems, refreshRecoveryData, restoreItem, permanentDeleteItem, currentUser } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
 
@@ -36,6 +37,10 @@ const RecoveryCentre = () => {
 
   return (
     <div className={`${styles.recoveryPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage recently deleted institutional data. Items are kept for 90 days before permanent deletion."
+      />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Recovery Centre</h1>

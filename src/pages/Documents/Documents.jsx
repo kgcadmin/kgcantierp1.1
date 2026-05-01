@@ -3,6 +3,7 @@ import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users } fro
 import { api } from '../../utils/api';
 import Card from '../../components/Card/Card';
 import { AppContext, fileStore } from '../../context/AppContext';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Documents = () => {
   const { documents, addDocument, deleteDocument, currentUser } = useContext(AppContext);
@@ -203,6 +204,12 @@ const Documents = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage institutional documents, share files with staff/students, and organize records."
+        staffText="Access shared institutional documents and resources."
+        studentText="View and download documents shared by the institution or your instructors."
+      />
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Document Hub</h1>

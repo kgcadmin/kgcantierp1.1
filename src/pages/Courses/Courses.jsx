@@ -5,9 +5,10 @@ import { AppContext } from '../../context/AppContext';
 import styles from './Courses.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import AddEntryModal from '../../components/AddEntryModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Courses = () => {
-  const { courses, addCourse, editCourse, deleteCourse, degrees, categories, subjects, currentUser } = useContext(AppContext);
+  const { courses, addCourse, editCourse, deleteCourse, degrees, categories, subjects, faculty, currentUser } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [showReports, setShowReports] = useState(false);
   const [instructorFilter, setInstructorFilter] = useState('');
@@ -45,6 +46,10 @@ const Courses = () => {
 
   return (
     <div className={`${styles.coursesPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage all courses offered by the institution, assign instructors, and link courses to specific degree programs."
+      />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Course Management</h1>
@@ -166,7 +171,13 @@ const Courses = () => {
         title={editingCourse ? 'Edit Course' : 'Add New Course'}
         fields={[
           { name: 'title', label: 'Course Title', required: true, placeholder: 'e.g. Mechanical Engineering' },
-          { name: 'instructor', label: 'Instructor', required: true, placeholder: 'e.g. Dr. Robert Smith' },
+          { 
+            name: 'instructor', 
+            label: 'Instructor', 
+            type: 'select', 
+            required: true, 
+            options: (faculty || []).map(f => ({ value: f.name, label: f.name })) 
+          },
           { name: 'credits', label: 'Credits', type: 'number', required: true, placeholder: '4' },
           { 
             name: 'degreeId', 

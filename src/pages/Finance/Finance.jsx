@@ -4,9 +4,9 @@ import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const Finance = () => {
-  const { finance, addExpense, currentUser, addLoan, refillPettyCash } = useContext(AppContext);
+  const { finance, addExpense, currentUser, addLoan, refillPettyCash, faculty, staff } = useContext(AppContext);
   const [showReports, setShowReports] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [modalType, setModalType] = useState(null); // 'expense' | 'loan' | 'refill'
@@ -21,8 +21,15 @@ const Finance = () => {
           { name: 'category', label: 'Category', required: true, placeholder: 'e.g. Supplies' }
         ];
       case 'loan':
+        const allEmployees = [...(faculty || []), ...(staff || [])];
         return [
-          { name: 'employeeId', label: 'Employee ID', required: true, placeholder: 'e.g. FAC001' },
+          { 
+            name: 'employeeId', 
+            label: 'Employee', 
+            type: 'select', 
+            required: true, 
+            options: allEmployees.map(e => ({ value: e.id, label: `${e.name} (${e.id})` })) 
+          },
           { name: 'type', label: 'Loan Type', required: true, placeholder: 'e.g. Advance Salary' },
           { name: 'amount', label: 'Total Amount (₹)', type: 'number', required: true, placeholder: 'e.g. 50000' },
           { name: 'installment', label: 'Monthly Installment (₹)', type: 'number', required: true, placeholder: 'e.g. 5000' }
@@ -56,6 +63,11 @@ const Finance = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage petty cash, record institutional expenses, and track employee loans/advances."
+        staffText="View financial policies and request petty cash refills or advances if authorized."
+      />
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Finance Management System</h1>

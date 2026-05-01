@@ -3,7 +3,7 @@ import { Search, Plus, CreditCard, Clock, CheckCircle, X, Settings, Calculator, 
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const Fees = () => {
   const { fees, students, addFee, deleteFee, feeStructures, addFeeStructure, courses, batches, enrollments, departments, currentUser } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
@@ -204,6 +204,12 @@ const Fees = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage fee structures, check dues, collect payments, and generate financial reports."
+        staffText="Check student fee dues and collect payments."
+        studentText="View your fee receipts, track pending dues, and make payments."
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Fees Management</h1>
@@ -622,7 +628,13 @@ const Fees = () => {
         onSave={handleCollectSubmit}
         title="Collect Fee Payment"
         fields={[
-          { name: 'studentId', label: 'Student ID', required: true, placeholder: 'e.g. STU001' },
+          { 
+            name: 'studentId', 
+            label: 'Student', 
+            type: 'select', 
+            required: true, 
+            options: (students || []).map(s => ({ value: s.id, label: `${s.name} (${s.id})` })) 
+          },
           { name: 'amount', label: 'Amount (₹)', type: 'number', required: true, placeholder: 'e.g. 5000' },
           { name: 'type', label: 'Fee Type', required: true, placeholder: 'e.g. Tuition' }
         ]}

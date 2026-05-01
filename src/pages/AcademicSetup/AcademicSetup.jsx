@@ -4,6 +4,7 @@ import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import styles from './AcademicSetup.module.css';
 import AddEntryModal from '../../components/AddEntryModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const AcademicSetup = () => {
   const { 
@@ -28,8 +29,20 @@ const AcademicSetup = () => {
       case 'degrees':
         return [
           { name: 'name', label: 'Degree Name', required: true, placeholder: 'e.g. M.Tech' },
-          { name: 'categoryId', label: 'Category ID', required: true, placeholder: 'e.g. CAT01' },
-          { name: 'departmentId', label: 'Department ID', required: true, placeholder: 'e.g. DPT01' }
+          { 
+            name: 'categoryId', 
+            label: 'Category', 
+            type: 'select', 
+            required: true, 
+            options: categories.map(c => ({ value: c.id, label: c.name })) 
+          },
+          { 
+            name: 'departmentId', 
+            label: 'Department', 
+            type: 'select', 
+            required: true, 
+            options: departments.map(d => ({ value: d.id, label: d.name })) 
+          }
         ];
       case 'subjects':
         return [
@@ -58,6 +71,10 @@ const AcademicSetup = () => {
 
   return (
     <div className={`${styles.setupPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Use Academic Setup to define the core institutional structure: Departments, Course Categories, Degrees, and Subjects."
+      />
       <div className={`${styles.header} mobile-stack`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
           <div>

@@ -4,7 +4,7 @@ import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const Exams = () => {
   const { exams, courses, addExam, currentUser, enrollments, batches } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -55,6 +55,12 @@ const Exams = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Schedule exams, track evaluations, and manage the complete assessment lifecycle."
+        staffText="Manage examinations for your assigned batches and update results."
+        studentText="View your upcoming scheduled exams and published results."
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Exam Management System</h1>

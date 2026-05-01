@@ -6,9 +6,10 @@ import styles from './Students.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ProfileView from '../../components/ProfileView/ProfileView';
 import AddEntryModal from '../../components/AddEntryModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Students = () => {
-  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, processCSV } = useContext(AppContext);
+  const { students, addStudent, editStudent, deleteStudent, enrollStudent, currentUser, batches, enrollments, promoteBatch, processCSV, departments } = useContext(AppContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -58,6 +59,11 @@ const Students = () => {
 
   return (
     <div className={`${styles.studentsPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage student records, batch enrollments, and execute batch promotions."
+        staffText="View student records and process enrollments."
+      />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Student Information System (SIS)</h1>
@@ -206,7 +212,13 @@ const Students = () => {
         fields={[
           { name: 'name', label: 'Full Name', required: true, placeholder: 'e.g. John Doe' },
           { name: 'email', label: 'Personal Email (for login)', required: true, placeholder: 'e.g. john@gmail.com' },
-          { name: 'department', label: 'Department', required: true, placeholder: 'e.g. Computer Science' }
+          { 
+            name: 'department', 
+            label: 'Department', 
+            type: 'select', 
+            required: true, 
+            options: (departments || []).map(d => ({ value: d.name, label: d.name })) 
+          }
         ]}
       />
 
@@ -216,7 +228,13 @@ const Students = () => {
         onSave={handlePromote}
         title="Promote Batch"
         fields={[
-          { name: 'batchId', label: 'Batch ID', required: true, placeholder: 'e.g. BAT01' }
+          { 
+            name: 'batchId', 
+            label: 'Batch', 
+            type: 'select', 
+            required: true, 
+            options: (batches || []).map(b => ({ value: b.id, label: b.name })) 
+          }
         ]}
       />
 
@@ -224,11 +242,17 @@ const Students = () => {
         isOpen={!!showEnrollModal}
         onClose={() => setShowEnrollModal(null)}
         onSave={(data) => {
-          if (data.batchId) enrollStudent(showEnrollModal, data.batchId.toUpperCase());
+          if (data.batchId) enrollStudent(showEnrollModal, data.batchId);
         }}
         title="Enroll in Batch"
         fields={[
-          { name: 'batchId', label: 'Batch ID', required: true, placeholder: 'e.g. BAT02' }
+          { 
+            name: 'batchId', 
+            label: 'Batch', 
+            type: 'select', 
+            required: true, 
+            options: (batches || []).map(b => ({ value: b.id, label: b.name })) 
+          }
         ]}
       />
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Palette, Save, Shield, Eye, EyeOff } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import Card from '../../components/Card/Card';
+import ModuleGuide from '../../components/ModuleGuide';
 import styles from './Settings.module.css';
 
 const Settings = () => {
@@ -37,7 +38,11 @@ const Settings = () => {
   };
 
   return (
-    <div className={styles.settingsPage}>
+    <div className={`${styles.settingsPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage your personal account settings, security preferences, and UI theme."
+      />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Settings</h1>

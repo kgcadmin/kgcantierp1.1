@@ -3,7 +3,7 @@ import { MessageSquare, Bell, CheckSquare, Plus, AlertCircle, Trash2 } from 'luc
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const Communication = () => {
   const { communication, faculty, addTask, addNotice, deleteTask, deleteNotice, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('tasks');
@@ -32,6 +32,12 @@ const Communication = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Create tasks for faculty and post global or targeted E-Notices."
+        staffText="Manage your assigned tasks and post notices to students."
+        studentText="View your E-Notices from the administration and faculty."
+      />
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Communication Hub</h1>

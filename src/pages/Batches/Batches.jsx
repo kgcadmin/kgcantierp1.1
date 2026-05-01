@@ -5,9 +5,10 @@ import { AppContext } from '../../context/AppContext';
 import styles from './Batches.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import AddEntryModal from '../../components/AddEntryModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Batches = () => {
-  const { batches, addBatch, deleteBatch, updateBatchStatus, enrollments, students, currentUser, promoteBatch } = useContext(AppContext);
+  const { batches, addBatch, deleteBatch, updateBatchStatus, enrollments, students, courses, currentUser, promoteBatch } = useContext(AppContext);
 
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [showReports, setShowReports] = useState(false);
@@ -54,6 +55,11 @@ const Batches = () => {
 
   return (
     <div className={`${styles.batchesPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Create and manage academic Batches, link them to Courses, and handle student promotion from one batch to the next."
+        staffText="View active Batches and track enrolled students."
+      />
       <div className={`${styles.header} mobile-stack`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1 className={styles.title} style={{ margin: '0 0 0.5rem 0' }}>Batch Management</h1>
@@ -190,7 +196,13 @@ const Batches = () => {
         title="Add New Batch"
         fields={[
           { name: 'name', label: 'Batch Name', required: true, placeholder: 'e.g. Batch 2024-A' },
-          { name: 'courseId', label: 'Course ID', required: true, placeholder: 'e.g. CRS01' }
+          { 
+            name: 'courseId', 
+            label: 'Course', 
+            type: 'select', 
+            required: true, 
+            options: (courses || []).map(c => ({ value: c.id, label: c.title })) 
+          }
         ]}
       />
 
@@ -200,8 +212,20 @@ const Batches = () => {
         onSave={handlePromoteSubmit}
         title="Promote Batch"
         fields={[
-          { name: 'batchId', label: 'Current Batch ID', required: true, placeholder: 'e.g. BAT01' },
-          { name: 'nextBatchId', label: 'Target Batch ID', required: true, placeholder: 'e.g. BAT03' }
+          { 
+            name: 'batchId', 
+            label: 'Current Batch', 
+            type: 'select', 
+            required: true, 
+            options: (batches || []).map(b => ({ value: b.id, label: b.name })) 
+          },
+          { 
+            name: 'nextBatchId', 
+            label: 'Target Batch', 
+            type: 'select', 
+            required: true, 
+            options: (batches || []).map(b => ({ value: b.id, label: b.name })) 
+          }
         ]}
       />
 

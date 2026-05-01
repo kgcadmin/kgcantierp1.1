@@ -6,9 +6,10 @@ import styles from '../Students/Students.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ProfileView from '../../components/ProfileView/ProfileView';
 import AddEntryModal from '../../components/AddEntryModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Faculty = () => {
-  const { faculty, addFaculty, editFaculty, deleteFaculty, currentUser, processCSV } = useContext(AppContext);
+  const { faculty, addFaculty, editFaculty, deleteFaculty, departments, currentUser, processCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -41,6 +42,10 @@ const Faculty = () => {
 
   return (
     <div className={`${styles.studentsPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage faculty members, assign roles, and handle department allocations."
+      />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Faculty Directory</h1>
@@ -172,7 +177,13 @@ const Faculty = () => {
         fields={[
           { name: 'name', label: 'Full Name', required: true, placeholder: 'e.g. Dr. Robert Smith' },
           { name: 'email', label: 'Personal Email (for login)', required: true, placeholder: 'e.g. robert@gmail.com' },
-          { name: 'department', label: 'Department', required: true, placeholder: 'e.g. Mathematics' },
+          { 
+            name: 'department', 
+            label: 'Department', 
+            type: 'select', 
+            required: true, 
+            options: (departments || []).map(d => ({ value: d.name, label: d.name })) 
+          },
           { name: 'role', label: 'Academic Role', required: true, placeholder: 'e.g. Associate Professor' }
         ]}
       />

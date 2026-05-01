@@ -3,6 +3,7 @@ import { Search, Book, Bookmark, BookOpen, Plus, Trash2, X, FileText } from 'luc
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Library = () => {
   const { library, addLibraryBook, deleteLibraryBook, currentUser } = useContext(AppContext);
@@ -20,7 +21,13 @@ const Library = () => {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage library inventory, track issued books, and handle reservations."
+        staffText="Manage library inventory, track issued books, and handle reservations."
+        studentText="Search the library catalog, view your issued books, and make reservations."
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Library Management (OPAC)</h1>

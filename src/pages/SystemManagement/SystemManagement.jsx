@@ -4,9 +4,9 @@ import { Shield, Bell, Settings as SettingsIcon, Save, Upload, Image as ImageIco
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const SystemManagement = () => {
-  const { systemConfig, setSystemConfig, systemHealth, profileTemplate, setProfileTemplate } = useContext(AppContext);
+  const { systemConfig, setSystemConfig, systemHealth, profileTemplate, setProfileTemplate, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('settings');
   const [config, setConfig] = useState(systemConfig);
   const [editingTemplate, setEditingTemplate] = useState(profileTemplate);
@@ -67,6 +67,12 @@ const SystemManagement = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Configure institutional branding, custom profile forms, notification rules, and monitor system health."
+        staffText="System configurations are managed by administrators."
+        studentText="System configurations are managed by administrators."
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>System Management</h1>

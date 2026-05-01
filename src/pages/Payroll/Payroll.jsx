@@ -3,6 +3,7 @@ import { Users, FileText, Download, Calendar, Trash2 } from 'lucide-react';
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Payroll = () => {
   const { 
@@ -45,6 +46,11 @@ const Payroll = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Process salary payments, manage allowances/deductions, and review staff leave requests."
+        staffText="View your salary slips and submit leave requests."
+      />
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Payroll & HRMS Management</h1>

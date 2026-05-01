@@ -4,7 +4,7 @@ import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const Hostel = () => {
   const { hostel, students, addRoomOccupant, addVisitor, addRoom, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('rooms');
@@ -51,6 +51,12 @@ const Hostel = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage hostel facilities, assign rooms to students, and track visitor logs."
+        staffText="Log visitor details for hostel residents."
+        studentText="View your room details and your personal visitor logs."
+      />
       <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Hostel Management</h1>
@@ -193,11 +199,23 @@ const Hostel = () => {
             required: true, 
             options: rooms.filter(r => r.status !== 'Full').map(r => ({ value: r.id, label: `Room ${r.id} (${r.block})` })) 
           },
-          { name: 'studentId', label: 'Student ID', required: true, placeholder: 'e.g. STU001' }
+          { 
+            name: 'studentId', 
+            label: 'Student', 
+            type: 'select', 
+            required: true, 
+            options: (students || []).map(s => ({ value: s.id, label: `${s.name} (${s.id})` })) 
+          }
         ] : [
           { name: 'name', label: 'Visitor Name', required: true, placeholder: 'e.g. John Smith' },
           { name: 'relation', label: 'Relation', required: true, placeholder: 'e.g. Father' },
-          { name: 'studentId', label: 'Visiting Student ID', required: true, placeholder: 'e.g. STU001' }
+          { 
+            name: 'studentId', 
+            label: 'Visiting Student', 
+            type: 'select', 
+            required: true, 
+            options: (students || []).map(s => ({ value: s.id, label: `${s.name} (${s.id})` })) 
+          }
         ])}
       />
     </div>

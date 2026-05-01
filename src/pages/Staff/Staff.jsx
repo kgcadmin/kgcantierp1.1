@@ -6,9 +6,10 @@ import styles from '../Students/Students.module.css';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ProfileView from '../../components/ProfileView/ProfileView';
 import AddEntryModal from '../../components/AddEntryModal';
+import ModuleGuide from '../../components/ModuleGuide';
 
 const Staff = () => {
-  const { staff, addStaff, editStaff, deleteStaff, currentUser, processCSV } = useContext(AppContext);
+  const { staff, addStaff, editStaff, deleteStaff, departments, currentUser, processCSV } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -41,6 +42,10 @@ const Staff = () => {
 
   return (
     <div className={`${styles.studentsPage} page-animate`}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Manage non-teaching staff, administration, and support roles."
+      />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Staff Directory</h1>
@@ -174,7 +179,13 @@ const Staff = () => {
         fields={[
           { name: 'name', label: 'Full Name', required: true, placeholder: 'e.g. Michael Brown' },
           { name: 'email', label: 'Personal Email (for login)', required: true, placeholder: 'e.g. michael@gmail.com' },
-          { name: 'department', label: 'Department', required: true, placeholder: 'e.g. Administration' },
+          { 
+            name: 'department', 
+            label: 'Department', 
+            type: 'select', 
+            required: true, 
+            options: (departments || []).map(d => ({ value: d.name, label: d.name })) 
+          },
           { name: 'role', label: 'Role', required: true, placeholder: 'e.g. Accountant' }
         ]}
       />

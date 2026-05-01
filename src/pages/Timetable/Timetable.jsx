@@ -3,7 +3,7 @@ import { Calendar as CalendarIcon, Clock, Users, CalendarDays, Bookmark, Setting
 import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import AddEntryModal from '../../components/AddEntryModal';
-
+import ModuleGuide from '../../components/ModuleGuide';
 const Timetable = () => {
   const { timetable, attendance, courses, faculty, addTimetable, generateTimetable, calendar, editCalendarEvent, addCalendarEvent, deleteCalendarEvent, exams, communication, batches, updateBatch, editTimetableSlot, bulkReplaceTimetable, markAttendance, enrollments, students, currentUser } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('schedule');
@@ -199,6 +199,12 @@ const Timetable = () => {
 
   return (
     <div className="page-animate" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <ModuleGuide 
+        role={currentUser?.role}
+        adminText="Create and manage class timetables, academic calendars, and track overall student attendance."
+        staffText="View timetables, mark student attendance, and access the academic calendar."
+        studentText="View your personal class schedule, track your attendance, and see upcoming events."
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Timetable & Attendance</h1>
