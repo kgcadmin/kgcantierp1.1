@@ -28,6 +28,7 @@ const Finance = lazy(() => import('./pages/Finance/Finance'));
 const AttendanceTracking = lazy(() => import('./pages/AttendanceTracking/AttendanceTracking'));
 const RecoveryCentre = lazy(() => import('./pages/RecoveryCentre/RecoveryCentre'));
 const UserCredentials = lazy(() => import('./pages/UserCredentials/UserCredentials'));
+const DataArchive = lazy(() => import('./pages/DataArchive/DataArchive'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem' }}>
@@ -192,6 +193,12 @@ function AppContent() {
               <Route path="user-credentials" element={
                 <ProtectedRoute allowedRoles={['Admin', 'Management']}>
                   <UserCredentials />
+                </ProtectedRoute>
+              } />
+
+              <Route path="data-archive" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Management']}>
+                  <DataArchive />
                 </ProtectedRoute>
               } />
             </Route>
