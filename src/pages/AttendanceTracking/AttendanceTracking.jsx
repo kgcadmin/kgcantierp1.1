@@ -36,16 +36,26 @@ const AttendanceTracking = () => {
     markStaffAttendance
   } = useContext(AppContext);
 
-  const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'mark' | 'yearly' | 'staff'
+  const [activeTab, setActiveTab] = useState('summary');
   const [selectedBatch, setSelectedBatch] = useState(batches[0]?.id || '');
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.code || '');
   const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentRecords, setCurrentRecords] = useState({});
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [staffDate, setStaffDate] = useState(new Date().toISOString().split('T')[0]);
-  const [staffMemberType, setStaffMemberType] = useState('faculty'); // 'faculty' | 'staff'
+  const [staffMemberType, setStaffMemberType] = useState('faculty');
   const [editingRow, setEditingRow] = useState(null);
   const [entryForm, setEntryForm] = useState({ entryTime: '', exitTime: '', status: 'Present' });
+
+  // ── Summary filters ──
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterCourse, setFilterCourse] = useState('All');
+  const [filterSubject, setFilterSubject] = useState('All');
+  const [filterDept, setFilterDept] = useState('All');
+  const [filterYear, setFilterYear] = useState('All');
+  const [filterThreshold, setFilterThreshold] = useState(0); // show students below this %
+  const [filterViewType, setFilterViewType] = useState('Students'); // 'Students' | 'Faculty' | 'Staff'
 
   // Memoized stats for summary
   const stats = useMemo(() => {
@@ -129,6 +139,41 @@ const AttendanceTracking = () => {
     markAttendance(selectedBatch, markDate, currentRecords, selectedSubject);
     alert("Attendance marked successfully!");
   };
+
+  // ── Derived filter options ──
+  const uniqueDepts = ['All', ...Array.from(new Set(students.map(s => s.department).filter(Boolean)))];
+  const uniqueYears = ['All', ...Array.from(new Set(students.map(s => s.year).filter(Boolean)))];
+
+  // ── Filtered summary list ──
+  const filteredSummaryStudents = useMemo(() => {
+    return students.filter(student => {
+      const matchSearch = !filterSearch || student.name.toLowerCase().includes(filterSearch.toLowerCase()) || student.id.toLowerCase().includes(filterSearch.toLowerCase());
+      const matchDept = filterDept === 'All' || student.department === filterDept;
+      const matchYear = filterYear === 'All' || student.year === filterYear;
+
+      const matchCourse = filterCourse === 'All' || (() => {
+        const batch = batches.find(b => b.courseId === filterCourse);
+        if (!batch) return false;
+        return enrollments.some(e => e.studentId === student.id && e.batchId === batch.id);
+      })();
+
+      const matchSubjectRate = filterSubject === 'All' || (() => {
+        const subAtd = attendance.filter(a => a.subjectId === filterSubject && a.records[student.id]);
+        return subAtd.length > 0;
+      })();
+
+      // Calculate rate for threshold filter
+      const studentAtd = filterSubject !== 'All'
+        ? attendance.filter(a => a.subjectId === filterSubject && a.records[student.id])
+        : attendance.filter(a => a.records[student.id]);
+      const total = studentAtd.length;
+      const present = studentAtd.filter(a => a.records[student.id] === 'Present').length;
+      const rate = total > 0 ? (present / total * 100) : 100;
+      const matchThreshold = filterThreshold === 0 || rate <= filterThreshold;
+
+      return matchSearch && matchDept && matchYear && matchCourse && matchSubjectRate && matchThreshold;
+    });
+  }, [students, filterSearch, filterDept, filterYear, filterCourse, filterSubject, filterThreshold, attendance, batches, enrollments]);
 
   // Yearly report logic
   const yearlyData = useMemo(() => {
@@ -277,7 +322,92 @@ const AttendanceTracking = () => {
           </div>
 
           <Card style={{ padding: '1.5rem' }}>
-            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem' }}>Overall Attendance Summary</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Attendance Summary</h3>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* View type pills */}
+                {['Students', 'Faculty', 'Staff'].map(type => (
+                  <button key={type} onClick={() => setFilterViewType(type)}
+                    style={{ padding: '0.35rem 0.875rem', borderRadius: '2rem', border: '1px solid var(--border-color)', background: filterViewType === type ? 'var(--primary)' : 'var(--bg-base)', color: filterViewType === type ? 'white' : 'var(--text-secondary)', fontWeight: 500, cursor: 'pointer', fontSize: '0.8125rem', transition: 'all 0.2s' }}
+                  >{type}</button>
+                ))}
+                <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
+                <button onClick={() => setShowFilters(f => !f)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.875rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: showFilters ? 'var(--primary-light)' : 'var(--bg-base)', color: showFilters ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 500, cursor: 'pointer', fontSize: '0.8125rem' }}
+                >
+                  <Filter size={14} /> Filters {(filterDept !== 'All' || filterCourse !== 'All' || filterSubject !== 'All' || filterYear !== 'All' || filterThreshold > 0 || filterSearch) && <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700 }}>!</span>}
+                </button>
+              </div>
+            </div>
+
+            {showFilters && (
+              <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Row 1: Search + Reset */}
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', flex: '1 1 200px' }}>
+                    <Filter size={14} style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                    <input type="text" placeholder="Search student name or ID…" value={filterSearch} onChange={e => setFilterSearch(e.target.value)}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                  <button onClick={() => { setFilterSearch(''); setFilterDept('All'); setFilterYear('All'); setFilterCourse('All'); setFilterSubject('All'); setFilterThreshold(0); }}
+                    style={{ padding: '0.55rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 500 }}
+                  >Clear All</button>
+                </div>
+
+                {/* Row 2: dropdowns */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '0.35rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Course</label>
+                    <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      <option value="All">All Courses</option>
+                      {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '0.35rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Subject</label>
+                    <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      <option value="All">All Subjects</option>
+                      {subjects.map(s => <option key={s.code} value={s.code}>{s.name} ({s.code})</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '0.35rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Department</label>
+                    <select value={filterDept} onChange={e => setFilterDept(e.target.value)}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      {uniqueDepts.map(d => <option key={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '0.35rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Year</label>
+                    <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      {uniqueYears.map(y => <option key={y}>{y}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '0.35rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Below % (Low Attendance)</label>
+                    <select value={filterThreshold} onChange={e => setFilterThreshold(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      <option value={0}>Show All</option>
+                      <option value={75}>Below 75%</option>
+                      <option value={60}>Below 60%</option>
+                      <option value={50}>Below 50%</option>
+                      <option value={40}>Below 40%</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', paddingTop: '0.25rem', borderTop: '1px solid var(--border-light)' }}>
+                  Showing <strong style={{ color: 'var(--text-primary)' }}>{filteredSummaryStudents.length}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{students.length}</strong> students
+                  {filterSubject !== 'All' && <span> • Subject: <strong style={{ color: 'var(--primary)' }}>{subjects.find(s => s.code === filterSubject)?.name}</strong></span>}
+                  {filterCourse !== 'All' && <span> • Course: <strong style={{ color: 'var(--primary)' }}>{courses.find(c => c.id === filterCourse)?.title}</strong></span>}
+                </div>
+              </div>
+            )}
+
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
@@ -289,13 +419,15 @@ const AttendanceTracking = () => {
                 </tr>
               </thead>
               <tbody>
-                {students.map(student => {
-                  // Calculate actual rate for the list
-                  const studentAttendance = attendance.filter(a => a.records[student.id]);
-                  const total = studentAttendance.length;
-                  const present = studentAttendance.filter(a => a.records[student.id] === 'Present').length;
+                {filterViewType === 'Students' && filteredSummaryStudents.map(student => {
+                  const studentAtd = filterSubject !== 'All'
+                    ? attendance.filter(a => a.subjectId === filterSubject && a.records[student.id])
+                    : attendance.filter(a => a.records[student.id]);
+                  const total = studentAtd.length;
+                  const present = studentAtd.filter(a => a.records[student.id] === 'Present').length;
                   const rate = total > 0 ? (present / total * 100).toFixed(0) : 0;
-                  
+                  const rateN = Number(rate);
+                  const rateColor = rateN >= 90 ? '#10b981' : rateN >= 75 ? '#3b82f6' : rateN >= 60 ? '#f59e0b' : '#ef4444';
                   return (
                     <tr key={student.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td style={{ padding: '1rem' }}>
@@ -306,23 +438,77 @@ const AttendanceTracking = () => {
                       <td style={{ padding: '1rem' }}>{student.year}</td>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span style={{ fontWeight: 600, minWidth: '40px' }}>{rate}%</span>
+                          <span style={{ fontWeight: 600, minWidth: '40px', color: rateColor }}>{rate}%</span>
                           <div style={{ flex: 1, height: '6px', background: 'var(--surface-hover)', borderRadius: '3px', overflow: 'hidden', minWidth: '100px' }}>
-                            <div style={{ height: '100%', background: rate > 90 ? '#10b981' : rate > 75 ? '#3b82f6' : '#f59e0b', width: `${rate}%` }}></div>
+                            <div style={{ height: '100%', background: rateColor, width: `${rate}%`, transition: 'width 0.4s' }}></div>
                           </div>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{present}/{total} sessions</span>
                         </div>
                       </td>
                       <td style={{ padding: '1rem' }}>
-                        <button 
-                          onClick={() => setSelectedStudentId(student.id)}
+                        <button onClick={() => setSelectedStudentId(student.id)}
                           style={{ padding: '0.4rem 0.8rem', borderRadius: '0.4rem', border: '1px solid var(--primary)', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
-                        >
-                          View Details
-                        </button>
+                        >View Details</button>
                       </td>
                     </tr>
                   );
                 })}
+
+                {filterViewType === 'Faculty' && faculty.map(member => {
+                  const recs = staffAttendance.filter(a => a.memberId === member.id);
+                  const total = recs.length;
+                  const present = recs.filter(r => r.status === 'Present').length;
+                  const rate = total > 0 ? (present / total * 100).toFixed(0) : 'N/A';
+                  return (
+                    <tr key={member.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '1rem' }}><div style={{ fontWeight: 600 }}>{member.name}</div><div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{member.id}</div></td>
+                      <td style={{ padding: '1rem' }}>{member.department}</td>
+                      <td style={{ padding: '1rem' }}><span style={{ padding: '0.2rem 0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: '2rem', fontSize: '0.75rem', fontWeight: 600 }}>{member.role}</span></td>
+                      <td style={{ padding: '1rem' }}>
+                        {rate === 'N/A' ? <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>No data</span> : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{ fontWeight: 600, minWidth: '40px', color: Number(rate) >= 75 ? '#10b981' : '#f59e0b' }}>{rate}%</span>
+                            <div style={{ flex: 1, height: '6px', background: 'var(--surface-hover)', borderRadius: '3px', overflow: 'hidden', minWidth: '100px' }}><div style={{ height: '100%', background: Number(rate) >= 75 ? '#10b981' : '#f59e0b', width: `${rate}%` }}></div></div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{present}/{total} days</span>
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '1rem' }}><span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>—</span></td>
+                    </tr>
+                  );
+                })}
+
+                {filterViewType === 'Staff' && staff.map(member => {
+                  const recs = staffAttendance.filter(a => a.memberId === member.id);
+                  const total = recs.length;
+                  const present = recs.filter(r => r.status === 'Present').length;
+                  const rate = total > 0 ? (present / total * 100).toFixed(0) : 'N/A';
+                  return (
+                    <tr key={member.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '1rem' }}><div style={{ fontWeight: 600 }}>{member.name}</div><div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{member.id}</div></td>
+                      <td style={{ padding: '1rem' }}>{member.department}</td>
+                      <td style={{ padding: '1rem' }}><span style={{ padding: '0.2rem 0.6rem', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', borderRadius: '2rem', fontSize: '0.75rem', fontWeight: 600 }}>{member.role}</span></td>
+                      <td style={{ padding: '1rem' }}>
+                        {rate === 'N/A' ? <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>No data</span> : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{ fontWeight: 600, minWidth: '40px', color: Number(rate) >= 75 ? '#10b981' : '#f59e0b' }}>{rate}%</span>
+                            <div style={{ flex: 1, height: '6px', background: 'var(--surface-hover)', borderRadius: '3px', overflow: 'hidden', minWidth: '100px' }}><div style={{ height: '100%', background: Number(rate) >= 75 ? '#10b981' : '#f59e0b', width: `${rate}%` }}></div></div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{present}/{total} days</span>
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '1rem' }}><span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>—</span></td>
+                    </tr>
+                  );
+                })}
+
+                {(
+                  (filterViewType === 'Students' && filteredSummaryStudents.length === 0) ||
+                  (filterViewType === 'Faculty' && faculty.length === 0) ||
+                  (filterViewType === 'Staff' && staff.length === 0)
+                ) && (
+                  <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>No records match the current filters.</td></tr>
+                )}
               </tbody>
             </table>
           </Card>
