@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Card from './Card/Card';
 
@@ -21,7 +22,7 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  return (
+  return createPortal(
     <div 
       style={{
         position: 'fixed',
@@ -159,7 +160,8 @@ const AddEntryModal = ({ isOpen, onClose, onSave, title, fields }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
