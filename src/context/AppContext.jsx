@@ -693,6 +693,12 @@ export const AppContextProvider = ({ children }) => {
     addActivity(`uploaded a new document: ${doc.title}`, audience);
   };
   
+  const updateDocument = (id, updatedFields) => {
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, ...updatedFields } : d));
+    syncToVPS('documents', { ...updatedFields, id }, id, 'PUT');
+    addActivity(`updated document visibility/details`, ['Admin', 'Office Staff']);
+  };
+  
   const deleteDocument = (id) => {
     const doc = documents.find(d => d.id === id);
     setDocuments(documents.filter(d => d.id !== id));
@@ -902,7 +908,7 @@ export const AppContextProvider = ({ children }) => {
     attendance, setAttendance, markAttendance,
     library, setLibrary, addLibraryBook, deleteLibraryBook,
     hostel, setHostel, addRoomOccupant, addVisitor, addRoom,
-    documents, setDocuments, addDocument, deleteDocument,
+    documents, setDocuments, addDocument, deleteDocument, updateDocument,
     communication, setCommunication, addTask, addNotice,
     systemHealth, promoteBatch, addLoan,
     dashboardStats, recentActivities,

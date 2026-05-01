@@ -1,16 +1,19 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users } from 'lucide-react';
+import { FileText, Download, UploadCloud, Folder, Trash2, X, Search, Users, Edit2 } from 'lucide-react';
 import { api } from '../../utils/api';
 import Card from '../../components/Card/Card';
 import { AppContext, fileStore } from '../../context/AppContext';
 import ModuleGuide from '../../components/ModuleGuide';
 
 const Documents = () => {
-  const { documents, addDocument, deleteDocument, currentUser } = useContext(AppContext);
+  const { documents, addDocument, deleteDocument, updateDocument, currentUser } = useContext(AppContext);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [audienceFilter, setAudienceFilter] = useState('All');
   const [uploadData, setUploadData] = useState({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });
+  const [editData, setEditData] = useState(null);
 
   const [showPreview, setShowPreview] = useState(null);
   const [toast, setToast] = useState(null);
@@ -76,6 +79,7 @@ const Documents = () => {
   }, [documents.length]);
 
   const categories = ['All', 'Template', 'Form', 'Academic', 'Financial', 'Personal'];
+  const audienceOptions = ['All', 'Public', 'Staff-Only', 'Student-Specific'];
 
   const showToast = (msg) => {
     setToast(msg);
@@ -159,12 +163,27 @@ const Documents = () => {
     setUploadData({ title: '', category: '', type: 'General', visibility: 'Public', studentId: '', file: null });
   };
 
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    updateDocument(editData.id, {
+      title: editData.title,
+      category: editData.category,
+      type: editData.type,
+      visibility: editData.visibility,
+      studentId: editData.visibility === 'Student-Specific' ? editData.studentId : null
+    });
+    showToast('Document updated successfully!');
+    setShowEditModal(false);
+    setEditData(null);
+  };
+
   const filteredDocuments = documents?.filter(d => {
     if (!d) return false;
     const title = (d.title || '').toLowerCase();
     const category = (d.category || '').toLowerCase();
     const matchesSearch = title.includes(searchTerm.toLowerCase()) || category.includes(searchTerm.toLowerCase());
     const matchesCategory = activeCategory === 'All' || d.type === activeCategory || d.category === activeCategory;
+    const matchesAudience = audienceFilter === 'All' || d.visibility === audienceFilter || (audienceFilter === 'Public' && !d.visibility);
     
     let isVisible = true;
     if (currentUser?.role === 'Student') {
@@ -173,7 +192,7 @@ const Documents = () => {
       isVisible = isPublic || isMine;
     }
 
-    return matchesSearch && matchesCategory && isVisible;
+    return matchesSearch && matchesCategory && matchesAudience && isVisible;
   }) || [];
 
 
@@ -264,6 +283,30 @@ const Documents = () => {
         </div>
       </div>
 
+      {currentUser?.role !== 'Student' && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+          {audienceOptions.map(aud => (
+            <button
+              key={aud}
+              onClick={() => setAudienceFilter(aud)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '2rem',
+                border: '1px solid var(--border-color)',
+                background: audienceFilter === aud ? 'var(--primary)' : 'var(--bg-surface)',
+                color: audienceFilter === aud ? 'white' : 'var(--text-secondary)',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {aud === 'All' ? 'All Documents' : aud}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '1.5rem' }} className="mobile-stack">
         {/* Sidebar Categories */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -335,6 +378,16 @@ const Documents = () => {
                           <button onClick={() => handleDownload(doc)} style={{ padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-light)', color: 'var(--text-main)', cursor: 'pointer', borderRadius: '0.5rem', transition: 'all 0.2s' }} className="icon-button-hover" title="Download">
                             <Download size={18} />
                           </button>
+                          {currentUser?.role !== 'Student' && (
+                            <button 
+                              onClick={() => { setEditData(doc); setShowEditModal(true); }} 
+                              style={{ padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-light)', color: 'var(--text-main)', cursor: 'pointer', borderRadius: '0.5rem', transition: 'all 0.2s' }} 
+                              className="icon-button-hover" 
+                              title="Edit/Share"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                          )}
                           {currentUser?.role !== 'Student' && (
                             <button 
                               onClick={() => handleDeleteWithCleanup(doc.id)} 
@@ -438,6 +491,64 @@ const Documents = () => {
           </Card>
         </div>
       )}
+
+      {showEditModal && editData && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
+          <Card style={{ width: '550px', maxWidth: '100%', padding: '0', overflow: 'hidden' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Edit Document</h2>
+              <button onClick={() => { setShowEditModal(false); setEditData(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={20} /></button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Document Title</label>
+                <input type="text" value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} required style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)' }} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Main Type</label>
+                  <select value={editData.type} onChange={e => setEditData({...editData, type: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+                    <option value="General">General</option>
+                    <option value="Form">Official Form</option>
+                    <option value="Template">Template</option>
+                    <option value="Academic">Academic</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Specific Label</label>
+                  <input type="text" value={editData.category || ''} onChange={e => setEditData({...editData, category: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)' }} />
+                </div>
+              </div>
+              
+              <div style={{ padding: '1rem', background: 'var(--surface-hover)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                <label style={{ display: 'block', marginBottom: '0.75rem', color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 600 }}>Access & Privacy</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <select value={editData.visibility || 'Public'} onChange={e => setEditData({...editData, visibility: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}>
+                    <option value="Public">Public (Visible to All)</option>
+                    <option value="Student-Specific">Private (Student ID Required)</option>
+                    <option value="Staff-Only">Internal (Staff/Admin Only)</option>
+                  </select>
+                  
+                  {editData.visibility === 'Student-Specific' && (
+                    <div style={{ position: 'relative' }}>
+                      <Users size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                      <input type="text" value={editData.studentId || ''} onChange={e => setEditData({...editData, studentId: e.target.value})} required placeholder="Enter Student ID (e.g. STU001)" style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.875rem' }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => { setShowEditModal(false); setEditData(null); }} style={{ flex: 1, padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ flex: 2, padding: '0.875rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>Save Changes</button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+      
       {/* Toast Notification */}
       {toast && (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#1e293b', color: 'white', padding: '1rem 1.5rem', borderRadius: '0.75rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 3000, display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid var(--border-color)', animation: 'slideUp 0.3s ease-out' }}>
