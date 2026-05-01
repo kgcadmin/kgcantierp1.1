@@ -3,7 +3,7 @@ import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
 const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
-  const { faculty, staff, staffAttendance, markStaffAttendance, calendar } = useContext(AppContext);
+  const { faculty, staff, staffAttendance, markStaffAttendance, calendar, editFaculty, editStaff } = useContext(AppContext);
   
   const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
   
@@ -35,7 +35,6 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
     const record = getAttendanceRecord(memberId, day);
     if (record?.status) return record.status;
 
-    // Default status if no record
     if (dayName === 0) return 'SUN';
     const holiday = calendar.find(c => c.date === dateStr && (c.type === 'Holiday' || c.category === 'Holiday'));
     if (holiday) return 'H';
@@ -53,6 +52,12 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
     markStaffAttendance(member.id, member.role === 'Faculty' ? 'Faculty' : 'Staff', dateStr, '', '', nextStatus);
   };
 
+  const updateProfile = (id, field, value) => {
+    const isFaculty = faculty.some(f => f.id === id);
+    if (isFaculty) editFaculty(id, { [field]: value });
+    else editStaff(id, { [field]: value });
+  };
+
   const calculateCounts = (memberId) => {
     const counts = { P: 0, A: 0, SUN: 0, CL: 0, H: 0, OT: 0 };
     dates.forEach(day => {
@@ -65,14 +70,13 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
       else if (status === 'OT') counts.OT++;
     });
     counts.TotalPresent = counts.P + counts.SUN + counts.H + counts.CL;
-    counts.GrandTotal = counts.TotalPresent + (counts.OT * 0.5); // OT adds 0.5 extra working day
     return counts;
   };
 
   return (
     <div className={styles.salaryPrintArea}>
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', letterSpacing: '1px' }}>KASHIBAI GANPAT COLLEGE</h2>
+        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>KASHIBAI GANPAT COLLEGE</h2>
         <h3 style={{ margin: '0.2rem 0', fontSize: '1.1rem', textDecoration: 'underline' }}>
           ATTENDANCE SHEET {monthName.toUpperCase()} {selectedYear}
         </h3>
@@ -109,8 +113,26 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
               const counts = calculateCounts(s.id);
               return (
                 <tr key={s.id}>
-                  <td className={styles.nameCol} style={{ fontWeight: 600 }}>{s.name}</td>
-                  <td style={{ fontSize: '0.65rem' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</td>
+                  <td className={styles.nameCol}>
+                    <input 
+                      type="text" 
+                      value={s.name} 
+                      onChange={(e) => updateProfile(s.id, 'name', e.target.value)}
+                      className={styles.noPrint}
+                      style={{ border: 'none', background: 'transparent', fontWeight: 600, width: '100%', fontSize: '0.75rem' }}
+                    />
+                    <span className="print-only" style={{ fontWeight: 600 }}>{s.name}</span>
+                  </td>
+                  <td>
+                    <input 
+                      type="text" 
+                      value={s.role || s.designation || 'Staff'} 
+                      onChange={(e) => updateProfile(s.id, 'role', e.target.value)}
+                      className={styles.noPrint}
+                      style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }}
+                    />
+                    <span className="print-only">{(s.role || s.designation || 'Staff').toUpperCase()}</span>
+                  </td>
                   {dates.map(d => {
                     const status = getStatus(s.id, d);
                     return (
@@ -118,8 +140,7 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
                         key={d} 
                         onClick={() => handleCellClick(s, d)}
                         className={`${styles.attCell} ${styles['att' + status] || ''}`}
-                        style={{ cursor: 'pointer', transition: 'background 0.1s' }}
-                        title="Click to change status"
+                        style={{ cursor: 'pointer' }}
                       >
                         {status === 'SUN' ? 'SUN' : status === 'OT' ? 'OT' : status}
                       </td>
@@ -138,20 +159,7 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
         </table>
       </div>
 
-      <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#fdfdfd', border: '1px solid #eee', borderRadius: '4px' }} className={styles.noPrint}>
-        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>Legend & Instructions:</h4>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attP}`}>P</span> Present</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attA}`}>A</span> Absent</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attSUN}`}>SUN</span> Sunday</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attCL}`}>CL</span> Casual Leave</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attH}`}>H</span> Holiday</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attOT}`}>OT</span> Over Time</div>
-        </div>
-        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: '#666' }}>💡 Click any cell in the grid to cycle through attendance statuses. Changes are saved automatically.</p>
-      </div>
-
-      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
         <div style={{ textAlign: 'center' }}>
            <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '30px' }}></div>
            <p style={{ margin: 0, fontWeight: 700 }}>Checked By</p>
@@ -166,6 +174,10 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
            <p style={{ margin: 0, fontWeight: 700 }}>Managing Director</p>
         </div>
       </div>
+      <style>{`
+        @media screen { .print-only { display: none; } }
+        @media print { .print-only { display: block; } .no-print { display: none !important; } }
+      `}</style>
     </div>
   );
 };

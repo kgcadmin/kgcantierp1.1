@@ -3,12 +3,19 @@ import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
 const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
-  const { faculty, staff, staffAttendance, calendar, payroll, setPayroll, syncToVPS } = useContext(AppContext);
+  const { faculty, staff, staffAttendance, calendar, payroll, setPayroll, syncToVPS, editFaculty, editStaff } = useContext(AppContext);
   
   const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
   const daysInMonth = useMemo(() => new Date(selectedYear, selectedMonth + 1, 0).getDate(), [selectedMonth, selectedYear]);
   const monthName = useMemo(() => new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' }), [selectedMonth, selectedYear]);
   const monthKey = `${monthName} ${selectedYear}`;
+
+  const updateProfile = (id, field, value) => {
+    const isFaculty = faculty.some(f => f.id === id);
+    const val = field === 'baseSalary' ? Number(value) : value;
+    if (isFaculty) editFaculty(id, { [field]: val });
+    else editStaff(id, { [field]: val });
+  };
 
   const getAttendanceData = (memberId) => {
     let working = 0;
@@ -21,7 +28,6 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayOfWeek = new Date(selectedYear, selectedMonth, d).getDay();
-      
       const record = staffAttendance.find(a => a.memberId === memberId && a.date === dateStr);
       const status = record?.status;
       const isHoliday = calendar.find(c => c.date === dateStr && (c.type === 'Holiday' || c.category === 'Holiday'));
@@ -33,7 +39,6 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
       else if (status === 'H' || (!status && isHoliday)) holiday++;
       else if (status === 'SUN' || (!status && dayOfWeek === 0)) sundays++;
     }
-
     return { working, sundays, absent, cl, holiday, ot };
   };
 
@@ -51,14 +56,13 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
         employeeId: memberId, 
         month: monthKey, 
         [field]: Number(value),
-        foodingRate: 30, // Default rate
+        foodingRate: 30,
         foodingDays: 0,
         advance: 0
       };
       updatedPayroll.push(record);
     }
     
-    // Auto-recalculate fooding if days/rate change
     if (field === 'foodingDays' || field === 'foodingRate') {
       record.fooding = (record.foodingDays || 0) * (record.foodingRate || 0);
     }
@@ -70,33 +74,14 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
   const calculateSalary = (staffMember) => {
     const { working, sundays, absent, cl, holiday, ot } = getAttendanceData(staffMember.id);
     const basicSalary = Number(staffMember.baseSalary || staffMember.salary || 10000);
-    
-    // Formula: Working Days With Holiday = Working + Sundays + Holidays + CL + OT
     const workingDaysWithHoliday = working + sundays + holiday + cl + ot;
     const amount = Math.round((basicSalary / daysInMonth) * workingDaysWithHoliday);
-    
     const record = payroll.find(p => p.employeeId === staffMember.id && p.month === monthKey) || {};
-    
     const fooding = record.fooding || 0;
     const advance = record.advance || 0;
-    const totalDeduction = fooding + advance;
-    const netPayment = amount - totalDeduction;
+    const netPayment = amount - fooding - advance;
 
-    return {
-      basicSalary,
-      sundays,
-      absent,
-      working,
-      cl,
-      ot,
-      workingDaysWithHoliday,
-      amount,
-      fooding,
-      advance,
-      totalDeduction,
-      netPayment,
-      record
-    };
+    return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, netPayment, record };
   };
 
   const totals = useMemo(() => {
@@ -137,7 +122,6 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <th>ADVANCE</th>
               <th>TOTAL DED.</th>
               <th>NET PAYMENT</th>
-              <th className={styles.noPrint}>CL BAL.</th>
             </tr>
           </thead>
           <tbody>
@@ -146,9 +130,21 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               return (
                 <tr key={s.id}>
                   <td>{index + 1}</td>
-                  <td className={styles.nameCol} style={{ fontWeight: 600 }}>{s.name}</td>
-                  <td style={{ fontSize: '0.7rem' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</td>
-                  <td>₹{calc.basicSalary.toLocaleString()}</td>
+                  <td className={styles.nameCol}>
+                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', fontWeight: 600, width: '100%', fontSize: '0.75rem' }} />
+                    <span className="print-only" style={{ fontWeight: 600 }}>{s.name}</span>
+                  </td>
+                  <td>
+                    <input type="text" value={s.role || s.designation || 'Staff'} onChange={e => updateProfile(s.id, 'role', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
+                    <span className="print-only">{(s.role || s.designation || 'Staff').toUpperCase()}</span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span>₹</span>
+                      <input type="number" value={s.baseSalary || s.salary || 0} onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '60px', textAlign: 'center', fontSize: '0.75rem' }} />
+                      <span className="print-only">{calc.basicSalary.toLocaleString()}</span>
+                    </div>
+                  </td>
                   <td>{calc.sundays + calc.holiday}</td>
                   <td style={{ color: calc.absent > 0 ? '#ef4444' : 'inherit' }}>{calc.absent}</td>
                   <td>{calc.working}</td>
@@ -162,33 +158,25 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
                     </div>
                   </td>
                   <td className="print-only">₹{calc.fooding}</td>
-                  <td className={styles.noPrint}>
-                    <input type="number" value={calc.record.advance || ''} onChange={e => updatePayrollField(s.id, 'advance', e.target.value)} style={{ width: '60px', fontSize: '0.85rem', padding: '4px' }} />
+                  <td>
+                    <input type="number" value={calc.record.advance || ''} onChange={e => updatePayrollField(s.id, 'advance', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '60px', textAlign: 'center', fontSize: '0.85rem' }} />
+                    <span className="print-only">₹{calc.advance.toLocaleString()}</span>
                   </td>
-                  <td className="print-only">₹{calc.advance}</td>
-                  <td style={{ color: '#ef4444' }}>₹{calc.totalDeduction.toLocaleString()}</td>
+                  <td style={{ color: '#ef4444' }}>₹{(calc.fooding + calc.advance).toLocaleString()}</td>
                   <td style={{ fontWeight: 800, background: '#f8f9fa' }}>₹{calc.netPayment.toLocaleString()}</td>
-                  <td className={styles.noPrint} style={{ fontSize: '0.75rem' }}>{21 - (calc.cl || 0)} / 21</td>
                 </tr>
               );
             })}
-            <tr className={styles.totalRow} style={{ fontSize: '0.9rem' }}>
+            <tr className={styles.totalRow}>
               <td colSpan="9" style={{ textAlign: 'right', paddingRight: '1rem' }}>TOTALS</td>
               <td>₹{totals.amount.toLocaleString()}</td>
               <td>₹{totals.fooding.toLocaleString()}</td>
               <td>₹{totals.advance.toLocaleString()}</td>
               <td style={{ color: '#ef4444' }}>₹{(totals.fooding + totals.advance).toLocaleString()}</td>
               <td style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>₹{totals.netPayment.toLocaleString()}</td>
-              <td className={styles.noPrint}></td>
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
-         <div style={{ border: '2px solid #000', padding: '0.5rem 1rem', fontWeight: 900, fontSize: '1.2rem' }}>
-            NET PAYMENT: ₹{totals.netPayment.toLocaleString()}
-         </div>
       </div>
 
       <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
@@ -206,15 +194,9 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
            <p style={{ margin: 0, fontWeight: 700 }}>Managing Director</p>
         </div>
       </div>
-
       <style>{`
-        @media screen {
-          .print-only { display: none; }
-        }
-        @media print {
-          .no-print { display: none !important; }
-          .print-only { display: table-cell !important; }
-        }
+        @media screen { .print-only { display: none; } }
+        @media print { .print-only { display: inline; } .no-print { display: none !important; } }
       `}</style>
     </div>
   );
