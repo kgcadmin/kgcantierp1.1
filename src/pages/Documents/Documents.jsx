@@ -40,9 +40,21 @@ const Documents = () => {
     }
   };
 
+  const closePreview = () => {
+    if (window.history.state?.modalOpen) {
+      window.history.back();
+    } else {
+      setShowPreview(null);
+    }
+  };
+
   // Close preview when user clicks browser 'Back'
   useEffect(() => {
-    const handlePopState = () => setShowPreview(null);
+    const handlePopState = (e) => {
+      if (!e.state?.modalOpen) {
+        setShowPreview(null);
+      }
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -443,7 +455,7 @@ const Documents = () => {
                 <FileText size={20} color="var(--primary)" />
                 <h2 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Preview: {showPreview.title}</h2>
               </div>
-              <button onClick={() => setShowPreview(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={24} /></button>
+              <button onClick={closePreview} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={24} /></button>
             </div>
             <div style={{ flex: 1, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', overflow: 'hidden' }}>
               {showPreview.fileUrl ? (
@@ -459,10 +471,10 @@ const Documents = () => {
                   } else if (showPreview.fileType === 'application/pdf') {
                     return (
                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <embed 
+                        <iframe 
                           src={fullUrl} 
-                          type="application/pdf"
-                          style={{ width: '100%', height: '100%', border: 'none' }}
+                          title={showPreview.title}
+                          style={{ width: '100%', height: '100%', flex: 1, border: 'none', display: 'block' }}
                         />
                         <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.5)', textAlign: 'center' }}>
                           <a href={fullUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontSize: '0.75rem', textDecoration: 'underline' }}>PDF not loading? Click to Open in New Tab</a>
@@ -490,7 +502,7 @@ const Documents = () => {
             </div>
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                <button 
-                 onClick={() => { handleDownload(showPreview); setShowPreview(null); }} 
+                 onClick={() => { handleDownload(showPreview); closePreview(); }} 
                  style={{ 
                    display: 'flex', 
                    alignItems: 'center', 
