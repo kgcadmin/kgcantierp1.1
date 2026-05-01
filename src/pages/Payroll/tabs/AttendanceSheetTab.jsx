@@ -3,7 +3,7 @@ import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
 const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
-  const { faculty, staff, staffAttendance, calendar } = useContext(AppContext);
+  const { faculty, staff, staffAttendance, markStaffAttendance, calendar } = useContext(AppContext);
   
   const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
   
@@ -23,25 +23,40 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
     return new Date(selectedYear, selectedMonth, day).toLocaleString('default', { weekday: 'short' }).toUpperCase();
   };
 
-  const getAttendanceStatus = (memberId, day) => {
+  const getAttendanceRecord = (memberId, day) => {
     const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return staffAttendance.find(a => a.memberId === memberId && a.date === dateStr);
+  };
+
+  const getStatus = (memberId, day) => {
     const dayName = new Date(selectedYear, selectedMonth, day).getDay();
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    // Check if Sunday
+    const record = getAttendanceRecord(memberId, day);
+    if (record?.status) return record.status;
+
+    // Default status if no record
     if (dayName === 0) return 'SUN';
-    
-    // Check holiday from calendar
     const holiday = calendar.find(c => c.date === dateStr && (c.type === 'Holiday' || c.category === 'Holiday'));
     if (holiday) return 'H';
 
-    const record = staffAttendance.find(a => a.memberId === memberId && a.date === dateStr);
-    return record?.status || ''; // P, A, CL, etc.
+    return ''; 
+  };
+
+  const handleCellClick = (member, day) => {
+    const currentStatus = getStatus(member.id, day);
+    const statuses = ['', 'P', 'A', 'CL', 'OT', 'H', 'SUN'];
+    let nextIndex = (statuses.indexOf(currentStatus) + 1) % statuses.length;
+    const nextStatus = statuses[nextIndex];
+    
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    markStaffAttendance(member.id, member.role === 'Faculty' ? 'Faculty' : 'Staff', dateStr, '', '', nextStatus);
   };
 
   const calculateCounts = (memberId) => {
-    const counts = { P: 0, A: 0, SUN: 0, CL: 0, H: 0, OT: 0, Total: 0 };
+    const counts = { P: 0, A: 0, SUN: 0, CL: 0, H: 0, OT: 0 };
     dates.forEach(day => {
-      const status = getAttendanceStatus(memberId, day);
+      const status = getStatus(memberId, day);
       if (status === 'P') counts.P++;
       else if (status === 'A') counts.A++;
       else if (status === 'SUN') counts.SUN++;
@@ -49,19 +64,19 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
       else if (status === 'H') counts.H++;
       else if (status === 'OT') counts.OT++;
     });
-    counts.Total = counts.P + counts.SUN + counts.H + counts.CL + (counts.OT * 0.5); // Simplified OT logic
-    counts.PresentTotal = counts.P + counts.SUN + counts.H + counts.CL;
+    counts.TotalPresent = counts.P + counts.SUN + counts.H + counts.CL;
+    counts.GrandTotal = counts.TotalPresent + (counts.OT * 0.5); // OT adds 0.5 extra working day
     return counts;
   };
 
   return (
     <div className={styles.salaryPrintArea}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.2rem' }}>KASHIBAI GANPAT COLLEGE</h2>
-        <h3 style={{ margin: 0, fontSize: '1rem', textDecoration: 'underline' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', letterSpacing: '1px' }}>KASHIBAI GANPAT COLLEGE</h2>
+        <h3 style={{ margin: '0.2rem 0', fontSize: '1.1rem', textDecoration: 'underline' }}>
           ATTENDANCE SHEET {monthName.toUpperCase()} {selectedYear}
         </h3>
-        <p style={{ margin: '0.2rem 0', fontSize: '0.8rem' }}>
+        <p style={{ margin: '0.2rem 0', fontSize: '0.85rem', fontWeight: 600 }}>
           01-{monthName.toUpperCase()} TO {daysInMonth}-{monthName.toUpperCase()} STAFF ATTENDANCE REGISTER-{selectedYear}
         </p>
       </div>
@@ -70,23 +85,23 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
         <table className={styles.slipTable}>
           <thead className={styles.attGrid}>
             <tr>
-              <th rowSpan="2" className={styles.nameCol}>NAME</th>
-              <th rowSpan="2">DESIGNATION</th>
+              <th rowSpan="2" className={styles.nameCol} style={{ width: '180px' }}>NAME</th>
+              <th rowSpan="2" style={{ width: '120px' }}>DESIGNATION</th>
               {dates.map(d => (
-                <th key={d} className={styles.attCell} style={{ fontSize: '0.6rem' }}>{getDayName(d)}</th>
+                <th key={d} className={styles.attCell}>{getDayName(d)}</th>
               ))}
-              <th colSpan="6">SUMMARY</th>
+              <th colSpan="6" style={{ background: '#eee' }}>SUMMARY</th>
             </tr>
             <tr>
               {dates.map(d => (
                 <th key={d} className={styles.attCell}>{d}</th>
               ))}
-              <th>A</th>
-              <th>SUN</th>
-              <th>CL</th>
-              <th>P</th>
-              <th>H/P</th>
-              <th>TOTAL</th>
+              <th style={{ background: '#f8d7da', width: '30px' }}>A</th>
+              <th style={{ background: '#fff3cd', width: '30px' }}>SUN</th>
+              <th style={{ background: '#cce5ff', width: '30px' }}>CL</th>
+              <th style={{ background: '#d4edda', width: '30px' }}>P</th>
+              <th style={{ background: '#e2e3e5', width: '30px' }}>H/P</th>
+              <th style={{ background: '#ccc', width: '40px' }}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -94,22 +109,28 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
               const counts = calculateCounts(s.id);
               return (
                 <tr key={s.id}>
-                  <td className={styles.nameCol}>{s.name}</td>
-                  <td>{s.role || s.designation || 'Staff'}</td>
+                  <td className={styles.nameCol} style={{ fontWeight: 600 }}>{s.name}</td>
+                  <td style={{ fontSize: '0.65rem' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</td>
                   {dates.map(d => {
-                    const status = getAttendanceStatus(s.id, d);
+                    const status = getStatus(s.id, d);
                     return (
-                      <td key={d} className={`${styles.attCell} ${styles['att' + status] || ''}`}>
-                        {status === 'SUN' ? 'S' : status}
+                      <td 
+                        key={d} 
+                        onClick={() => handleCellClick(s, d)}
+                        className={`${styles.attCell} ${styles['att' + status] || ''}`}
+                        style={{ cursor: 'pointer', transition: 'background 0.1s' }}
+                        title="Click to change status"
+                      >
+                        {status === 'SUN' ? 'SUN' : status === 'OT' ? 'OT' : status}
                       </td>
                     );
                   })}
-                  <td style={{ background: '#f8d7da' }}>{counts.A}</td>
-                  <td style={{ background: '#fff3cd' }}>{counts.SUN}</td>
-                  <td style={{ background: '#cce5ff' }}>{counts.CL}</td>
-                  <td style={{ background: '#d4edda' }}>{counts.P}</td>
-                  <td>{counts.H}</td>
-                  <td style={{ fontWeight: 700 }}>{counts.PresentTotal}</td>
+                  <td style={{ background: '#f8d7da', fontWeight: 700 }}>{counts.A || ''}</td>
+                  <td style={{ background: '#fff3cd', fontWeight: 700 }}>{counts.SUN || ''}</td>
+                  <td style={{ background: '#cce5ff', fontWeight: 700 }}>{counts.CL || ''}</td>
+                  <td style={{ background: '#d4edda', fontWeight: 700 }}>{counts.P || ''}</td>
+                  <td style={{ background: '#e2e3e5', fontWeight: 700 }}>{counts.H || ''}</td>
+                  <td style={{ background: '#eee', fontWeight: 800 }}>{counts.TotalPresent}</td>
                 </tr>
               );
             })}
@@ -117,14 +138,33 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
         </table>
       </div>
 
-      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-        <div style={{ borderTop: '1px solid #000', paddingTop: '0.5rem', width: '200px', textAlign: 'center' }}>Checked By</div>
+      <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#fdfdfd', border: '1px solid #eee', borderRadius: '4px' }} className={styles.noPrint}>
+        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>Legend & Instructions:</h4>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attP}`}>P</span> Present</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attA}`}>A</span> Absent</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attSUN}`}>SUN</span> Sunday</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attCL}`}>CL</span> Casual Leave</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attH}`}>H</span> Holiday</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span className={`${styles.attCell} ${styles.attOT}`}>OT</span> Over Time</div>
+        </div>
+        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: '#666' }}>💡 Click any cell in the grid to cycle through attendance statuses. Changes are saved automatically.</p>
+      </div>
+
+      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+        <div style={{ textAlign: 'center' }}>
+           <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '30px' }}></div>
+           <p style={{ margin: 0, fontWeight: 700 }}>Checked By</p>
+        </div>
         <div style={{ textAlign: 'center' }}>
           <p style={{ margin: 0 }}>For</p>
-          <p style={{ margin: 0, fontWeight: 700 }}>PRINCIPAL</p>
-          <p style={{ margin: 0 }}>KASHIBAI GANPAT NURSING COLLEGE</p>
+          <p style={{ margin: 0, fontWeight: 800 }}>PRINCIPAL</p>
+          <p style={{ margin: 0, fontSize: '0.75rem' }}>KASHIBAI GANPAT NURSING COLLEGE</p>
         </div>
-        <div style={{ borderTop: '1px solid #000', paddingTop: '0.5rem', width: '200px', textAlign: 'center' }}>Managing Director</div>
+        <div style={{ textAlign: 'center' }}>
+           <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '30px' }}></div>
+           <p style={{ margin: 0, fontWeight: 700 }}>Managing Director</p>
+        </div>
       </div>
     </div>
   );

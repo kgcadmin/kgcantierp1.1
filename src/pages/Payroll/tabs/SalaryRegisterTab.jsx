@@ -1,58 +1,86 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
 const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
-  const { faculty, staff, staffAttendance, calendar, payroll, setPayroll } = useContext(AppContext);
+  const { faculty, staff, staffAttendance, calendar, payroll, setPayroll, syncToVPS } = useContext(AppContext);
   
   const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
   const daysInMonth = useMemo(() => new Date(selectedYear, selectedMonth + 1, 0).getDate(), [selectedMonth, selectedYear]);
   const monthName = useMemo(() => new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' }), [selectedMonth, selectedYear]);
+  const monthKey = `${monthName} ${selectedYear}`;
 
-  // Track manual inputs for Fooding and Advance per staff for the current month
-  // In a real app, these would be in the database/context. 
-  // We'll use the existing 'payroll' records if they exist, or local state for editing.
-  
   const getAttendanceData = (memberId) => {
     let working = 0;
     let sundays = 0;
     let absent = 0;
     let cl = 0;
     let holiday = 0;
+    let ot = 0;
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayOfWeek = new Date(selectedYear, selectedMonth, d).getDay();
       
       const record = staffAttendance.find(a => a.memberId === memberId && a.date === dateStr);
+      const status = record?.status;
       const isHoliday = calendar.find(c => c.date === dateStr && (c.type === 'Holiday' || c.category === 'Holiday'));
 
-      if (dayOfWeek === 0) sundays++;
-      else if (isHoliday) holiday++;
-      
-      if (record?.status === 'P') working++;
-      else if (record?.status === 'A') absent++;
-      else if (record?.status === 'CL') cl++;
+      if (status === 'P') working++;
+      else if (status === 'A') absent++;
+      else if (status === 'CL') cl++;
+      else if (status === 'OT') ot++;
+      else if (status === 'H' || (!status && isHoliday)) holiday++;
+      else if (status === 'SUN' || (!status && dayOfWeek === 0)) sundays++;
     }
 
-    return { working, sundays, absent, cl, holiday };
+    return { working, sundays, absent, cl, holiday, ot };
+  };
+
+  const updatePayrollField = (memberId, field, value) => {
+    const existingIndex = payroll.findIndex(p => p.employeeId === memberId && p.month === monthKey);
+    let updatedPayroll = [...payroll];
+    let record;
+
+    if (existingIndex >= 0) {
+      record = { ...updatedPayroll[existingIndex], [field]: Number(value) };
+      updatedPayroll[existingIndex] = record;
+    } else {
+      record = { 
+        id: `PAY${Date.now()}${memberId}`, 
+        employeeId: memberId, 
+        month: monthKey, 
+        [field]: Number(value),
+        foodingRate: 30, // Default rate
+        foodingDays: 0,
+        advance: 0
+      };
+      updatedPayroll.push(record);
+    }
+    
+    // Auto-recalculate fooding if days/rate change
+    if (field === 'foodingDays' || field === 'foodingRate') {
+      record.fooding = (record.foodingDays || 0) * (record.foodingRate || 0);
+    }
+
+    setPayroll(updatedPayroll);
+    syncToVPS('payroll', record, record.id, existingIndex >= 0 ? 'PUT' : 'POST');
   };
 
   const calculateSalary = (staffMember) => {
-    const { working, sundays, absent, cl, holiday } = getAttendanceData(staffMember.id);
+    const { working, sundays, absent, cl, holiday, ot } = getAttendanceData(staffMember.id);
     const basicSalary = Number(staffMember.baseSalary || staffMember.salary || 10000);
     
-    // Formula: Working Days With Holiday = Working + Sundays + Holidays + CL (paid)
-    const workingDaysWithHoliday = working + sundays + holiday + cl;
-    
+    // Formula: Working Days With Holiday = Working + Sundays + Holidays + CL + OT
+    const workingDaysWithHoliday = working + sundays + holiday + cl + ot;
     const amount = Math.round((basicSalary / daysInMonth) * workingDaysWithHoliday);
     
-    // Find existing payroll record for this month
-    const existing = payroll.find(p => p.employeeId === staffMember.id && p.month === `${monthName} ${selectedYear}`);
+    const record = payroll.find(p => p.employeeId === staffMember.id && p.month === monthKey) || {};
     
-    const fooding = existing?.fooding || 0;
-    const advance = existing?.advance || 0;
-    const netPayment = amount - fooding - advance;
+    const fooding = record.fooding || 0;
+    const advance = record.advance || 0;
+    const totalDeduction = fooding + advance;
+    const netPayment = amount - totalDeduction;
 
     return {
       basicSalary,
@@ -60,14 +88,14 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
       absent,
       working,
       cl,
+      ot,
       workingDaysWithHoliday,
       amount,
       fooding,
       advance,
+      totalDeduction,
       netPayment,
-      totalCL: 21,
-      usedCL: 0, // Should be calculated from all months in selectedYear
-      balanceCL: 21
+      record
     };
   };
 
@@ -80,13 +108,13 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
       acc.netPayment += calc.netPayment;
       return acc;
     }, { amount: 0, fooding: 0, advance: 0, netPayment: 0 });
-  }, [allStaff, selectedMonth, selectedYear, payroll]);
+  }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
 
   return (
     <div className={styles.salaryPrintArea}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.2rem' }}>KASHIBAI GANPAT COLLEGE</h2>
-        <h3 style={{ margin: 0, fontSize: '1rem', textDecoration: 'underline' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>KASHIBAI GANPAT COLLEGE</h2>
+        <h3 style={{ margin: '0.2rem 0', fontSize: '1.1rem', textDecoration: 'underline' }}>
           SALARY SLIP FOR THE MONTH OF {monthName.toUpperCase()} {selectedYear}
         </h3>
       </div>
@@ -99,20 +127,17 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <th className={styles.nameCol}>NAME</th>
               <th>DESIGNATION</th>
               <th>BASIC SALARY</th>
-              <th>TOTAL SUNDAY HOLIDAY</th>
+              <th>SUN/HOL</th>
               <th>ABSENT</th>
-              <th>WORKING</th>
+              <th>WORK</th>
               <th>C.L</th>
-              <th>WORKING DAY WITH HOLIDAY</th>
+              <th>W.D.W.H</th>
               <th>AMOUNT</th>
               <th>FOODING</th>
               <th>ADVANCE</th>
-              <th>TOTAL</th>
+              <th>TOTAL DED.</th>
               <th>NET PAYMENT</th>
-              <th>TOTAL CASUAL LEAVE</th>
-              <th>TOTAL LEAVE USE</th>
-              <th>THIS MONTH</th>
-              <th>LEAVE BALANCE</th>
+              <th className={styles.noPrint}>CL BAL.</th>
             </tr>
           </thead>
           <tbody>
@@ -121,66 +146,76 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               return (
                 <tr key={s.id}>
                   <td>{index + 1}</td>
-                  <td className={styles.nameCol}>{s.name}</td>
-                  <td>{s.role || s.designation || 'Staff'}</td>
+                  <td className={styles.nameCol} style={{ fontWeight: 600 }}>{s.name}</td>
+                  <td style={{ fontSize: '0.7rem' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</td>
                   <td>₹{calc.basicSalary.toLocaleString()}</td>
-                  <td>{calc.sundays}</td>
-                  <td>{calc.absent}</td>
+                  <td>{calc.sundays + calc.holiday}</td>
+                  <td style={{ color: calc.absent > 0 ? '#ef4444' : 'inherit' }}>{calc.absent}</td>
                   <td>{calc.working}</td>
                   <td>{calc.cl}</td>
-                  <td>{calc.workingDaysWithHoliday}</td>
-                  <td>₹{calc.amount.toLocaleString()}</td>
-                  <td>{calc.fooding > 0 ? `₹${calc.fooding}` : '-'}</td>
-                  <td>{calc.advance > 0 ? `₹${calc.advance}` : '-'}</td>
-                  <td>₹{(calc.fooding + calc.advance).toLocaleString()}</td>
-                  <td style={{ fontWeight: 700 }}>₹{calc.netPayment.toLocaleString()}</td>
-                  <td>{calc.totalCL}</td>
-                  <td>{calc.usedCL}</td>
-                  <td>{calc.cl}</td>
-                  <td>{calc.balanceCL - calc.cl}</td>
+                  <td style={{ fontWeight: 700 }}>{calc.workingDaysWithHoliday}</td>
+                  <td style={{ fontWeight: 600 }}>₹{calc.amount.toLocaleString()}</td>
+                  <td className={styles.noPrint}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <input type="number" placeholder="Days" value={calc.record.foodingDays || ''} onChange={e => updatePayrollField(s.id, 'foodingDays', e.target.value)} style={{ width: '45px', fontSize: '0.75rem', padding: '2px' }} />
+                      <input type="number" placeholder="Rate" value={calc.record.foodingRate || ''} onChange={e => updatePayrollField(s.id, 'foodingRate', e.target.value)} style={{ width: '45px', fontSize: '0.75rem', padding: '2px' }} />
+                    </div>
+                  </td>
+                  <td className="print-only">₹{calc.fooding}</td>
+                  <td className={styles.noPrint}>
+                    <input type="number" value={calc.record.advance || ''} onChange={e => updatePayrollField(s.id, 'advance', e.target.value)} style={{ width: '60px', fontSize: '0.85rem', padding: '4px' }} />
+                  </td>
+                  <td className="print-only">₹{calc.advance}</td>
+                  <td style={{ color: '#ef4444' }}>₹{calc.totalDeduction.toLocaleString()}</td>
+                  <td style={{ fontWeight: 800, background: '#f8f9fa' }}>₹{calc.netPayment.toLocaleString()}</td>
+                  <td className={styles.noPrint} style={{ fontSize: '0.75rem' }}>{21 - (calc.cl || 0)} / 21</td>
                 </tr>
               );
             })}
-            <tr className={styles.totalRow}>
-              <td colSpan="9" style={{ textAlign: 'right', paddingRight: '1rem' }}>TOTAL</td>
+            <tr className={styles.totalRow} style={{ fontSize: '0.9rem' }}>
+              <td colSpan="9" style={{ textAlign: 'right', paddingRight: '1rem' }}>TOTALS</td>
               <td>₹{totals.amount.toLocaleString()}</td>
               <td>₹{totals.fooding.toLocaleString()}</td>
               <td>₹{totals.advance.toLocaleString()}</td>
-              <td>₹{(totals.fooding + totals.advance).toLocaleString()}</td>
-              <td>₹{totals.netPayment.toLocaleString()}</td>
-              <td colSpan="4"></td>
+              <td style={{ color: '#ef4444' }}>₹{(totals.fooding + totals.advance).toLocaleString()}</td>
+              <td style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>₹{totals.netPayment.toLocaleString()}</td>
+              <td className={styles.noPrint}></td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '3rem', fontWeight: 700 }}>
-         <span>NET PAYMENT: ₹{totals.netPayment.toLocaleString()}</span>
+      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
+         <div style={{ border: '2px solid #000', padding: '0.5rem 1rem', fontWeight: 900, fontSize: '1.2rem' }}>
+            NET PAYMENT: ₹{totals.netPayment.toLocaleString()}
+         </div>
       </div>
 
-      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-        <div style={{ borderTop: '1px solid #000', paddingTop: '0.5rem', width: '150px', textAlign: 'center' }}>Checked By</div>
+      <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+        <div style={{ textAlign: 'center' }}>
+           <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '40px' }}></div>
+           <p style={{ margin: 0, fontWeight: 700 }}>Checked By</p>
+        </div>
         <div style={{ textAlign: 'center' }}>
           <p style={{ margin: 0 }}>For</p>
-          <p style={{ margin: 0, fontWeight: 700 }}>PRINCIPAL</p>
-          <p style={{ margin: 0 }}>KASHIBAI GANPAT NURSING COLLEGE</p>
+          <p style={{ margin: 0, fontWeight: 800 }}>PRINCIPAL</p>
+          <p style={{ margin: 0, fontSize: '0.75rem' }}>KASHIBAI GANPAT NURSING COLLEGE</p>
         </div>
-        <div style={{ borderTop: '1px solid #000', paddingTop: '0.5rem', width: '150px', textAlign: 'center' }}>Managing Director</div>
-      </div>
-      
-      <div className={styles.noPrint} style={{ marginTop: '2rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-        <h4 style={{ margin: '0 0 0.5rem 0' }}>CL Status (Annual)</h4>
-        <div style={{ display: 'flex', gap: '2rem' }}>
-          {allStaff.map(s => {
-            const calc = calculateSalary(s);
-            return (
-              <div key={s.id} style={{ fontSize: '0.85rem' }}>
-                <strong>{s.name}:</strong> {calc.balanceCL - calc.cl} / 21 remaining
-              </div>
-            );
-          })}
+        <div style={{ textAlign: 'center' }}>
+           <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '40px' }}></div>
+           <p style={{ margin: 0, fontWeight: 700 }}>Managing Director</p>
         </div>
       </div>
+
+      <style>{`
+        @media screen {
+          .print-only { display: none; }
+        }
+        @media print {
+          .no-print { display: none !important; }
+          .print-only { display: table-cell !important; }
+        }
+      `}</style>
     </div>
   );
 };
