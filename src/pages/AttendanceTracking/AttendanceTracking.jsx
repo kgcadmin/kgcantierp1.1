@@ -10,7 +10,11 @@ import {
   FileSpreadsheet,
   TrendingUp,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  LogIn,
+  LogOut,
+  Save,
+  Edit2
 } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import Card from '../../components/Card/Card';
@@ -25,15 +29,23 @@ const AttendanceTracking = () => {
     enrollments, 
     students, 
     currentUser,
-    courses
+    courses,
+    faculty,
+    staff,
+    staffAttendance,
+    markStaffAttendance
   } = useContext(AppContext);
 
-  const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'mark' | 'yearly'
+  const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'mark' | 'yearly' | 'staff'
   const [selectedBatch, setSelectedBatch] = useState(batches[0]?.id || '');
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.code || '');
   const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentRecords, setCurrentRecords] = useState({});
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [staffDate, setStaffDate] = useState(new Date().toISOString().split('T')[0]);
+  const [staffMemberType, setStaffMemberType] = useState('faculty'); // 'faculty' | 'staff'
+  const [editingRow, setEditingRow] = useState(null);
+  const [entryForm, setEntryForm] = useState({ entryTime: '', exitTime: '', status: 'Present' });
 
   // Memoized stats for summary
   const stats = useMemo(() => {
@@ -215,6 +227,12 @@ const AttendanceTracking = () => {
           onClick={() => { setActiveTab('yearly'); setSelectedStudentId(null); }}
           style={{ background: 'none', border: 'none', color: activeTab === 'yearly' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: activeTab === 'yearly' ? 600 : 500, cursor: 'pointer', padding: '0.5rem 1rem', borderBottom: activeTab === 'yearly' ? '2px solid var(--primary)' : 'none' }}
         >Yearly Report</button>
+        {['Admin', 'Management', 'Office Staff'].includes(currentUser?.role) && (
+          <button 
+            onClick={() => { setActiveTab('staff'); setSelectedStudentId(null); }}
+            style={{ background: 'none', border: 'none', color: activeTab === 'staff' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: activeTab === 'staff' ? 600 : 500, cursor: 'pointer', padding: '0.5rem 1rem', borderBottom: activeTab === 'staff' ? '2px solid var(--primary)' : 'none' }}
+          >Staff & Faculty Attendance</button>
+        )}
       </div>
 
       {activeTab === 'summary' && !selectedStudentId && (
@@ -549,6 +567,176 @@ const AttendanceTracking = () => {
             </table>
           </div>
         </Card>
+      )}
+
+      {/* ── Staff & Faculty Attendance Tab ── */}
+      {activeTab === 'staff' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Controls */}
+          <Card style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 500 }}>Date</label>
+                <input 
+                  type="date" 
+                  value={staffDate} 
+                  onChange={e => setStaffDate(e.target.value)}
+                  style={{ padding: '0.6rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.875rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 500 }}>Member Type</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => setStaffMemberType('faculty')} 
+                    style={{ padding: '0.6rem 1.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: staffMemberType === 'faculty' ? 'var(--primary)' : 'var(--bg-base)', color: staffMemberType === 'faculty' ? 'white' : 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.875rem' }}
+                  >Faculty</button>
+                  <button 
+                    onClick={() => setStaffMemberType('staff')} 
+                    style={{ padding: '0.6rem 1.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: staffMemberType === 'staff' ? 'var(--primary)' : 'var(--bg-base)', color: staffMemberType === 'staff' ? 'white' : 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.875rem' }}
+                  >Staff</button>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Attendance Table */}
+          <Card style={{ padding: '0' }}>
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>
+                {staffMemberType === 'faculty' ? 'Faculty' : 'Staff'} Attendance — {staffDate}
+              </h3>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                {(() => {
+                  const members = staffMemberType === 'faculty' ? faculty : staff;
+                  const todayPresent = members.filter(m => {
+                    const rec = staffAttendance.find(a => a.memberId === m.id && a.date === staffDate);
+                    return rec?.status === 'Present';
+                  }).length;
+                  return `${todayPresent} / ${members.length} Present`;
+                })()}
+              </span>
+            </div>
+            <div className="table-responsive" style={{ margin: 0 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
+                    <th style={{ padding: '0.875rem 1rem' }}>Name</th>
+                    <th style={{ padding: '0.875rem 1rem' }}>ID</th>
+                    <th style={{ padding: '0.875rem 1rem' }}>Department</th>
+                    <th style={{ padding: '0.875rem 1rem' }}><LogIn size={14} style={{ marginRight: '0.25rem', verticalAlign: 'middle' }}/>Entry Time</th>
+                    <th style={{ padding: '0.875rem 1rem' }}><LogOut size={14} style={{ marginRight: '0.25rem', verticalAlign: 'middle' }}/>Exit Time</th>
+                    <th style={{ padding: '0.875rem 1rem' }}>Status</th>
+                    <th style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(staffMemberType === 'faculty' ? faculty : staff).map(member => {
+                    const existing = staffAttendance.find(a => a.memberId === member.id && a.date === staffDate);
+                    const isEditing = editingRow === member.id;
+
+                    return (
+                      <tr key={member.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }} className="table-row-hover">
+                        <td style={{ padding: '0.875rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{member.name}</td>
+                        <td style={{ padding: '0.875rem 1rem', color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>{member.id}</td>
+                        <td style={{ padding: '0.875rem 1rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{member.department}</td>
+
+                        {isEditing ? (
+                          <>
+                            <td style={{ padding: '0.5rem 1rem' }}>
+                              <input 
+                                type="time" 
+                                value={entryForm.entryTime} 
+                                onChange={e => setEntryForm(f => ({ ...f, entryTime: e.target.value }))}
+                                style={{ padding: '0.4rem 0.5rem', borderRadius: '0.375rem', border: '1px solid var(--primary)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.875rem', width: '100%' }}
+                              />
+                            </td>
+                            <td style={{ padding: '0.5rem 1rem' }}>
+                              <input 
+                                type="time" 
+                                value={entryForm.exitTime} 
+                                onChange={e => setEntryForm(f => ({ ...f, exitTime: e.target.value }))}
+                                style={{ padding: '0.4rem 0.5rem', borderRadius: '0.375rem', border: '1px solid var(--primary)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.875rem', width: '100%' }}
+                              />
+                            </td>
+                            <td style={{ padding: '0.5rem 1rem' }}>
+                              <select 
+                                value={entryForm.status} 
+                                onChange={e => setEntryForm(f => ({ ...f, status: e.target.value }))}
+                                style={{ padding: '0.4rem 0.5rem', borderRadius: '0.375rem', border: '1px solid var(--primary)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.875rem', width: '100%' }}
+                              >
+                                <option value="Present">Present</option>
+                                <option value="Absent">Absent</option>
+                                <option value="Late">Late</option>
+                                <option value="Half Day">Half Day</option>
+                                <option value="On Leave">On Leave</option>
+                              </select>
+                            </td>
+                            <td style={{ padding: '0.5rem 1rem', textAlign: 'center' }}>
+                              <button 
+                                onClick={() => {
+                                  markStaffAttendance(member.id, staffMemberType, staffDate, entryForm.entryTime, entryForm.exitTime, entryForm.status);
+                                  setEditingRow(null);
+                                }}
+                                style={{ padding: '0.4rem 0.75rem', borderRadius: '0.375rem', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem' }}
+                              >
+                                <Save size={14} /> Save
+                              </button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td style={{ padding: '0.875rem 1rem', color: 'var(--text-primary)', fontWeight: existing?.entryTime ? 600 : 400 }}>
+                              {existing?.entryTime 
+                                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#10b981' }}><LogIn size={14} />{existing.entryTime}</span> 
+                                : <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>— Not marked —</span>}
+                            </td>
+                            <td style={{ padding: '0.875rem 1rem' }}>
+                              {existing?.exitTime 
+                                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#ef4444' }}><LogOut size={14} />{existing.exitTime}</span> 
+                                : <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>—</span>}
+                            </td>
+                            <td style={{ padding: '0.875rem 1rem' }}>
+                              {existing ? (
+                                <span style={{ 
+                                  padding: '0.25rem 0.65rem', 
+                                  borderRadius: '2rem', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 600,
+                                  background: existing.status === 'Present' ? 'rgba(16,185,129,0.15)' : existing.status === 'Late' ? 'rgba(245,158,11,0.15)' : existing.status === 'Half Day' ? 'rgba(99,102,241,0.15)' : 'rgba(239,68,68,0.15)',
+                                  color: existing.status === 'Present' ? '#10b981' : existing.status === 'Late' ? '#f59e0b' : existing.status === 'Half Day' ? '#6366f1' : '#ef4444'
+                                }}>
+                                  {existing.status}
+                                </span>
+                              ) : (
+                                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>
+                              <button 
+                                onClick={() => {
+                                  setEditingRow(member.id);
+                                  setEntryForm({ 
+                                    entryTime: existing?.entryTime || '', 
+                                    exitTime: existing?.exitTime || '', 
+                                    status: existing?.status || 'Present' 
+                                  });
+                                }}
+                                style={{ padding: '0.4rem 0.75rem', borderRadius: '0.375rem', background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border-light)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', transition: 'all 0.2s' }}
+                              >
+                                <Edit2 size={13} /> {existing ? 'Edit' : 'Log Entry'}
+                              </button>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );

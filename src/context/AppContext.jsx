@@ -91,6 +91,7 @@ export const AppContextProvider = ({ children }) => {
   const [exams, setExams] = useState(() => loadState('exams', initialExams));
   const [timetable, setTimetable] = useState(() => loadState('timetable', initialTimetable));
   const [attendance, setAttendance] = useState(() => loadState('attendance', initialAttendance));
+  const [staffAttendance, setStaffAttendance] = useState(() => loadState('staffAttendance', []));
   const [library, setLibrary] = useState(() => loadState('library', initialLibrary));
 
   const [hostel, setHostel] = useState(() => loadState('hostel', initialHostel));
@@ -250,6 +251,7 @@ export const AppContextProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('edusec_exams', JSON.stringify(exams)); }, [exams]);
   useEffect(() => { localStorage.setItem('edusec_timetable', JSON.stringify(timetable)); }, [timetable]);
   useEffect(() => { localStorage.setItem('edusec_attendance', JSON.stringify(attendance)); }, [attendance]);
+  useEffect(() => { localStorage.setItem('edusec_staffAttendance', JSON.stringify(staffAttendance)); }, [staffAttendance]);
   useEffect(() => { localStorage.setItem('edusec_library', JSON.stringify(library)); }, [library]);
   useEffect(() => { localStorage.setItem('edusec_hostel', JSON.stringify(hostel)); }, [hostel]);
   useEffect(() => { localStorage.setItem('edusec_documents', JSON.stringify(documents)); }, [documents]);
@@ -766,6 +768,21 @@ export const AppContextProvider = ({ children }) => {
     }));
   };
 
+  const markStaffAttendance = (memberId, memberType, date, entryTime, exitTime, status) => {
+    const today = date || new Date().toISOString().split('T')[0];
+    const existingIndex = staffAttendance.findIndex(a => a.memberId === memberId && a.date === today);
+    const record = { id: `SATD${Date.now()}`, memberId, memberType, date: today, entryTime, exitTime, status };
+    if (existingIndex >= 0) {
+      const updated = [...staffAttendance];
+      updated[existingIndex] = { ...updated[existingIndex], ...record };
+      setStaffAttendance(updated);
+      syncToVPS('staffAttendance', record, record.id, 'PUT');
+    } else {
+      setStaffAttendance(prev => [...prev, record]);
+      syncToVPS('staffAttendance', record);
+    }
+  };
+
   const markAttendance = (batchId, date, records, subjectId) => {
     const existingIndex = attendance.findIndex(a => a.batchId === batchId && a.date === date && a.subjectId === subjectId);
     if (existingIndex >= 0) {
@@ -906,6 +923,7 @@ export const AppContextProvider = ({ children }) => {
     timetable, setTimetable, addTimetable, generateTimetable, editTimetableSlot, bulkReplaceTimetable,
     calendar, setCalendar, editCalendarEvent, addCalendarEvent, deleteCalendarEvent,
     attendance, setAttendance, markAttendance,
+    staffAttendance, setStaffAttendance, markStaffAttendance,
     library, setLibrary, addLibraryBook, deleteLibraryBook,
     hostel, setHostel, addRoomOccupant, addVisitor, addRoom,
     documents, setDocuments, addDocument, deleteDocument, updateDocument,
@@ -921,7 +939,7 @@ export const AppContextProvider = ({ children }) => {
   }), [
     currentUser, students, faculty, staff, courses, departments, categories, degrees, subjects, 
     batches, enrollments, systemConfig, feeStructures, fees, payroll, leaves, finance, exams, 
-    timetable, calendar, attendance, library, hostel, documents, communication, systemHealth, 
+    timetable, calendar, attendance, staffAttendance, library, hostel, documents, communication, systemHealth, 
     recentActivities, users, profileTemplate, recoveredItems, academicYear
   ]);
 
