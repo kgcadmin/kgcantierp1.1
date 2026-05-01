@@ -4,6 +4,9 @@ import Card from '../../components/Card/Card';
 import { AppContext } from '../../context/AppContext';
 import ReportExportModal from '../../components/ReportExportModal/ReportExportModal';
 import ModuleGuide from '../../components/ModuleGuide';
+import SalaryRegisterTab from './tabs/SalaryRegisterTab';
+import AttendanceSheetTab from './tabs/AttendanceSheetTab';
+import BankPaymentTab from './tabs/BankPaymentTab';
 
 const Payroll = () => {
   const { 
@@ -12,9 +15,15 @@ const Payroll = () => {
     deletePayroll, deleteLeave, currentUser 
   } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('salary');
+  const [detailedSubTab, setDetailedSubTab] = useState('register');
   const [showReports, setShowReports] = useState(false);
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [newEntry, setNewEntry] = useState({ employeeId: '', baseSalary: '', allowances: '', deductions: '', month: 'April 2026' });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const years = [2024, 2025, 2026, 2027];
 
   const getEmployeeName = (id) => {
     const emp = [...faculty, ...staff].find(e => e.id === id);
@@ -39,6 +48,26 @@ const Payroll = () => {
     setShowEntryModal(false);
     setNewEntry({ employeeId: '', baseSalary: '', allowances: '', deductions: '', month: 'April 2026' });
     alert("Payroll entry added successfully!");
+  };
+
+  const downloadCSV = () => {
+    const table = document.querySelector('table');
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const csvContent = rows.map(row => {
+      const cells = Array.from(row.querySelectorAll('th, td'));
+      return cells.map(cell => `"${cell.innerText.replace(/"/g, '""')}"`).join(',');
+    }).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `KGC_Payroll_${detailedSubTab}_${months[selectedMonth]}_${selectedYear}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const relevantPayroll = currentUser?.role === 'Faculty' ? payroll.filter(p => p.employeeId === currentUser.linkedId) : payroll;
@@ -89,7 +118,43 @@ const Payroll = () => {
           onClick={() => setActiveTab('leaves')}
           style={{ background: 'none', border: 'none', color: activeTab === 'leaves' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: activeTab === 'leaves' ? 600 : 500, cursor: 'pointer', padding: '0.5rem 1rem' }}
         ><Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }}/> Leave Management</button>
+
+        <button 
+          onClick={() => setActiveTab('detailed')}
+          style={{ background: 'none', border: 'none', color: activeTab === 'detailed' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: activeTab === 'detailed' ? 600 : 500, cursor: 'pointer', padding: '0.5rem 1rem' }}
+        ><FileText size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }}/> College Detailed Reports</button>
       </div>
+
+      {activeTab === 'detailed' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--surface)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={{ padding: '0.5rem', borderRadius: '0.25rem', background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+              {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+            </select>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} style={{ padding: '0.5rem', borderRadius: '0.25rem', background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <div style={{ flex: 1 }}></div>
+            <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-base)', padding: '0.25rem', borderRadius: '0.4rem' }}>
+              <button onClick={() => setDetailedSubTab('register')} style={{ padding: '0.4rem 0.8rem', borderRadius: '0.25rem', border: 'none', background: detailedSubTab === 'register' ? 'var(--primary)' : 'transparent', color: detailedSubTab === 'register' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem' }}>Salary Register</button>
+              <button onClick={() => setDetailedSubTab('attendance')} style={{ padding: '0.4rem 0.8rem', borderRadius: '0.25rem', border: 'none', background: detailedSubTab === 'attendance' ? 'var(--primary)' : 'transparent', color: detailedSubTab === 'attendance' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem' }}>Attendance Sheet</button>
+              <button onClick={() => setDetailedSubTab('bank')} style={{ padding: '0.4rem 0.8rem', borderRadius: '0.25rem', border: 'none', background: detailedSubTab === 'bank' ? 'var(--primary)' : 'transparent', color: detailedSubTab === 'bank' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem' }}>Bank Payment</button>
+            </div>
+            <button onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.4rem', border: 'none', background: '#2c3e50', color: 'white', cursor: 'pointer', fontWeight: 600 }}>
+              <Download size={16} /> Print / PDF
+            </button>
+            <button onClick={downloadCSV} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.4rem', border: 'none', background: '#27ae60', color: 'white', cursor: 'pointer', fontWeight: 600 }}>
+              <FileText size={16} /> Excel / CSV
+            </button>
+          </div>
+
+          <Card style={{ padding: '2rem', minHeight: '800px', background: 'white', color: '#000' }}>
+            {detailedSubTab === 'register' && <SalaryRegisterTab selectedMonth={selectedMonth} selectedYear={selectedYear} />}
+            {detailedSubTab === 'attendance' && <AttendanceSheetTab selectedMonth={selectedMonth} selectedYear={selectedYear} />}
+            {detailedSubTab === 'bank' && <BankPaymentTab selectedMonth={selectedMonth} selectedYear={selectedYear} />}
+          </Card>
+        </div>
+      )}
 
       {activeTab === 'salary' && (
         <Card style={{ padding: '1.5rem' }}>

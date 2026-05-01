@@ -1,0 +1,42 @@
+/* Salary Slip Print Styles */
+@media print {
+  body * { visibility: hidden !important; }
+  .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
+  .salaryPrintArea { position: fixed; left: 0; top: 0; width: 100%; background: white; z-index: 99999; }
+  .noPrint { display: none !important; }
+}
+
+.salaryPrintArea {
+  background: white;
+  color: #000;
+  font-family: 'Times New Roman', serif;
+}
+
+.slipTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+.slipTable th, .slipTable td {
+  border: 1px solid #333;
+  padding: 3px 5px;
+  text-align: center;
+  white-space: nowrap;
+}
+.slipTable th {
+  background: #e8e8e8;
+  font-weight: 700;
+  font-size: 0.68rem;
+}
+.slipTable .nameCol { text-align: left; }
+.slipTable .totalRow td { font-weight: 700; background: #f0f0f0; }
+
+.attGrid th { writing-mode: vertical-lr; transform: rotate(180deg); height: 60px; font-size: 0.65rem; }
+.attCell { width: 20px; min-width: 20px; max-width: 20px; cursor: pointer; }
+.attP  { background: #d4edda; color: #155724; }
+.attA  { background: #f8d7da; color: #721c24; }
+.attSUN { background: #fff3cd; color: #856404; }
+.attCL { background: #cce5ff; color: #004085; }
+.attH  { background: #e2e3e5; color: #383d41; }
+.attOT { background: #d1ecf1; color: #0c5460; }
+.attEmpty { background: #f8f9fa; color: #adb5bd; }
