@@ -91,9 +91,11 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     // Fooding is now a direct amount, no calculation
     const fooding = record.fooding || 0;
     const advance = record.advance || 0;
+    const prevLeaveUse = record.prevLeaveUse || 0;
     const total = fooding + advance;
     const netPayment = amount - total;
-    return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, total, netPayment, record };
+    const leaveBalance = 21 - prevLeaveUse - (cl || 0);
+    return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, prevLeaveUse, total, netPayment, leaveBalance, record };
   };
 
   const totals = useMemo(() => {
@@ -162,7 +164,8 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <th className={styles.verticalHeader}>TOTAL</th>
               <th style={{ minWidth: '90px' }}>NET PAYMENT</th>
               <th className={styles.verticalHeader}>TOTAL CL</th>
-              <th className={styles.verticalHeader}>LEAVE THIS MONTH</th>
+              <th className={styles.verticalHeader}>TOTAL LEAVE USE</th>
+              <th className={styles.verticalHeader}>THIS MONTH</th>
               <th className={styles.verticalHeader}>LEAVE BALANCE</th>
             </tr>
           </thead>
@@ -220,8 +223,12 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
 
                   {/* CL columns */}
                   <td>21</td>
-                  <td>{calc.cl || ''}</td>
-                  <td style={{ fontWeight: 600 }}>{21 - (calc.cl || 0)}</td>
+                  <td>
+                    <input type="number" value={calc.prevLeaveUse || ''} onChange={e => updatePayrollField(s.id, 'prevLeaveUse', e.target.value)}
+                      style={{ ...cellInput, textAlign: 'center', width: '50px' }} placeholder="0" />
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{calc.cl || ''}</td>
+                  <td style={{ fontWeight: 700, color: calc.leaveBalance < 0 ? '#ef4444' : '#10b981' }}>{calc.leaveBalance}</td>
                 </tr>
               );
             })}
@@ -234,7 +241,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.advance)}</td>
               <td style={{ fontWeight: 700, color: '#ef4444' }}>{formatCurrency(totals.total)}</td>
               <td style={{ fontWeight: 800, color: '#1d4ed8', fontSize: '0.85rem' }}>{formatCurrency(totals.netPayment)}</td>
-              <td colSpan="3" style={{ border: 'none' }}></td>
+              <td colSpan="4" style={{ border: 'none' }}></td>
             </tr>
           </tbody>
         </table>
