@@ -18,7 +18,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
   };
 
   const formatCurrency = (val) => {
-    if (!val) return '';
+    if (!val && val !== 0) return '';
     return '₹ ' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
@@ -84,10 +84,10 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     const record = payroll.find(p => p.employeeId === staffMember.id && p.month === monthKey) || {};
     const fooding = record.fooding || 0;
     const advance = record.advance || 0;
-    const total = fooding + advance;
-    const netPayment = amount - total;
+    const totalDeductions = fooding + advance;
+    const netPayment = amount - totalDeductions;
 
-    return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, total, netPayment, record };
+    return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, totalDeductions, netPayment, record };
   };
 
   const totals = useMemo(() => {
@@ -96,44 +96,33 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
       acc.amount += calc.amount;
       acc.fooding += calc.fooding;
       acc.advance += calc.advance;
-      acc.total += calc.total;
+      acc.totalDeductions += calc.totalDeductions;
       acc.netPayment += calc.netPayment;
       return acc;
-    }, { amount: 0, fooding: 0, advance: 0, total: 0, netPayment: 0 });
+    }, { amount: 0, fooding: 0, advance: 0, totalDeductions: 0, netPayment: 0 });
   }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
 
   return (
-    <div className={styles.salaryPrintArea}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem', borderBottom: '2px solid #000', paddingBottom: '5px' }}>
-        <h1 className={styles.headerTitle} style={{ margin: 0, fontSize: '1.8rem' }}>KASHIBAI GANPAT COLLEGE</h1>
-        <h3 style={{ margin: '5px 0', fontSize: '1rem', fontWeight: 'bold' }}>
-          SALARY SLIP FOR THE MONTH OF {monthName.toUpperCase()} {selectedYear}
-        </h3>
+    <div className={styles.reportContainer}>
+      <div className={styles.reportHeader}>
+        <h2 className={styles.reportTitle}>Salary Register</h2>
+        <p className={styles.reportSubtitle}>{monthName} {selectedYear} • Editable Payroll Data</p>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table className={styles.slipTable}>
+      <div className={styles.tableWrapper}>
+        <table className={styles.modernTable}>
           <thead>
             <tr>
-              <th style={{ width: '40px' }}>S.NO</th>
-              <th className={styles.nameCol} style={{ width: '200px' }}>NAME</th>
-              <th style={{ width: '150px' }}>DESIGNATION</th>
-              <th className={styles.verticalHeader}>BASIC E SALARY</th>
-              <th className={styles.verticalHeader}>TOTAL SUNDAY</th>
-              <th className={styles.verticalHeader}>HOLIDAY</th>
-              <th className={styles.verticalHeader}>ABSENT</th>
-              <th className={styles.verticalHeader}>WORKING</th>
-              <th className={styles.verticalHeader}>C L</th>
-              <th className={styles.verticalHeader}>WORKING DAY WITH<br/>HOLIDAY</th>
-              <th style={{ minWidth: '100px' }}>AMOUNT</th>
-              <th className={styles.verticalHeader}>FOODING</th>
-              <th className={styles.verticalHeader}>ADVANCE</th>
-              <th className={styles.verticalHeader}>TOTAL</th>
-              <th className={styles.verticalHeader} style={{ minWidth: '80px' }}>NET PAYMENT</th>
-              <th className={styles.verticalHeader}>TOTAL CASUAL</th>
-              <th className={styles.verticalHeader}>TOTAL<br/>LEAVE USE</th>
-              <th className={styles.verticalHeader}>THIS MONTH</th>
-              <th className={styles.verticalHeader}>LEAVE BALANCE</th>
+              <th style={{ width: '40px' }}>No.</th>
+              <th style={{ width: '220px' }}>Employee</th>
+              <th style={{ width: '130px' }}>Designation</th>
+              <th style={{ textAlign: 'right', width: '110px' }}>Base Salary</th>
+              <th className={styles.calcCell} style={{ textAlign: 'center' }}>Total Days</th>
+              <th className={styles.calcCell} style={{ textAlign: 'right', width: '110px' }}>Gross Amount</th>
+              <th style={{ textAlign: 'center', width: '120px' }}>Fooding (D/R)</th>
+              <th style={{ textAlign: 'right', width: '100px' }}>Advance</th>
+              <th className={styles.calcCell} style={{ textAlign: 'right', width: '110px' }}>Total Ded.</th>
+              <th className={styles.netPayCell} style={{ textAlign: 'right', width: '130px' }}>Net Payment</th>
             </tr>
           </thead>
           <tbody>
@@ -141,87 +130,90 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               const calc = calculateSalary(s);
               return (
                 <tr key={s.id}>
-                  <td>{index + 1}</td>
-                  <td className={styles.nameCol}>
-                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', fontWeight: 'bold', width: '100%', fontSize: '0.65rem' }} />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
+                  <td style={{ color: '#64748b', fontWeight: 500 }}>{index + 1}</td>
+                  <td>
+                    <input 
+                      type="text" 
+                      value={s.name} 
+                      onChange={e => updateProfile(s.id, 'name', e.target.value)} 
+                      className={styles.editInput} 
+                      style={{ fontWeight: 600 }} 
+                      placeholder="Name" 
+                    />
                   </td>
                   <td>
-                    <input type="text" value={s.role || s.designation || 'Staff'} onChange={e => updateProfile(s.id, 'role', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem', fontWeight: 'bold' }} />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</span>
+                    <input 
+                      type="text" 
+                      value={s.role || s.designation || 'Staff'} 
+                      onChange={e => updateProfile(s.id, 'role', e.target.value)} 
+                      className={styles.editInput} 
+                      style={{ fontSize: '0.85rem' }} 
+                      placeholder="Role" 
+                    />
                   </td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className={styles.noPrint}>₹</span>
-                      <input type="number" value={s.baseSalary || s.salary || 0} onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '60px', textAlign: 'center', fontSize: '0.65rem' }} />
-                      <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.basicSalary)}</span>
+                    <input 
+                      type="number" 
+                      value={s.baseSalary || s.salary || ''} 
+                      onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)} 
+                      className={`${styles.editInput} ${styles.currency}`} 
+                      placeholder="0" 
+                    />
+                  </td>
+                  <td className={styles.calcCell} style={{ textAlign: 'center' }}>
+                    <span title={`Working: ${calc.working}, Sun: ${calc.sundays}, Hol: ${calc.holiday}, CL: ${calc.cl}, OT: ${calc.ot}`}>
+                      {calc.workingDaysWithHoliday} / {daysInMonth}
+                    </span>
+                  </td>
+                  <td className={styles.calcCell} style={{ textAlign: 'right' }}>{formatCurrency(calc.amount)}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <input 
+                        type="number" 
+                        placeholder="Days" 
+                        value={calc.record.foodingDays || ''} 
+                        onChange={e => updatePayrollField(s.id, 'foodingDays', e.target.value)} 
+                        className={styles.editInput} 
+                        style={{ textAlign: 'center' }} 
+                      />
+                      <span style={{ color: '#94a3b8' }}>×</span>
+                      <input 
+                        type="number" 
+                        placeholder="Rate" 
+                        value={calc.record.foodingRate || ''} 
+                        onChange={e => updatePayrollField(s.id, 'foodingRate', e.target.value)} 
+                        className={styles.editInput} 
+                        style={{ textAlign: 'center' }} 
+                      />
                     </div>
                   </td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.sundays || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.holiday || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.absent || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.working || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.cl || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.workingDaysWithHoliday || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{formatCurrency(calc.amount)}</td>
-                  <td className={styles.noPrint}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <input type="number" placeholder="Days" value={calc.record.foodingDays || ''} onChange={e => updatePayrollField(s.id, 'foodingDays', e.target.value)} style={{ width: '45px', fontSize: '0.65rem', padding: '2px' }} />
-                      <input type="number" placeholder="Rate" value={calc.record.foodingRate || ''} onChange={e => updatePayrollField(s.id, 'foodingRate', e.target.value)} style={{ width: '45px', fontSize: '0.65rem', padding: '2px' }} />
-                    </div>
-                  </td>
-                  <td className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.fooding)}</td>
                   <td>
-                    <input type="number" value={calc.record.advance || ''} onChange={e => updatePayrollField(s.id, 'advance', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '60px', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.advance)}</span>
+                    <input 
+                      type="number" 
+                      value={calc.record.advance || ''} 
+                      onChange={e => updatePayrollField(s.id, 'advance', e.target.value)} 
+                      className={`${styles.editInput} ${styles.currency}`} 
+                      placeholder="0" 
+                    />
                   </td>
-                  <td style={{ fontWeight: 'bold' }}>{formatCurrency(calc.total)}</td>
-                  <td style={{ fontWeight: 'bold' }}>{formatCurrency(calc.netPayment)}</td>
-                  <td>21</td>
-                  <td>{calc.cl || ''}</td>
-                  <td>{calc.cl || ''}</td>
-                  <td>{21 - (calc.cl || 0)}</td>
+                  <td className={styles.calcCell} style={{ textAlign: 'right', color: calc.totalDeductions > 0 ? '#dc2626' : 'inherit' }}>
+                    {calc.totalDeductions > 0 ? '-' : ''}{formatCurrency(calc.totalDeductions)}
+                  </td>
+                  <td className={styles.netPayCell} style={{ textAlign: 'right' }}>{formatCurrency(calc.netPayment)}</td>
                 </tr>
               );
             })}
-            <tr className={styles.totalRow} style={{ fontSize: '0.75rem' }}>
-              <td colSpan="10" style={{ border: 'none' }}></td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.amount)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.fooding)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.advance)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.total)}</td>
-              <td style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>{formatCurrency(totals.netPayment)}</td>
-              <td colSpan="4" style={{ border: 'none' }}></td>
+            <tr className={styles.totalRow}>
+              <td colSpan="5" style={{ textAlign: 'right', textTransform: 'uppercase', letterSpacing: '1px' }}>Organization Totals</td>
+              <td style={{ textAlign: 'right' }}>{formatCurrency(totals.amount)}</td>
+              <td style={{ textAlign: 'center' }}>{formatCurrency(totals.fooding)}</td>
+              <td style={{ textAlign: 'right' }}>{formatCurrency(totals.advance)}</td>
+              <td style={{ textAlign: 'right' }}>{formatCurrency(totals.totalDeductions)}</td>
+              <td className={styles.netPayCell} style={{ textAlign: 'right', fontSize: '1.1rem' }}>{formatCurrency(totals.netPayment)}</td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
-         <div style={{ border: '1px solid #000', padding: '5px 10px', fontSize: '0.9rem', width: '300px', textAlign: 'center' }}>
-            NET PAYMENT-  {totals.netPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-         </div>
-      </div>
-
-      <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', padding: '0 2rem' }}>
-        <div style={{ textAlign: 'left', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold' }}></p>
-        </div>
-        <div style={{ textAlign: 'center', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold', color: '#1e3a8a' }}>for</p>
-          <p style={{ margin: 0, fontWeight: 'bold', color: '#1e3a8a' }}>PRINCIPAL</p>
-          <p style={{ margin: 0, fontSize: '0.7rem', color: '#1e3a8a' }}>KASHIBAI GANPAT NURSING</p>
-          <p style={{ margin: 0, fontSize: '0.7rem', color: '#1e3a8a' }}>COLLEGE</p>
-        </div>
-        <div style={{ textAlign: 'right', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.8rem', color: '#1e3a8a' }}>KASHIBAI GANPAT COLLEGE</p>
-          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.8rem', color: '#1e3a8a' }}>OF PHARMACY</p>
-        </div>
-      </div>
-      <style>{`
-        @media screen { .print-only { display: none; } }
-        @media print { .print-only { display: inline; } .no-print { display: none !important; } }
-      `}</style>
     </div>
   );
 };

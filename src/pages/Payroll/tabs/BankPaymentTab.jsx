@@ -54,28 +54,24 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
   }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
 
   return (
-    <div className={styles.salaryPrintArea}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <h1 className={styles.headerTitle} style={{ margin: 0, fontSize: '1.8rem' }}>KASHIBAI GANPAT COLLEGE</h1>
-        <p style={{ margin: '5px 0', fontSize: '0.8rem', fontWeight: 'bold' }}>VILL - CHAKME, (THAKUR GAON) BURMU, RANCHI- 835205</p>
-        <p style={{ margin: '5px 0', fontSize: '0.8rem', fontWeight: 'bold' }}>
-          BANK DETAILS & PA . {monthName.toUpperCase()} {selectedYear}
-        </p>
+    <div className={styles.reportContainer}>
+      <div className={styles.reportHeader}>
+        <h2 className={styles.reportTitle}>Bank Disbursement File</h2>
+        <p className={styles.reportSubtitle}>{monthName} {selectedYear} • Account Details & Net Transfers</p>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table className={styles.slipTable}>
+      <div className={styles.tableWrapper}>
+        <table className={styles.modernTable}>
           <thead>
             <tr>
-              <th>Sl.No</th>
-              <th>STAFF NAME</th>
-              <th>BANK NAME</th>
-              <th>BRANCH NAME</th>
-              <th>ACCOUNT NUMBER</th>
-              <th>IFSC CODE</th>
-              <th>BANK HOLDER NAME</th>
-              <th>{monthName.toUpperCase()}</th>
-              <th>NET PAYMENT</th>
+              <th style={{ width: '40px' }}>No.</th>
+              <th style={{ width: '220px' }}>Employee</th>
+              <th style={{ width: '180px' }}>Bank Name</th>
+              <th style={{ width: '150px' }}>Branch</th>
+              <th style={{ width: '200px' }}>Account Number</th>
+              <th style={{ width: '150px' }}>IFSC Code</th>
+              <th style={{ width: '220px' }}>Account Holder Name</th>
+              <th className={styles.netPayCell} style={{ textAlign: 'right', width: '150px' }}>Transfer Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -83,61 +79,81 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
               const netPay = calculateNetPayment(s);
               return (
                 <tr key={s.id}>
-                  <td>{index + 1}</td>
-                  <td className={styles.nameCol}>
-                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', fontWeight: 'bold', width: '100%', fontSize: '0.65rem' }} />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
+                  <td style={{ color: '#64748b', fontWeight: 500 }}>{index + 1}</td>
+                  <td>
+                    <input 
+                      type="text" 
+                      value={s.name} 
+                      onChange={e => updateProfile(s.id, 'name', e.target.value)} 
+                      className={styles.editInput} 
+                      style={{ fontWeight: 600 }} 
+                      placeholder="Employee Name" 
+                    />
                   </td>
                   <td>
-                    <input type="text" value={s.bankName || ''} onChange={e => updateProfile(s.id, 'bankName', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only">{s.bankName || '-'}</span>
+                    <input 
+                      type="text" 
+                      value={s.bankName || ''} 
+                      onChange={e => updateProfile(s.id, 'bankName', e.target.value)} 
+                      className={styles.editInput} 
+                      placeholder="e.g. State Bank of India" 
+                    />
                   </td>
                   <td>
-                    <input type="text" value={s.bankBranch || ''} onChange={e => updateProfile(s.id, 'bankBranch', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only">{s.bankBranch || '-'}</span>
-                  </td>
-                  <td style={{ fontWeight: 'bold' }}>
-                    <input type="text" value={s.accountNumber || ''} onChange={e => updateProfile(s.id, 'accountNumber', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem', fontWeight: 'bold' }} />
-                    <span className="print-only">{s.accountNumber || '-'}</span>
-                  </td>
-                  <td style={{ fontWeight: 'bold' }}>
-                    <input type="text" value={s.ifscCode || ''} onChange={e => updateProfile(s.id, 'ifscCode', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem', fontWeight: 'bold' }} />
-                    <span className="print-only">{s.ifscCode || '-'}</span>
+                    <input 
+                      type="text" 
+                      value={s.bankBranch || ''} 
+                      onChange={e => updateProfile(s.id, 'bankBranch', e.target.value)} 
+                      className={styles.editInput} 
+                      placeholder="Branch City/Code" 
+                    />
                   </td>
                   <td>
-                    <input type="text" value={s.bankHolderName || s.name} onChange={e => updateProfile(s.id, 'bankHolderName', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only">{s.bankHolderName || s.name}</span>
+                    <input 
+                      type="text" 
+                      value={s.accountNumber || ''} 
+                      onChange={e => updateProfile(s.id, 'accountNumber', e.target.value)} 
+                      className={styles.editInput} 
+                      style={{ fontFamily: 'monospace', letterSpacing: '1px', fontWeight: 600 }} 
+                      placeholder="Account No." 
+                    />
                   </td>
-                  <td>{formatCurrency(netPay)}</td>
-                  <td>{formatCurrency(netPay)}</td>
+                  <td>
+                    <input 
+                      type="text" 
+                      value={s.ifscCode || ''} 
+                      onChange={e => updateProfile(s.id, 'ifscCode', e.target.value)} 
+                      className={styles.editInput} 
+                      style={{ textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 600 }} 
+                      placeholder="IFSC" 
+                    />
+                  </td>
+                  <td>
+                    <input 
+                      type="text" 
+                      value={s.bankHolderName || s.name} 
+                      onChange={e => updateProfile(s.id, 'bankHolderName', e.target.value)} 
+                      className={styles.editInput} 
+                      placeholder="Account Holder" 
+                    />
+                  </td>
+                  <td className={styles.netPayCell} style={{ textAlign: 'right' }}>
+                    {formatCurrency(netPay)}
+                  </td>
                 </tr>
               );
             })}
             <tr className={styles.totalRow}>
-              <td colSpan="7" style={{ textAlign: 'right', paddingRight: '2rem' }}>TOTAL AMOUNT</td>
-              <td>{formatCurrency(totalAmount)}</td>
-              <td>{formatCurrency(totalAmount)}</td>
+              <td colSpan="7" style={{ textAlign: 'right', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Disbursement Amount</td>
+              <td className={styles.netPayCell} style={{ textAlign: 'right', fontSize: '1.2rem' }}>{formatCurrency(totalAmount)}</td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <div style={{ marginTop: '5rem', display: 'flex', justifyContent: 'space-between', padding: '0 2rem' }}>
-        <div style={{ textAlign: 'left', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold' }}></p>
-        </div>
-        <div style={{ textAlign: 'center', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold' }}>for</p>
-        </div>
-        <div style={{ textAlign: 'center', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold', textTransform: 'uppercase' }}>KASHIBAI GANPAT COLLEGE</p>
-          <p style={{ margin: 0, fontWeight: 'bold', textTransform: 'uppercase' }}>OF PHARMACY</p>
-        </div>
+      
+      <div className={styles.noPrint} style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', color: '#64748b', fontSize: '0.85rem' }}>
+        <p style={{ margin: 0 }}>Tip: Ensure IFSC codes and Account Numbers are correct before generating the final bank transfer file.</p>
       </div>
-      <style>{`
-        @media screen { .print-only { display: none; } }
-        @media print { .print-only { display: inline; } .no-print { display: none !important; } }
-      `}</style>
     </div>
   );
 };
