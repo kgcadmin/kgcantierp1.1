@@ -2,6 +2,18 @@ import React, { useContext, useMemo } from 'react';
 import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
+const cellInput = {
+  border: '1px solid #e2e8f0',
+  borderRadius: '4px',
+  padding: '3px 6px',
+  background: '#ffffff',
+  color: '#0f172a',
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  width: '100%',
+  boxSizing: 'border-box',
+};
+
 const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
   const { faculty, staff, staffAttendance, calendar, payroll, setPayroll, syncToVPS, editFaculty, editStaff } = useContext(AppContext);
   
@@ -163,44 +175,18 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
 
                   {/* Name */}
                   <td className={styles.nameCol}>
-                    <input
-                      type="text"
-                      value={s.name}
-                      onChange={e => updateProfile(s.id, 'name', e.target.value)}
-                      style={{ ...inputStyle, fontWeight: 600 }}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                      className={styles.noPrint}
-                    />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
+                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)}
+                      style={{ ...cellInput, fontWeight: 700 }} />
                   </td>
 
-                  {/* Designation */}
                   <td>
-                    <input
-                      type="text"
-                      value={s.role || s.designation || 'Staff'}
-                      onChange={e => updateProfile(s.id, 'role', e.target.value)}
-                      style={{ ...inputStyle, textAlign: 'center' }}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                      className={styles.noPrint}
-                    />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</span>
+                    <input type="text" value={s.role || s.designation || 'Staff'} onChange={e => updateProfile(s.id, 'role', e.target.value)}
+                      style={{ ...cellInput, textAlign: 'center' }} />
                   </td>
 
-                  {/* Basic Salary */}
                   <td>
-                    <input
-                      type="number"
-                      value={s.baseSalary || s.salary || 0}
-                      onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)}
-                      style={{ ...inputStyle, textAlign: 'right', width: '80px' }}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                      className={styles.noPrint}
-                    />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.basicSalary)}</span>
+                    <input type="number" value={s.baseSalary || s.salary || 0} onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)}
+                      style={{ ...cellInput, textAlign: 'right', width: '80px' }} />
                   </td>
 
                   {/* Auto-calculated attendance columns */}
@@ -214,34 +200,16 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
                   {/* Gross Amount */}
                   <td style={{ fontWeight: 700, background: '#f8fafc' }}>{formatCurrency(calc.amount)}</td>
 
-                  {/* Fooding — simple direct amount input */}
+                  {/* Fooding — direct amount input */}
                   <td>
-                    <input
-                      type="number"
-                      value={calc.record.fooding ?? ''}
-                      onChange={e => updatePayrollField(s.id, 'fooding', e.target.value)}
-                      style={{ ...inputStyle, textAlign: 'right', width: '80px' }}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                      placeholder="0"
-                      className={styles.noPrint}
-                    />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.fooding)}</span>
+                    <input type="number" value={calc.record.fooding ?? ''} onChange={e => updatePayrollField(s.id, 'fooding', e.target.value)}
+                      style={{ ...cellInput, textAlign: 'right', width: '80px' }} placeholder="0" />
                   </td>
 
                   {/* Advance */}
                   <td>
-                    <input
-                      type="number"
-                      value={calc.record.advance ?? ''}
-                      onChange={e => updatePayrollField(s.id, 'advance', e.target.value)}
-                      style={{ ...inputStyle, textAlign: 'right', width: '80px' }}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                      placeholder="0"
-                      className={styles.noPrint}
-                    />
-                    <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.advance)}</span>
+                    <input type="number" value={calc.record.advance ?? ''} onChange={e => updatePayrollField(s.id, 'advance', e.target.value)}
+                      style={{ ...cellInput, textAlign: 'right', width: '80px' }} placeholder="0" />
                   </td>
 
                   {/* Total deductions */}
