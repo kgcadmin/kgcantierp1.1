@@ -45,18 +45,22 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
     return amount - deductions;
   };
 
+  const formatCurrency = (val) => {
+    return '₹ ' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const totalAmount = useMemo(() => {
     return allStaff.reduce((sum, s) => sum + calculateNetPayment(s), 0);
   }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
 
   return (
     <div className={styles.salaryPrintArea}>
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>KASHIBAI GANPAT COLLEGE</h2>
-        <p style={{ margin: 0, fontSize: '0.85rem' }}>VILL - CHAKME, [THAKUR GAON] BURMU, RANCHI-835205</p>
-        <h3 style={{ margin: '0.5rem 0', fontSize: '1rem', textDecoration: 'underline' }}>
-          BANK DETAILS & PA. {monthName.toUpperCase()} {selectedYear}
-        </h3>
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <h1 className={styles.headerTitle} style={{ margin: 0, fontSize: '1.8rem' }}>KASHIBAI GANPAT COLLEGE</h1>
+        <p style={{ margin: '5px 0', fontSize: '0.8rem', fontWeight: 'bold' }}>VILL - CHAKME, (THAKUR GAON) BURMU, RANCHI- 835205</p>
+        <p style={{ margin: '5px 0', fontSize: '0.8rem', fontWeight: 'bold' }}>
+          BANK DETAILS & PA . {monthName.toUpperCase()} {selectedYear}
+        </p>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -64,12 +68,13 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
           <thead>
             <tr>
               <th>Sl.No</th>
-              <th className={styles.nameCol}>STAFF NAME</th>
+              <th>STAFF NAME</th>
               <th>BANK NAME</th>
               <th>BRANCH NAME</th>
               <th>ACCOUNT NUMBER</th>
               <th>IFSC CODE</th>
               <th>BANK HOLDER NAME</th>
+              <th>{monthName.toUpperCase()}</th>
               <th>NET PAYMENT</th>
             </tr>
           </thead>
@@ -80,53 +85,53 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
                 <tr key={s.id}>
                   <td>{index + 1}</td>
                   <td className={styles.nameCol}>
-                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', fontWeight: 600, width: '100%', fontSize: '0.75rem' }} />
-                    <span className="print-only" style={{ fontWeight: 600 }}>{s.name}</span>
+                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)} className={styles.noPrint} style={{ border: 'none', background: 'transparent', fontWeight: 'bold', width: '100%', fontSize: '0.65rem' }} />
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
                   </td>
                   <td>
-                    <input type="text" value={s.bankName || ''} onChange={e => updateProfile(s.id, 'bankName', e.target.value)} placeholder="Enter Bank" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only">{s.bankName}</span>
+                    <input type="text" value={s.bankName || ''} onChange={e => updateProfile(s.id, 'bankName', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
+                    <span className="print-only">{s.bankName || '-'}</span>
                   </td>
                   <td>
-                    <input type="text" value={s.bankBranch || ''} onChange={e => updateProfile(s.id, 'bankBranch', e.target.value)} placeholder="Enter Branch" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only">{s.bankBranch}</span>
+                    <input type="text" value={s.bankBranch || ''} onChange={e => updateProfile(s.id, 'bankBranch', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
+                    <span className="print-only">{s.bankBranch || '-'}</span>
+                  </td>
+                  <td style={{ fontWeight: 'bold' }}>
+                    <input type="text" value={s.accountNumber || ''} onChange={e => updateProfile(s.id, 'accountNumber', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem', fontWeight: 'bold' }} />
+                    <span className="print-only">{s.accountNumber || '-'}</span>
+                  </td>
+                  <td style={{ fontWeight: 'bold' }}>
+                    <input type="text" value={s.ifscCode || ''} onChange={e => updateProfile(s.id, 'ifscCode', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem', fontWeight: 'bold' }} />
+                    <span className="print-only">{s.ifscCode || '-'}</span>
                   </td>
                   <td>
-                    <input type="text" value={s.accountNumber || ''} onChange={e => updateProfile(s.id, 'accountNumber', e.target.value)} placeholder="Account No" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.75rem', letterSpacing: '0.5px' }} />
-                    <span className="print-only">{s.accountNumber}</span>
-                  </td>
-                  <td>
-                    <input type="text" value={s.ifscCode || ''} onChange={e => updateProfile(s.id, 'ifscCode', e.target.value)} placeholder="IFSC" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
-                    <span className="print-only">{s.ifscCode}</span>
-                  </td>
-                  <td>
-                    <input type="text" value={s.bankHolderName || s.name} onChange={e => updateProfile(s.id, 'bankHolderName', e.target.value)} placeholder="Holder Name" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.7rem' }} />
+                    <input type="text" value={s.bankHolderName || s.name} onChange={e => updateProfile(s.id, 'bankHolderName', e.target.value)} placeholder="-" className={styles.noPrint} style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }} />
                     <span className="print-only">{s.bankHolderName || s.name}</span>
                   </td>
-                  <td style={{ fontWeight: 700 }}>₹{netPay.toLocaleString()}</td>
+                  <td>{formatCurrency(netPay)}</td>
+                  <td>{formatCurrency(netPay)}</td>
                 </tr>
               );
             })}
             <tr className={styles.totalRow}>
-              <td colSpan="7" style={{ textAlign: 'right', paddingRight: '1rem', fontWeight: 800 }}>TOTAL AMOUNT TO BE DISBURSED</td>
-              <td style={{ fontSize: '1.1rem' }}>₹{totalAmount.toLocaleString()}</td>
+              <td colSpan="7" style={{ textAlign: 'right', paddingRight: '2rem' }}>TOTAL AMOUNT</td>
+              <td>{formatCurrency(totalAmount)}</td>
+              <td>{formatCurrency(totalAmount)}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', padding: '0 2rem' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ height: '40px' }}></div>
-          <p style={{ borderTop: '1px solid #000', width: '150px', paddingTop: '0.5rem', fontWeight: 700 }}>Checked By</p>
+      <div style={{ marginTop: '5rem', display: 'flex', justifyContent: 'space-between', padding: '0 2rem' }}>
+        <div style={{ textAlign: 'left', minWidth: '200px' }}>
+          <p style={{ margin: 0, fontWeight: 'bold' }}></p>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ height: '40px' }}></div>
-          <p style={{ borderTop: '1px solid #000', width: '150px', paddingTop: '0.5rem', fontWeight: 700 }}>Principal</p>
+        <div style={{ textAlign: 'center', minWidth: '200px' }}>
+          <p style={{ margin: 0, fontWeight: 'bold' }}>for</p>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ height: '40px' }}></div>
-          <p style={{ borderTop: '1px solid #000', width: '150px', paddingTop: '0.5rem', fontWeight: 700 }}>Managing Director</p>
+        <div style={{ textAlign: 'center', minWidth: '200px' }}>
+          <p style={{ margin: 0, fontWeight: 'bold', textTransform: 'uppercase' }}>KASHIBAI GANPAT COLLEGE</p>
+          <p style={{ margin: 0, fontWeight: 'bold', textTransform: 'uppercase' }}>OF PHARMACY</p>
         </div>
       </div>
       <style>{`

@@ -39,12 +39,12 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
     const holiday = calendar.find(c => c.date === dateStr && (c.type === 'Holiday' || c.category === 'Holiday'));
     if (holiday) return 'H';
 
-    return ''; 
+    return 'P'; // Defaulting to P to match typical excel usage where it's pre-filled
   };
 
   const handleCellClick = (member, day) => {
     const currentStatus = getStatus(member.id, day);
-    const statuses = ['', 'P', 'A', 'CL', 'OT', 'H', 'SUN'];
+    const statuses = ['P', 'A', 'CL', 'OT', 'H', 'SUN', ''];
     let nextIndex = (statuses.indexOf(currentStatus) + 1) % statuses.length;
     const nextStatus = statuses[nextIndex];
     
@@ -74,38 +74,36 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
   };
 
   return (
-    <div className={styles.salaryPrintArea}>
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>KASHIBAI GANPAT COLLEGE</h2>
-        <h3 style={{ margin: '0.2rem 0', fontSize: '1.1rem', textDecoration: 'underline' }}>
-          ATTENDANCE SHEET {monthName.toUpperCase()} {selectedYear}
-        </h3>
-        <p style={{ margin: '0.2rem 0', fontSize: '0.85rem', fontWeight: 600 }}>
-          01-{monthName.toUpperCase()} TO {daysInMonth}-{monthName.toUpperCase()} STAFF ATTENDANCE REGISTER-{selectedYear}
-        </p>
+    <div className={styles.salaryPrintArea} style={{ fontFamily: 'Arial, sans-serif' }}>
+      <div style={{ textAlign: 'center', backgroundColor: '#3b3b4f', color: '#fff', padding: '5px' }}>
+        <h2 style={{ margin: 0, fontSize: '1rem', letterSpacing: '1px' }}>ATTENDANCE SHEET {monthName.toUpperCase()} {selectedYear}</h2>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#f4f4f4', border: '1px solid #000', padding: '2px 10px', fontSize: '0.7rem', fontWeight: 'bold' }}>
+        <div>MONTH :- {monthName.toUpperCase()}</div>
+        <div>01-{monthName.toUpperCase()} TO {daysInMonth}-{monthName.toUpperCase()}</div>
+        <div>STAFF ATTENDANCE REGESTER-{selectedYear}</div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', marginTop: '5px' }}>
         <table className={styles.slipTable}>
-          <thead className={styles.attGrid}>
+          <thead>
             <tr>
-              <th rowSpan="2" className={styles.nameCol} style={{ width: '180px' }}>NAME</th>
-              <th rowSpan="2" style={{ width: '120px' }}>DESIGNATION</th>
+              <th rowSpan="2" style={{ backgroundColor: '#fff2cc', width: '150px' }}>NAME</th>
+              <th rowSpan="2" style={{ backgroundColor: '#fff2cc', width: '100px' }}>DESIGNATION</th>
               {dates.map(d => (
-                <th key={d} className={styles.attCell}>{getDayName(d)}</th>
+                <th key={d} style={{ backgroundColor: '#e53935', color: '#fff', width: '22px' }}>{d}</th>
               ))}
-              <th colSpan="6" style={{ background: '#eee' }}>SUMMARY</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#f06292', color: '#fff' }}>Summer vacation</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#7b1fa2', color: '#fff' }}>Absent</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#d32f2f', color: '#fff' }}>Sunday / HOLIDAY</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#c2185b', color: '#fff' }}>CL</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#1976d2', color: '#fff' }}>Present</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#c2185b', color: '#fff' }}>Holiday / Present</th>
             </tr>
             <tr>
               {dates.map(d => (
-                <th key={d} className={styles.attCell}>{d}</th>
+                <th key={d} style={{ backgroundColor: '#e53935', color: '#fff', fontSize: '0.55rem', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{getDayName(d)}</th>
               ))}
-              <th style={{ background: '#f8d7da', width: '30px' }}>A</th>
-              <th style={{ background: '#fff3cd', width: '30px' }}>SUN</th>
-              <th style={{ background: '#cce5ff', width: '30px' }}>CL</th>
-              <th style={{ background: '#d4edda', width: '30px' }}>P</th>
-              <th style={{ background: '#e2e3e5', width: '30px' }}>H/P</th>
-              <th style={{ background: '#ccc', width: '40px' }}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -119,9 +117,9 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
                       value={s.name} 
                       onChange={(e) => updateProfile(s.id, 'name', e.target.value)}
                       className={styles.noPrint}
-                      style={{ border: 'none', background: 'transparent', fontWeight: 600, width: '100%', fontSize: '0.75rem' }}
+                      style={{ border: 'none', background: 'transparent', fontWeight: 'bold', width: '100%', fontSize: '0.65rem' }}
                     />
-                    <span className="print-only" style={{ fontWeight: 600 }}>{s.name}</span>
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
                   </td>
                   <td>
                     <input 
@@ -129,9 +127,9 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
                       value={s.role || s.designation || 'Staff'} 
                       onChange={(e) => updateProfile(s.id, 'role', e.target.value)}
                       className={styles.noPrint}
-                      style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem' }}
+                      style={{ border: 'none', background: 'transparent', width: '100%', textAlign: 'center', fontSize: '0.65rem', fontWeight: 'bold' }}
                     />
-                    <span className="print-only">{(s.role || s.designation || 'Staff').toUpperCase()}</span>
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</span>
                   </td>
                   {dates.map(d => {
                     const status = getStatus(s.id, d);
@@ -140,18 +138,18 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
                         key={d} 
                         onClick={() => handleCellClick(s, d)}
                         className={`${styles.attCell} ${styles['att' + status] || ''}`}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', border: '1px solid #ccc' }}
                       >
                         {status === 'SUN' ? 'SUN' : status === 'OT' ? 'OT' : status}
                       </td>
                     );
                   })}
-                  <td style={{ background: '#f8d7da', fontWeight: 700 }}>{counts.A || ''}</td>
-                  <td style={{ background: '#fff3cd', fontWeight: 700 }}>{counts.SUN || ''}</td>
-                  <td style={{ background: '#cce5ff', fontWeight: 700 }}>{counts.CL || ''}</td>
-                  <td style={{ background: '#d4edda', fontWeight: 700 }}>{counts.P || ''}</td>
-                  <td style={{ background: '#e2e3e5', fontWeight: 700 }}>{counts.H || ''}</td>
-                  <td style={{ background: '#eee', fontWeight: 800 }}>{counts.TotalPresent}</td>
+                  <td style={{ backgroundColor: '#e1bee7', fontWeight: 'bold', color: '#000' }}>0</td>
+                  <td style={{ backgroundColor: '#f8bbd0', fontWeight: 'bold', color: '#000' }}>{counts.A}</td>
+                  <td style={{ backgroundColor: '#ffcdd2', fontWeight: 'bold', color: '#000' }}>{counts.SUN + counts.H}</td>
+                  <td style={{ backgroundColor: '#f8bbd0', fontWeight: 'bold', color: '#000' }}>{counts.CL}</td>
+                  <td style={{ backgroundColor: '#bbdefb', fontWeight: 'bold', color: '#000' }}>{counts.P}</td>
+                  <td style={{ backgroundColor: '#283593', fontWeight: 'bold', color: '#fff' }}>{counts.TotalPresent}</td>
                 </tr>
               );
             })}
@@ -159,24 +157,52 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
         </table>
       </div>
 
-      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-        <div style={{ textAlign: 'center' }}>
-           <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '30px' }}></div>
-           <p style={{ margin: 0, fontWeight: 700 }}>Checked By</p>
+      <div style={{ marginTop: '1rem', width: '400px' }}>
+        <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', fontWeight: 'bold' }}>NOTE:-</p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem', border: '1px solid #000' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '100px', textAlign: 'center', padding: '4px', border: '1px solid #000' }}>P</td>
+              <td style={{ padding: '4px 10px', border: '1px solid #000', backgroundColor: '#e3f2fd' }}>PRESENT</td>
+            </tr>
+            <tr>
+              <td className={styles.attA} style={{ textAlign: 'center', padding: '4px', border: '1px solid #000' }}>A</td>
+              <td style={{ padding: '4px 10px', border: '1px solid #000', backgroundColor: '#e3f2fd' }}>ABSENT</td>
+            </tr>
+            <tr>
+              <td className={styles.attSUN} style={{ textAlign: 'center', padding: '4px', border: '1px solid #000' }}>SUN</td>
+              <td style={{ padding: '4px 10px', border: '1px solid #000', backgroundColor: '#ffcdd2' }}>SUNDAY / HOLIDAY</td>
+            </tr>
+            <tr>
+              <td className={styles.attCL} style={{ textAlign: 'center', padding: '4px', border: '1px solid #000' }}>CL</td>
+              <td style={{ padding: '4px 10px', border: '1px solid #000', backgroundColor: '#c8e6c9' }}>CASUAL LEAVE</td>
+            </tr>
+            <tr>
+              <td className={styles.attH} style={{ textAlign: 'center', padding: '4px', border: '1px solid #000' }}>HOLIDAY</td>
+              <td style={{ padding: '4px 10px', border: '1px solid #000', backgroundColor: '#283593' }}></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', padding: '0 2rem' }}>
+        <div style={{ textAlign: 'left', minWidth: '200px' }}>
+          <p style={{ margin: 0, fontWeight: 'bold' }}></p>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ margin: 0 }}>For</p>
-          <p style={{ margin: 0, fontWeight: 800 }}>PRINCIPAL</p>
-          <p style={{ margin: 0, fontSize: '0.75rem' }}>KASHIBAI GANPAT NURSING COLLEGE</p>
+        <div style={{ textAlign: 'center', minWidth: '200px' }}>
+          <p style={{ margin: 0, fontWeight: 'bold' }}>for</p>
+          <p style={{ margin: 0, fontWeight: 'bold', color: '#1e3a8a' }}>PRINCIPAL</p>
+          <p style={{ margin: 0, fontSize: '0.7rem', color: '#1e3a8a' }}>KASHIBAI GANPAT NURSING</p>
+          <p style={{ margin: 0, fontSize: '0.7rem', color: '#1e3a8a' }}>COLLEGE</p>
         </div>
-        <div style={{ textAlign: 'center' }}>
-           <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '30px' }}></div>
-           <p style={{ margin: 0, fontWeight: 700 }}>Managing Director</p>
+        <div style={{ textAlign: 'right', minWidth: '200px' }}>
+          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.8rem', color: '#1e3a8a' }}>KASHIBAI GANPAT COLLEGE</p>
+          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.8rem', color: '#1e3a8a' }}>OF PHARMACY</p>
         </div>
       </div>
       <style>{`
         @media screen { .print-only { display: none; } }
-        @media print { .print-only { display: block; } .no-print { display: none !important; } }
+        @media print { .print-only { display: inline; } .no-print { display: none !important; } }
       `}</style>
     </div>
   );
