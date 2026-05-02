@@ -97,7 +97,7 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
               {dates.map(d => (
                 <th key={d} style={{ background: '#1e293b', color: '#fff', width: '24px' }}>{d}</th>
               ))}
-              <th rowSpan="2" className={styles.verticalHeader} style={{ background: '#f1f5f9' }}>Summer Vacation</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ background: '#f1f5f9' }}>Vacation</th>
               <th rowSpan="2" className={styles.verticalHeader} style={{ background: '#fee2e2', color: '#991b1b' }}>Absent</th>
               <th rowSpan="2" className={styles.verticalHeader} style={{ background: '#ffedd5', color: '#9a3412' }}>Sunday / Holiday</th>
               <th rowSpan="2" className={styles.verticalHeader} style={{ background: '#dcfce7', color: '#166534' }}>CL</th>
