@@ -113,16 +113,21 @@
   transition: opacity 0.15s;
   user-select: none;
 }
-.attCell:hover { opacity: 0.75; }
+.attCell:hover { 
+  opacity: 0.9;
+  filter: brightness(0.9);
+  outline: 1px solid #3b82f6;
+  z-index: 10;
+}
 
-/* Attendance status colours */
-.attP   { background: #ffffff; color: #334155; }
-.attA   { background: #ef4444; color: #fff; }
-.attSUN { background: #f97316; color: #fff; }
-.attCL  { background: #10b981; color: #fff; }
-.attH   { background: #6366f1; color: #fff; }
-.attOT  { background: #eab308; color: #000; }
-.attEmpty { background: #ffffff; color: #000; }
+/* Attendance status colours — using !important to win over row hover styles */
+.attP     { background: #ffffff !important; color: #334155 !important; }
+.attA     { background: #ef4444 !important; color: #ffffff !important; font-weight: 700 !important; }
+.attSUN   { background: #f97316 !important; color: #ffffff !important; font-weight: 700 !important; }
+.attCL    { background: #10b981 !important; color: #ffffff !important; font-weight: 700 !important; }
+.attH     { background: #6366f1 !important; color: #ffffff !important; font-weight: 700 !important; }
+.attOT    { background: #eab308 !important; color: #000000 !important; font-weight: 700 !important; }
+.attEmpty { background: #ffffff !important; color: #000000 !important; }
 
 .headerTitle {
   font-family: 'Georgia', serif;
