@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
@@ -17,13 +17,22 @@ const cellInput = {
 
 const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
   const { faculty, staff, staffAttendance, calendar, payroll, setPayroll, syncToVPS, editFaculty, editStaff } = useContext(AppContext);
-  const [extraCols, setExtraCols] = useState(0);
-
-  const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
+  
   const monthName = useMemo(() =>
     new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' }),
     [selectedMonth, selectedYear]);
   const monthKey = `${monthName} ${selectedYear}`;
+
+  const [extraCols, setExtraCols] = useState(0);
+
+  // Sync extraCols with data: if someone has more columns than current state, update it.
+  useEffect(() => {
+    const monthlyPayroll = payroll.filter(p => p.month === monthKey);
+    const maxExtras = monthlyPayroll.reduce((max, p) => Math.max(max, (p.extraAmounts || []).length), 0);
+    if (maxExtras > extraCols) setExtraCols(maxExtras);
+  }, [payroll, monthKey]);
+
+  const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
 
   const daysInMonth = useMemo(() =>
     new Date(selectedYear, selectedMonth + 1, 0).getDate(),

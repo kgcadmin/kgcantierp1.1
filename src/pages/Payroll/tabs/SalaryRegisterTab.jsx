@@ -19,15 +19,28 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
   
   const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
   
-  const daysInMonth = useMemo(() => {
-    return new Date(selectedYear, selectedMonth + 1, 0).getDate();
-  }, [selectedMonth, selectedYear]);
-
   const monthName = useMemo(() => {
     return new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' });
   }, [selectedMonth, selectedYear]);
-
   const monthKey = `${monthName} ${selectedYear}`;
+
+  const [extraCols, setExtraCols] = useState(0);
+
+  // Sync extraCols with data: if someone has more columns than current state, update it.
+  React.useEffect(() => {
+    const monthlyPayroll = payroll.filter(p => p.month === monthKey);
+    const maxExtras = monthlyPayroll.reduce((max, p) => Math.max(max, (p.extraAmounts || []).length), 0);
+    if (maxExtras > extraCols) setExtraCols(maxExtras);
+  }, [payroll, monthKey, extraCols]);
+
+  const extraColsCount = useMemo(() => {
+    const monthlyPayroll = payroll.filter(p => p.month === monthKey);
+    return monthlyPayroll.reduce((max, p) => Math.max(max, (p.extraAmounts || []).length), 0);
+  }, [payroll, monthKey]);
+  
+  const daysInMonth = useMemo(() => {
+    return new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  }, [selectedMonth, selectedYear]);
 
   const updateProfile = (id, field, value) => {
     const isFaculty = faculty.some(f => f.id === id);
@@ -115,15 +128,18 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     // Use manual override if present in record, otherwise use auto-calculated value
     const prevLeaveUse = record.prevLeaveUse !== undefined ? record.prevLeaveUse : prevUsedLeaves;
     
+    const extraTotal = (record.extraAmounts || []).reduce((sum, val) => sum + (val || 0), 0);
+    
     const total = fooding + advance;
-    const netPayment = amount - total;
+    const netPayment = amount - total + extraTotal;
     const leaveBalance = 21 - prevLeaveUse - (cl || 0);
     
     return { 
       basicSalary, sundays, absent, working, cl, ot, holiday, 
       workingDaysWithHoliday, amount, fooding, advance, 
       prevLeaveUse, total, netPayment, leaveBalance, record,
-      hireDate: staffMember.hireDate
+      hireDate: staffMember.hireDate, extraTotal,
+      extraAmounts: record.extraAmounts || []
     };
   };
 
@@ -169,6 +185,9 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <th style={{ minWidth: '90px' }}>FOODING</th>
               <th style={{ minWidth: '90px' }}>ADVANCE</th>
               <th className={styles.verticalHeader}>TOTAL</th>
+              {Array.from({ length: extraColsCount }).map((_, i) => (
+                <th key={i} className={styles.verticalHeader} style={{ background: '#f8fafc' }}>ADJ ({i+1})</th>
+              ))}
               <th style={{ minWidth: '90px' }}>NET PAYMENT</th>
               <th className={styles.verticalHeader}>TOTAL CL</th>
               <th className={styles.verticalHeader}>TOTAL LEAVE USE</th>
@@ -224,6 +243,10 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
 
                   {/* Total deductions */}
                   <td style={{ fontWeight: 700, color: calc.total > 0 ? '#ef4444' : 'inherit' }}>{formatCurrency(calc.total)}</td>
+                  
+                  {Array.from({ length: extraColsCount }).map((_, i) => (
+                    <td key={i} style={{ fontWeight: 600 }}>{calc.extraAmounts[i] || ''}</td>
+                  ))}
 
                   {/* Net Payment */}
                   <td style={{ fontWeight: 800, background: '#eff6ff', color: '#1d4ed8' }}>{formatCurrency(calc.netPayment)}</td>

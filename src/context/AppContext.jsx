@@ -811,6 +811,10 @@ export const AppContextProvider = ({ children }) => {
     setPayroll(prev => [...prev, newRecord]);
     syncToVPS('payroll', newRecord);
   };
+  const editPayroll = (id, updated) => {
+    setPayroll(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    syncToVPS('payroll', { ...updated, id }, id, 'PUT');
+  };
   const deletePayroll = (id) => {
     setPayroll(prev => prev.filter(p => p.id !== id));
     syncToVPS('payroll', null, id, 'DELETE');
@@ -1009,7 +1013,7 @@ export const AppContextProvider = ({ children }) => {
     systemConfig, setSystemConfig,
     feeStructures, setFeeStructures, addFeeStructure,
     fees, setFees, addFee,
-    payroll, setPayroll, addPayroll,
+    payroll, setPayroll, addPayroll, editPayroll,
     leaves, setLeaves, approveLeave, requestLeave,
     finance, setFinance, addExpense, refillPettyCash,
     exams, setExams, addExam,

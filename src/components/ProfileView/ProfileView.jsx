@@ -231,10 +231,11 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
   const userAttendance = attendance?.filter(a => a.records && a.records[formData?.id]) || [];
 
   const tabs = [
-    { id: 'personal', label: 'Personal', icon: <User size={16} /> },
-    { id: 'academic', label: 'Academic', icon: <Award size={16} /> },
-    { id: 'documents', label: 'Documents', icon: <BookOpen size={16} /> },
-    { id: 'attendance', label: 'Attendance', icon: <Activity size={16} /> },
+    { id: 'personal', label: 'Personal', icon: <User size={18} /> },
+    { id: 'academic', label: 'Academic', icon: <BookOpen size={18} /> },
+    { id: 'documents', label: 'Documents', icon: <FileText size={18} /> },
+    { id: 'activity', label: 'Activity', icon: <Activity size={18} /> },
+    ...(type === 'Staff' || type === 'Faculty' ? [{ id: 'payroll', label: 'Payroll & Bank', icon: <Building2 size={18} /> }] : []),
     { id: 'departments', label: 'Departments', icon: <Building2 size={16} /> },
     { id: 'categories', label: 'Categories', icon: <Layers size={16} /> },
     { id: 'degrees', label: 'Degrees', icon: <Grid size={16} /> },
@@ -430,6 +431,42 @@ const ProfileView = ({ data, type, onSave, onDelete, onCancel }) => {
         </div>
 
         <Card style={{ padding: '2rem' }}>
+          {activeTab === 'payroll' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div className={styles.sectionTitle}><Building2 size={20} /> Bank & Payroll Details</div>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoItem}>
+                  <label>Appointment Date (Anniversary)</label>
+                  {isEditing ? <input type="date" value={formData.hireDate || ''} onChange={(e) => handleChange(null, 'hireDate', e.target.value)} className={styles.input} /> : <div>{formData.hireDate || '-'}</div>}
+                </div>
+                <div className={styles.infoItem}>
+                  <label>Basic Salary (Monthly)</label>
+                  {isEditing ? <input type="number" value={formData.baseSalary || ''} onChange={(e) => handleChange(null, 'baseSalary', e.target.value)} className={styles.input} /> : <div>₹ {formData.baseSalary || 0}</div>}
+                </div>
+                <div className={styles.infoItem}>
+                  <label>Bank Name</label>
+                  {isEditing ? <input type="text" value={formData.bankName || ''} onChange={(e) => handleChange(null, 'bankName', e.target.value)} className={styles.input} /> : <div>{formData.bankName || '-'}</div>}
+                </div>
+                <div className={styles.infoItem}>
+                  <label>Account Number</label>
+                  {isEditing ? <input type="text" value={formData.accountNumber || ''} onChange={(e) => handleChange(null, 'accountNumber', e.target.value)} className={styles.input} /> : <div style={{ fontFamily: 'monospace' }}>{formData.accountNumber || '-'}</div>}
+                </div>
+                <div className={styles.infoItem}>
+                  <label>IFSC Code</label>
+                  {isEditing ? <input type="text" value={formData.ifscCode || ''} onChange={(e) => handleChange(null, 'ifscCode', e.target.value)} className={styles.input} /> : <div style={{ textTransform: 'uppercase', fontFamily: 'monospace' }}>{formData.ifscCode || '-'}</div>}
+                </div>
+                <div className={styles.infoItem}>
+                  <label>Bank Branch</label>
+                  {isEditing ? <input type="text" value={formData.bankBranch || ''} onChange={(e) => handleChange(null, 'bankBranch', e.target.value)} className={styles.input} /> : <div>{formData.bankBranch || '-'}</div>}
+                </div>
+                <div className={styles.infoItem}>
+                  <label>Bank Holder Name</label>
+                  {isEditing ? <input type="text" value={formData.bankHolderName || ''} onChange={(e) => handleChange(null, 'bankHolderName', e.target.value)} className={styles.input} /> : <div>{formData.bankHolderName || '-'}</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'personal' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
