@@ -4,24 +4,33 @@
 
 /* Modernized but Format-Preserving Styles */
 @media print {
-  body { margin: 0; padding: 0; background: white; }
-  .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
-  body * { visibility: hidden !important; }
-  
-  .salaryPrintArea { 
-    visibility: visible !important;
-    position: relative !important; 
-    width: 100% !important; 
-    margin: 0 !important; 
-    padding: 15mm !important; 
-    background: white !important; 
-    box-sizing: border-box !important;
-  }
-  .noPrint, .no-print { display: none !important; }
-  
   @page {
     size: A4 landscape;
-    margin: 0; 
+    margin: 5mm; /* Small margin for PDF safety */
+  }
+
+  /* Global hide rules */
+  :global(.no-print), :global(.noPrint) { 
+    display: none !important; 
+  }
+
+  body { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    background: white !important;
+    height: auto !important;
+  }
+
+  body * { visibility: hidden !important; }
+  .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
+  
+  .salaryPrintArea { 
+    position: static !important;
+    width: 100% !important; 
+    margin: 0 !important; 
+    padding: 10mm !important;
+    background: white !important; 
+    box-sizing: border-box !important;
   }
 
   .scrollWrapper {
@@ -33,6 +42,13 @@
     width: 100% !important;
     min-width: 100% !important;
     table-layout: auto !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  /* Prevent row splitting across pages */
+  .slipTable tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 
