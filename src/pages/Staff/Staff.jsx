@@ -186,7 +186,8 @@ const Staff = () => {
             required: true, 
             options: (departments || []).map(d => ({ value: d.name, label: d.name })) 
           },
-          { name: 'role', label: 'Role', required: true, placeholder: 'e.g. Accountant' }
+          { name: 'role', label: 'Role', required: true, placeholder: 'e.g. Accountant' },
+          { name: 'hireDate', label: 'Appointment Date', type: 'date', required: true }
         ]}
       />
 

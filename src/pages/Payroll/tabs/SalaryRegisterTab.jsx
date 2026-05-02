@@ -158,7 +158,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <th style={{ width: '36px' }}>S.NO</th>
               <th className={styles.nameCol} style={{ width: '160px' }}>NAME</th>
               <th style={{ width: '100px' }}>DESIGNATION</th>
-              <th style={{ width: '90px' }}>DOJ</th>
+              <th style={{ width: '130px' }}>APPOINT DATE</th>
               <th className={styles.verticalHeader}>BASIC SALARY</th>
               <th className={styles.verticalHeader}>TOTAL SUNDAY</th>
               <th className={styles.verticalHeader}>HOLIDAY</th>
@@ -195,9 +195,14 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
                       style={{ ...cellInput, textAlign: 'center' }} />
                   </td>
 
-                  {/* DOJ */}
-                  <td style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b' }}>
-                    {calc.hireDate ? new Date(calc.hireDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                  {/* Appointment Date */}
+                  <td>
+                    <input 
+                      type="date" 
+                      value={s.hireDate || ''} 
+                      onChange={e => updateProfile(s.id, 'hireDate', e.target.value)}
+                      style={{ ...cellInput, fontSize: '0.7rem', padding: '2px' }} 
+                    />
                   </td>
 
                   <td>
@@ -248,7 +253,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
 
             {/* Totals row */}
             <tr className={styles.totalRow}>
-              <td colSpan="11" style={{ border: 'none', textAlign: 'right', paddingRight: '0.5rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Totals →</td>
+              <td colSpan="12" style={{ border: 'none', textAlign: 'right', paddingRight: '0.5rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Totals →</td>
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.amount)}</td>
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.fooding)}</td>
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.advance)}</td>

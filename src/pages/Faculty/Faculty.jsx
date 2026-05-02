@@ -184,7 +184,8 @@ const Faculty = () => {
             required: true, 
             options: (departments || []).map(d => ({ value: d.name, label: d.name })) 
           },
-          { name: 'role', label: 'Academic Role', required: true, placeholder: 'e.g. Associate Professor' }
+          { name: 'role', label: 'Academic Role', required: true, placeholder: 'e.g. Associate Professor' },
+          { name: 'hireDate', label: 'Appointment Date', type: 'date', required: true }
         ]}
       />
 
