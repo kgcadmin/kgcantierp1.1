@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { AppContext } from '../../../context/AppContext';
 import styles from '../SalarySlip.module.css';
 
@@ -16,16 +16,17 @@ const cellInput = {
 };
 
 const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
-  const { faculty, staff, staffAttendance, calendar, payroll, editFaculty, editStaff } = useContext(AppContext);
+  const { faculty, staff, staffAttendance, calendar, payroll, setPayroll, syncToVPS, editFaculty, editStaff } = useContext(AppContext);
+  const [extraCols, setExtraCols] = useState(0);
 
   const allStaff = useMemo(() => [...faculty, ...staff], [faculty, staff]);
+  const monthName = useMemo(() =>
+    new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' }),
+    [selectedMonth, selectedYear]);
+  const monthKey = `${monthName} ${selectedYear}`;
 
   const daysInMonth = useMemo(() =>
     new Date(selectedYear, selectedMonth + 1, 0).getDate(),
-    [selectedMonth, selectedYear]);
-
-  const monthName = useMemo(() =>
-    new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' }),
     [selectedMonth, selectedYear]);
 
   const updateProfile = (id, field, value) => {
@@ -34,7 +35,36 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
     else editStaff(id, { [field]: value });
   };
 
-  const calculateNetPayment = (staffMember) => {
+  const updateExtraAmount = (memberId, index, value) => {
+    const existingIndex = payroll.findIndex(p => p.employeeId === memberId && p.month === monthKey);
+    let updatedPayroll = [...payroll];
+    let record;
+    const val = Number(value) || 0;
+
+    if (existingIndex >= 0) {
+      record = { ...updatedPayroll[existingIndex] };
+      const extras = [...(record.extraAmounts || [])];
+      extras[index] = val;
+      record.extraAmounts = extras;
+      updatedPayroll[existingIndex] = record;
+    } else {
+      const extras = [];
+      extras[index] = val;
+      record = {
+        id: `PAY${Date.now()}${memberId}`,
+        employeeId: memberId,
+        month: monthKey,
+        fooding: 0,
+        advance: 0,
+        extraAmounts: extras
+      };
+      updatedPayroll.push(record);
+    }
+    setPayroll(updatedPayroll);
+    syncToVPS('payroll', record, record.id, existingIndex >= 0 ? 'PUT' : 'POST');
+  };
+
+  const calculateFullPayment = (staffMember) => {
     let working = 0, sundays = 0, cl = 0, holiday = 0, ot = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -50,15 +80,21 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
     const basicSalary = Number(staffMember.baseSalary || staffMember.salary || 10000);
     const workingDays = working + sundays + holiday + cl + ot;
     const amount = Math.round((basicSalary / daysInMonth) * workingDays);
-    const monthKey = `${monthName} ${selectedYear}`;
     const existing = payroll.find(p => p.employeeId === staffMember.id && p.month === monthKey);
     const deductions = (existing?.fooding || 0) + (existing?.advance || 0);
-    return amount - deductions;
+    const monthAmount = amount - deductions;
+    const extraTotal = (existing?.extraAmounts || []).reduce((sum, val) => sum + (val || 0), 0);
+    return { monthAmount, extraAmounts: existing?.extraAmounts || [], totalNet: monthAmount + extraTotal };
   };
 
-  const totalAmount = useMemo(() =>
-    allStaff.reduce((sum, s) => sum + calculateNetPayment(s), 0),
-    [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
+  const totals = useMemo(() => {
+    return allStaff.reduce((acc, s) => {
+      const p = calculateFullPayment(s);
+      acc.monthAmount += p.monthAmount;
+      acc.totalNet += p.totalNet;
+      return acc;
+    }, { monthAmount: 0, totalNet: 0 });
+  }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
 
   const fmt = (val) => Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
@@ -73,6 +109,13 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
         </h3>
       </div>
 
+      {/* Controls (Non-printing) */}
+      <div className="no-print" style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>ADJUSTMENT COLUMNS:</span>
+        <button onClick={() => setExtraCols(prev => prev + 1)} style={{ padding: '2px 8px', borderRadius: '4px', background: '#dcfce7', border: '1px solid #86efac', cursor: 'pointer', fontWeight: 700 }}>+</button>
+        <button onClick={() => setExtraCols(prev => Math.max(0, prev - 1))} style={{ padding: '2px 10px', borderRadius: '4px', background: '#fee2e2', border: '1px solid #fecaca', cursor: 'pointer', fontWeight: 700 }}>-</button>
+      </div>
+
       {/* Table */}
       <div className={styles.scrollWrapper}>
         <table className={styles.slipTable}>
@@ -85,13 +128,17 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
               <th>ACCOUNT NO.</th>
               <th>IFSC CODE</th>
               <th>BANK HOLDER NAME</th>
-              <th>MONTH AMOUNT</th>
-              <th>NET PAYMENT</th>
+              {/* Dynamic Extra Columns */}
+              {Array.from({ length: extraCols }).map((_, i) => (
+                <th key={i} style={{ minWidth: '90px', background: '#f8fafc' }}>PREV. MONTH ({i + 1})</th>
+              ))}
+              <th style={{ minWidth: '100px' }}>MONTH AMOUNT</th>
+              <th style={{ minWidth: '110px' }}>NET PAYMENT</th>
             </tr>
           </thead>
           <tbody>
             {allStaff.map((s, index) => {
-              const netPay = calculateNetPayment(s);
+              const p = calculateFullPayment(s);
               return (
                 <tr key={s.id}>
                   <td style={{ color: '#64748b' }}>{index + 1}</td>
@@ -113,15 +160,27 @@ const BankPaymentTab = ({ selectedMonth, selectedYear }) => {
                   <td>
                     <input type="text" value={s.bankHolderName || ''} onChange={e => updateProfile(s.id, 'bankHolderName', e.target.value)} placeholder="Holder Name" style={cellInput} />
                   </td>
-                  <td style={{ fontWeight: 700 }}>₹ {fmt(netPay)}</td>
-                  <td style={{ fontWeight: 800, color: '#1d4ed8', background: '#eff6ff' }}>₹ {fmt(netPay)}</td>
+                  {/* Dynamic Extra Amount Inputs */}
+                  {Array.from({ length: extraCols }).map((_, i) => (
+                    <td key={i}>
+                      <input 
+                        type="number" 
+                        value={p.extraAmounts[i] ?? ''} 
+                        onChange={e => updateExtraAmount(s.id, i, e.target.value)} 
+                        placeholder="0" 
+                        style={{ ...cellInput, textAlign: 'right' }} 
+                      />
+                    </td>
+                  ))}
+                  <td style={{ fontWeight: 700 }}>₹ {fmt(p.monthAmount)}</td>
+                  <td style={{ fontWeight: 800, color: '#1d4ed8', background: '#eff6ff' }}>₹ {fmt(p.totalNet)}</td>
                 </tr>
               );
             })}
             <tr className={styles.totalRow}>
-              <td colSpan="7" style={{ textAlign: 'right', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Disbursement →</td>
-              <td style={{ fontWeight: 700 }}>₹ {fmt(totalAmount)}</td>
-              <td style={{ fontWeight: 800, color: '#1d4ed8' }}>₹ {fmt(totalAmount)}</td>
+              <td colSpan={7 + extraCols} style={{ textAlign: 'right', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Disbursement →</td>
+              <td style={{ fontWeight: 700 }}>₹ {fmt(totals.monthAmount)}</td>
+              <td style={{ fontWeight: 800, color: '#1d4ed8' }}>₹ {fmt(totals.totalNet)}</td>
             </tr>
           </tbody>
         </table>
