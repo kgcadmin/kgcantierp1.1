@@ -22,6 +22,28 @@
   padding: 1rem;
 }
 
+/* Force all inputs inside salaryPrintArea to always be white with dark text */
+.salaryPrintArea input,
+.salaryPrintArea input[type="text"],
+.salaryPrintArea input[type="number"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+}
+
+.salaryPrintArea input:hover {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+.salaryPrintArea input:focus {
+  background-color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+}
+
 .slipTable {
   width: 100%;
   border-collapse: collapse;
@@ -47,8 +69,17 @@
   letter-spacing: 0.5px;
 }
 
-.slipTable tr:hover td {
-  background: #f1f5f9;
+/* Only colour the td on hover — NOT inputs inside them */
+.slipTable tr:hover > td {
+  background: #f8fafc;
+}
+
+/* Keep inputs white even when row is hovered */
+.slipTable tr:hover > td input,
+.slipTable tr:hover > td input[type="text"],
+.slipTable tr:hover > td input[type="number"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 .slipTable .nameCol { text-align: left; padding-left: 8px; }
@@ -64,45 +95,29 @@
 }
 
 .attGrid th { font-size: 0.65rem; padding: 4px; }
-.attCell { width: 24px; min-width: 24px; max-width: 24px; font-weight: bold; cursor: pointer; text-align: center; transition: opacity 0.2s; }
-.attCell:hover { opacity: 0.8; }
+.attCell {
+  width: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+.attCell:hover { opacity: 0.75; }
 
-/* Exact colors from the image legend, but slightly modernized */
-.attP  { background: #ffffff; color: #334155; }
-.attA  { background: #ef4444; color: #fff; } /* Red for Absent */
-.attSUN { background: #f97316; color: #fff; } /* Orange for Sunday */
-.attCL { background: #10b981; color: #fff; } /* Green for CL */
-.attH  { background: #6366f1; color: #fff; } /* Indigo for Holiday */
-.attOT { background: #eab308; color: #fff; } /* Yellow for OT */
+/* Attendance status colours */
+.attP   { background: #ffffff; color: #334155; }
+.attA   { background: #ef4444; color: #fff; }
+.attSUN { background: #f97316; color: #fff; }
+.attCL  { background: #10b981; color: #fff; }
+.attH   { background: #6366f1; color: #fff; }
+.attOT  { background: #eab308; color: #000; }
 .attEmpty { background: #ffffff; color: #000; }
 
 .headerTitle {
   font-family: 'Georgia', serif;
   font-weight: bold;
   letter-spacing: 1px;
-}
-
-.modernInput {
-  border: 1px solid transparent;
-  background: #ffffff !important;
-  width: 100%;
-  font-family: inherit;
-  font-size: inherit;
-  color: #0f172a !important;
-  text-align: inherit;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.modernInput:hover {
-  background: #f8fafc !important;
-  border-color: #e2e8f0;
-}
-
-.modernInput:focus {
-  outline: none;
-  background: #ffffff !important;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }

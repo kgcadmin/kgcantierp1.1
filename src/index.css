@@ -199,6 +199,34 @@ input::placeholder, textarea::placeholder {
   color: var(--text-muted);
 }
 
+/* ── Payroll print area: force light inputs (beats dark theme !important) ── */
+.salaryPrintArea input,
+.salaryPrintArea input[type="text"],
+.salaryPrintArea input[type="number"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  padding: 3px 6px !important;
+  z-index: auto !important;
+}
+
+.salaryPrintArea input:hover {
+  background: #f0f4ff !important;
+  background-color: #f0f4ff !important;
+  border-color: #94a3b8 !important;
+}
+
+.salaryPrintArea input:focus {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+  color: #0f172a !important;
+}
+/* ── End payroll override ── */
+
 /* Global Responsive Helpers */
 .table-responsive {
   width: 100%;
