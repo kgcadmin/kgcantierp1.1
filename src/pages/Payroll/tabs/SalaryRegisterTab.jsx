@@ -209,22 +209,6 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
             NET PAYMENT -  {totals.netPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
          </div>
       </div>
-
-      <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', padding: '0 2rem' }}>
-        <div style={{ textAlign: 'left', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold' }}></p>
-        </div>
-        <div style={{ textAlign: 'center', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold', color: '#1e3a8a' }}>for</p>
-          <p style={{ margin: 0, fontWeight: 'bold', color: '#1e3a8a' }}>PRINCIPAL</p>
-          <p style={{ margin: 0, fontSize: '0.7rem', color: '#1e3a8a' }}>KASHIBAI GANPAT NURSING</p>
-          <p style={{ margin: 0, fontSize: '0.7rem', color: '#1e3a8a' }}>COLLEGE</p>
-        </div>
-        <div style={{ textAlign: 'right', minWidth: '200px' }}>
-          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.8rem', color: '#1e3a8a' }}>KASHIBAI GANPAT COLLEGE</p>
-          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.8rem', color: '#1e3a8a' }}>OF PHARMACY</p>
-        </div>
-      </div>
     </div>
   );
 };

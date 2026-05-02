@@ -176,17 +176,6 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
              <tr><td className={styles.attOT}>OVER TIME</td><td className={styles.attOT} style={{ fontWeight: 'bold' }}>OT</td></tr>
           </tbody>
         </table>
-
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: '1rem' }}>
-           <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '40px' }}></div>
-              <p style={{ margin: 0, fontWeight: 'bold' }}>PRINCIPAL</p>
-           </div>
-           <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '40px' }}></div>
-              <p style={{ margin: 0, fontWeight: 'bold' }}>MANAGING DIRECTOR</p>
-           </div>
-        </div>
       </div>
     </div>
   );
