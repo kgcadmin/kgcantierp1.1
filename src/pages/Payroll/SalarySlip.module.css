@@ -1,5 +1,8 @@
-/* Modernized but Format-Preserving Styles */
+@media screen {
+  .print-only { display: none !important; }
+}
 
+/* Modernized but Format-Preserving Styles */
 @media print {
   body * { visibility: hidden !important; }
   .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
@@ -81,11 +84,11 @@
 
 .modernInput {
   border: 1px solid transparent;
-  background: transparent;
+  background: #ffffff !important;
   width: 100%;
   font-family: inherit;
   font-size: inherit;
-  color: inherit;
+  color: #0f172a !important;
   text-align: inherit;
   padding: 2px 4px;
   border-radius: 4px;
@@ -93,13 +96,13 @@
 }
 
 .modernInput:hover {
-  background: #f8fafc;
+  background: #f8fafc !important;
   border-color: #e2e8f0;
 }
 
 .modernInput:focus {
   outline: none;
-  background: white;
+  background: #ffffff !important;
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }

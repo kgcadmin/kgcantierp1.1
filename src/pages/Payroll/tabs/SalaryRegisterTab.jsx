@@ -30,20 +30,13 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
   };
 
   const getAttendanceData = (memberId) => {
-    let working = 0;
-    let sundays = 0;
-    let absent = 0;
-    let cl = 0;
-    let holiday = 0;
-    let ot = 0;
-
+    let working = 0, sundays = 0, absent = 0, cl = 0, holiday = 0, ot = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayOfWeek = new Date(selectedYear, selectedMonth, d).getDay();
       const record = staffAttendance.find(a => a.memberId === memberId && a.date === dateStr);
       const status = record?.status;
       const isHoliday = calendar.find(c => c.date === dateStr && (c.type === 'Holiday' || c.category === 'Holiday'));
-
       if (status === 'P') working++;
       else if (status === 'A') absent++;
       else if (status === 'CL') cl++;
@@ -54,31 +47,25 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     return { working, sundays, absent, cl, holiday, ot };
   };
 
+  // Simplified: just store fooding as a direct amount, advance as a direct amount
   const updatePayrollField = (memberId, field, value) => {
     const existingIndex = payroll.findIndex(p => p.employeeId === memberId && p.month === monthKey);
     let updatedPayroll = [...payroll];
     let record;
-
     if (existingIndex >= 0) {
       record = { ...updatedPayroll[existingIndex], [field]: Number(value) };
       updatedPayroll[existingIndex] = record;
     } else {
-      record = { 
-        id: `PAY${Date.now()}${memberId}`, 
-        employeeId: memberId, 
-        month: monthKey, 
+      record = {
+        id: `PAY${Date.now()}${memberId}`,
+        employeeId: memberId,
+        month: monthKey,
         [field]: Number(value),
-        foodingRate: 30,
-        foodingDays: 0,
+        fooding: 0,
         advance: 0
       };
       updatedPayroll.push(record);
     }
-    
-    if (field === 'foodingDays' || field === 'foodingRate') {
-      record.fooding = (record.foodingDays || 0) * (record.foodingRate || 0);
-    }
-
     setPayroll(updatedPayroll);
     syncToVPS('payroll', record, record.id, existingIndex >= 0 ? 'PUT' : 'POST');
   };
@@ -89,11 +76,11 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     const workingDaysWithHoliday = working + sundays + holiday + cl + ot;
     const amount = Math.round((basicSalary / daysInMonth) * workingDaysWithHoliday);
     const record = payroll.find(p => p.employeeId === staffMember.id && p.month === monthKey) || {};
+    // Fooding is now a direct amount, no calculation
     const fooding = record.fooding || 0;
     const advance = record.advance || 0;
     const total = fooding + advance;
     const netPayment = amount - total;
-
     return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, total, netPayment, record };
   };
 
@@ -109,8 +96,31 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     }, { amount: 0, fooding: 0, advance: 0, total: 0, netPayment: 0 });
   }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
 
+  // Shared input style — clean white background so text is always readable
+  const inputStyle = {
+    border: '1px solid #e2e8f0',
+    background: '#ffffff',
+    color: '#0f172a',
+    borderRadius: '4px',
+    padding: '3px 6px',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    width: '100%',
+    boxSizing: 'border-box',
+  };
+
+  const inputFocusHandler = (e) => {
+    e.target.style.borderColor = '#3b82f6';
+    e.target.style.boxShadow = '0 0 0 2px rgba(59,130,246,0.15)';
+  };
+  const inputBlurHandler = (e) => {
+    e.target.style.borderColor = '#e2e8f0';
+    e.target.style.boxShadow = 'none';
+  };
+
   return (
     <div className={styles.salaryPrintArea}>
+      {/* ── Header ── */}
       <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem' }}>
         <h1 className={styles.headerTitle} style={{ margin: 0, fontSize: '1.8rem', color: '#0f172a' }}>KASHIBAI GANPAT COLLEGE</h1>
         <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.5px' }}>VILL - CHAKME, (THAKUR GAON) BURMU, RANCHI- 835205</p>
@@ -119,25 +129,26 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
         </h3>
       </div>
 
+      {/* ── Table ── */}
       <div style={{ overflowX: 'auto' }}>
         <table className={styles.slipTable}>
           <thead>
             <tr>
-              <th style={{ width: '40px' }}>S.NO</th>
-              <th className={styles.nameCol} style={{ width: '200px' }}>NAME</th>
-              <th style={{ width: '150px' }}>DESIGNATION</th>
-              <th className={styles.verticalHeader}>BASIC E SALARY</th>
+              <th style={{ width: '36px' }}>S.NO</th>
+              <th className={styles.nameCol} style={{ width: '160px' }}>NAME</th>
+              <th style={{ width: '120px' }}>DESIGNATION</th>
+              <th className={styles.verticalHeader}>BASIC SALARY</th>
               <th className={styles.verticalHeader}>TOTAL SUNDAY</th>
               <th className={styles.verticalHeader}>HOLIDAY</th>
               <th className={styles.verticalHeader}>ABSENT</th>
               <th className={styles.verticalHeader}>WORKING</th>
               <th className={styles.verticalHeader}>C L</th>
-              <th className={styles.verticalHeader}>WORKING DAY WITH<br/>HOLIDAY</th>
-              <th style={{ minWidth: '100px' }}>AMOUNT</th>
-              <th className={styles.verticalHeader}>FOODING</th>
-              <th className={styles.verticalHeader}>ADVANCE</th>
+              <th className={styles.verticalHeader}>WORKING DAY WITH HOLIDAY</th>
+              <th style={{ minWidth: '90px' }}>AMOUNT</th>
+              <th style={{ minWidth: '90px' }}>FOODING</th>
+              <th style={{ minWidth: '90px' }}>ADVANCE</th>
               <th className={styles.verticalHeader}>TOTAL</th>
-              <th style={{ minWidth: '100px' }}>NET PAYMENT</th>
+              <th style={{ minWidth: '90px' }}>NET PAYMENT</th>
               <th className={styles.verticalHeader}>TOTAL CL</th>
               <th className={styles.verticalHeader}>LEAVE THIS MONTH</th>
               <th className={styles.verticalHeader}>LEAVE BALANCE</th>
@@ -148,66 +159,125 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               const calc = calculateSalary(s);
               return (
                 <tr key={s.id}>
-                  <td>{index + 1}</td>
+                  <td style={{ color: '#64748b' }}>{index + 1}</td>
+
+                  {/* Name */}
                   <td className={styles.nameCol}>
-                    <input type="text" value={s.name} onChange={e => updateProfile(s.id, 'name', e.target.value)} className={`${styles.noPrint} ${styles.modernInput}`} />
+                    <input
+                      type="text"
+                      value={s.name}
+                      onChange={e => updateProfile(s.id, 'name', e.target.value)}
+                      style={{ ...inputStyle, fontWeight: 600 }}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                      className={styles.noPrint}
+                    />
                     <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
                   </td>
+
+                  {/* Designation */}
                   <td>
-                    <input type="text" value={s.role || s.designation || 'Staff'} onChange={e => updateProfile(s.id, 'role', e.target.value)} className={`${styles.noPrint} ${styles.modernInput}`} style={{ textAlign: 'center' }} />
+                    <input
+                      type="text"
+                      value={s.role || s.designation || 'Staff'}
+                      onChange={e => updateProfile(s.id, 'role', e.target.value)}
+                      style={{ ...inputStyle, textAlign: 'center' }}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                      className={styles.noPrint}
+                    />
                     <span className="print-only" style={{ fontWeight: 'bold' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</span>
                   </td>
+
+                  {/* Basic Salary */}
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
-                      <span className={styles.noPrint}>₹</span>
-                      <input type="number" value={s.baseSalary || s.salary || 0} onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)} className={`${styles.noPrint} ${styles.modernInput}`} style={{ width: '60px', textAlign: 'center' }} />
-                      <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.basicSalary)}</span>
-                    </div>
+                    <input
+                      type="number"
+                      value={s.baseSalary || s.salary || 0}
+                      onChange={e => updateProfile(s.id, 'baseSalary', e.target.value)}
+                      style={{ ...inputStyle, textAlign: 'right', width: '80px' }}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                      className={styles.noPrint}
+                    />
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.basicSalary)}</span>
                   </td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.sundays || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.holiday || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.absent || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.working || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.cl || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{calc.workingDaysWithHoliday || ''}</td>
-                  <td style={{ fontWeight: 'bold' }}>{formatCurrency(calc.amount)}</td>
-                  <td className={styles.noPrint}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <input type="number" placeholder="Days" value={calc.record.foodingDays || ''} onChange={e => updatePayrollField(s.id, 'foodingDays', e.target.value)} className={styles.modernInput} style={{ width: '45px', padding: '2px' }} />
-                      <input type="number" placeholder="Rate" value={calc.record.foodingRate || ''} onChange={e => updatePayrollField(s.id, 'foodingRate', e.target.value)} className={styles.modernInput} style={{ width: '45px', padding: '2px' }} />
-                    </div>
-                  </td>
-                  <td className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.fooding)}</td>
+
+                  {/* Auto-calculated attendance columns */}
+                  <td style={{ fontWeight: 600 }}>{calc.sundays || ''}</td>
+                  <td style={{ fontWeight: 600 }}>{calc.holiday || ''}</td>
+                  <td style={{ fontWeight: 600, color: calc.absent > 0 ? '#ef4444' : 'inherit' }}>{calc.absent || ''}</td>
+                  <td style={{ fontWeight: 600 }}>{calc.working || ''}</td>
+                  <td style={{ fontWeight: 600 }}>{calc.cl || ''}</td>
+                  <td style={{ fontWeight: 700, background: '#f8fafc' }}>{calc.workingDaysWithHoliday || ''}</td>
+
+                  {/* Gross Amount */}
+                  <td style={{ fontWeight: 700, background: '#f8fafc' }}>{formatCurrency(calc.amount)}</td>
+
+                  {/* Fooding — simple direct amount input */}
                   <td>
-                    <input type="number" value={calc.record.advance || ''} onChange={e => updatePayrollField(s.id, 'advance', e.target.value)} className={`${styles.noPrint} ${styles.modernInput}`} style={{ width: '60px', textAlign: 'center' }} />
+                    <input
+                      type="number"
+                      value={calc.record.fooding ?? ''}
+                      onChange={e => updatePayrollField(s.id, 'fooding', e.target.value)}
+                      style={{ ...inputStyle, textAlign: 'right', width: '80px' }}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                      placeholder="0"
+                      className={styles.noPrint}
+                    />
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.fooding)}</span>
+                  </td>
+
+                  {/* Advance */}
+                  <td>
+                    <input
+                      type="number"
+                      value={calc.record.advance ?? ''}
+                      onChange={e => updatePayrollField(s.id, 'advance', e.target.value)}
+                      style={{ ...inputStyle, textAlign: 'right', width: '80px' }}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                      placeholder="0"
+                      className={styles.noPrint}
+                    />
                     <span className="print-only" style={{ fontWeight: 'bold' }}>{formatCurrency(calc.advance)}</span>
                   </td>
-                  <td style={{ fontWeight: 'bold' }}>{formatCurrency(calc.total)}</td>
-                  <td style={{ fontWeight: 'bold' }}>{formatCurrency(calc.netPayment)}</td>
+
+                  {/* Total deductions */}
+                  <td style={{ fontWeight: 700, color: calc.total > 0 ? '#ef4444' : 'inherit' }}>{formatCurrency(calc.total)}</td>
+
+                  {/* Net Payment */}
+                  <td style={{ fontWeight: 800, background: '#eff6ff', color: '#1d4ed8' }}>{formatCurrency(calc.netPayment)}</td>
+
+                  {/* CL columns */}
                   <td>21</td>
                   <td>{calc.cl || ''}</td>
                   <td>{calc.cl || ''}</td>
-                  <td>{21 - (calc.cl || 0)}</td>
+                  <td style={{ fontWeight: 600 }}>{21 - (calc.cl || 0)}</td>
                 </tr>
               );
             })}
-            <tr className={styles.totalRow} style={{ fontSize: '0.75rem' }}>
-              <td colSpan="10" style={{ border: 'none' }}></td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.amount)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.fooding)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.advance)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totals.total)}</td>
-              <td style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>{formatCurrency(totals.netPayment)}</td>
+
+            {/* Totals row */}
+            <tr className={styles.totalRow}>
+              <td colSpan="10" style={{ border: 'none', textAlign: 'right', paddingRight: '0.5rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Totals →</td>
+              <td style={{ fontWeight: 700 }}>{formatCurrency(totals.amount)}</td>
+              <td style={{ fontWeight: 700 }}>{formatCurrency(totals.fooding)}</td>
+              <td style={{ fontWeight: 700 }}>{formatCurrency(totals.advance)}</td>
+              <td style={{ fontWeight: 700, color: '#ef4444' }}>{formatCurrency(totals.total)}</td>
+              <td style={{ fontWeight: 800, color: '#1d4ed8', fontSize: '0.85rem' }}>{formatCurrency(totals.netPayment)}</td>
               <td colSpan="4" style={{ border: 'none' }}></td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
-         <div style={{ border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', borderRadius: '4px', padding: '5px 10px', fontSize: '0.9rem', width: '300px', textAlign: 'center', fontWeight: 'bold' }}>
-            NET PAYMENT -  {totals.netPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-         </div>
+      {/* ── Net Payment Summary ── */}
+      <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ border: '1px solid #bfdbfe', backgroundColor: '#eff6ff', borderRadius: '6px', padding: '8px 20px', fontSize: '0.95rem', textAlign: 'center', fontWeight: 700, color: '#1d4ed8', minWidth: '300px' }}>
+          NET PAYMENT — ₹ {totals.netPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
       </div>
     </div>
   );
