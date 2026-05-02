@@ -91,11 +91,40 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
     // Fooding is now a direct amount, no calculation
     const fooding = record.fooding || 0;
     const advance = record.advance || 0;
-    const prevLeaveUse = record.prevLeaveUse || 0;
+    
+    // Anniversary-based Leave Logic
+    const hireDate = new Date(staffMember.hireDate || '2020-01-01');
+    const today = new Date(selectedYear, selectedMonth, 1);
+    
+    // Find the start of the current "Leave Year" (most recent anniversary)
+    let leaveYearStart = new Date(hireDate);
+    leaveYearStart.setFullYear(today.getFullYear());
+    if (leaveYearStart > today) {
+      leaveYearStart.setFullYear(today.getFullYear() - 1);
+    }
+
+    // Auto-calculate previous leaves in the current leave year (excluding current month)
+    const prevUsedLeaves = staffAttendance.reduce((sum, a) => {
+      if (a.memberId === staffMember.id && a.status === 'CL') {
+        const d = new Date(a.date);
+        if (d >= leaveYearStart && d < today) return sum + 1;
+      }
+      return sum;
+    }, 0);
+
+    // Use manual override if present in record, otherwise use auto-calculated value
+    const prevLeaveUse = record.prevLeaveUse !== undefined ? record.prevLeaveUse : prevUsedLeaves;
+    
     const total = fooding + advance;
     const netPayment = amount - total;
     const leaveBalance = 21 - prevLeaveUse - (cl || 0);
-    return { basicSalary, sundays, absent, working, cl, ot, holiday, workingDaysWithHoliday, amount, fooding, advance, prevLeaveUse, total, netPayment, leaveBalance, record };
+    
+    return { 
+      basicSalary, sundays, absent, working, cl, ot, holiday, 
+      workingDaysWithHoliday, amount, fooding, advance, 
+      prevLeaveUse, total, netPayment, leaveBalance, record,
+      hireDate: staffMember.hireDate
+    };
   };
 
   const totals = useMemo(() => {
@@ -109,28 +138,6 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
       return acc;
     }, { amount: 0, fooding: 0, advance: 0, total: 0, netPayment: 0 });
   }, [allStaff, selectedMonth, selectedYear, payroll, staffAttendance]);
-
-  // Shared input style — clean white background so text is always readable
-  const inputStyle = {
-    border: '1px solid #e2e8f0',
-    background: '#ffffff',
-    color: '#0f172a',
-    borderRadius: '4px',
-    padding: '3px 6px',
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
-    width: '100%',
-    boxSizing: 'border-box',
-  };
-
-  const inputFocusHandler = (e) => {
-    e.target.style.borderColor = '#3b82f6';
-    e.target.style.boxShadow = '0 0 0 2px rgba(59,130,246,0.15)';
-  };
-  const inputBlurHandler = (e) => {
-    e.target.style.borderColor = '#e2e8f0';
-    e.target.style.boxShadow = 'none';
-  };
 
   return (
     <div className={styles.salaryPrintArea}>
@@ -150,7 +157,8 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
             <tr>
               <th style={{ width: '36px' }}>S.NO</th>
               <th className={styles.nameCol} style={{ width: '160px' }}>NAME</th>
-              <th style={{ width: '120px' }}>DESIGNATION</th>
+              <th style={{ width: '100px' }}>DESIGNATION</th>
+              <th style={{ width: '90px' }}>DOJ</th>
               <th className={styles.verticalHeader}>BASIC SALARY</th>
               <th className={styles.verticalHeader}>TOTAL SUNDAY</th>
               <th className={styles.verticalHeader}>HOLIDAY</th>
@@ -185,6 +193,11 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
                   <td>
                     <input type="text" value={s.role || s.designation || 'Staff'} onChange={e => updateProfile(s.id, 'role', e.target.value)}
                       style={{ ...cellInput, textAlign: 'center' }} />
+                  </td>
+
+                  {/* DOJ */}
+                  <td style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b' }}>
+                    {calc.hireDate ? new Date(calc.hireDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                   </td>
 
                   <td>
@@ -224,7 +237,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
                   {/* CL columns */}
                   <td>21</td>
                   <td>
-                    <input type="number" value={calc.prevLeaveUse || ''} onChange={e => updatePayrollField(s.id, 'prevLeaveUse', e.target.value)}
+                    <input type="number" value={calc.prevLeaveUse ?? ''} onChange={e => updatePayrollField(s.id, 'prevLeaveUse', e.target.value)}
                       style={{ ...cellInput, textAlign: 'center', width: '50px' }} placeholder="0" />
                   </td>
                   <td style={{ fontWeight: 600 }}>{calc.cl || ''}</td>
@@ -235,7 +248,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
 
             {/* Totals row */}
             <tr className={styles.totalRow}>
-              <td colSpan="10" style={{ border: 'none', textAlign: 'right', paddingRight: '0.5rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Totals →</td>
+              <td colSpan="11" style={{ border: 'none', textAlign: 'right', paddingRight: '0.5rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Totals →</td>
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.amount)}</td>
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.fooding)}</td>
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.advance)}</td>
