@@ -142,7 +142,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
       </div>
 
       {/* ── Table ── */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className={styles.scrollWrapper}>
         <table className={styles.slipTable}>
           <thead>
             <tr>
@@ -221,7 +221,6 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
                   {/* CL columns */}
                   <td>21</td>
                   <td>{calc.cl || ''}</td>
-                  <td>{calc.cl || ''}</td>
                   <td style={{ fontWeight: 600 }}>{21 - (calc.cl || 0)}</td>
                 </tr>
               );
@@ -235,7 +234,7 @@ const SalaryRegisterTab = ({ selectedMonth, selectedYear }) => {
               <td style={{ fontWeight: 700 }}>{formatCurrency(totals.advance)}</td>
               <td style={{ fontWeight: 700, color: '#ef4444' }}>{formatCurrency(totals.total)}</td>
               <td style={{ fontWeight: 800, color: '#1d4ed8', fontSize: '0.85rem' }}>{formatCurrency(totals.netPayment)}</td>
-              <td colSpan="4" style={{ border: 'none' }}></td>
+              <td colSpan="3" style={{ border: 'none' }}></td>
             </tr>
           </tbody>
         </table>

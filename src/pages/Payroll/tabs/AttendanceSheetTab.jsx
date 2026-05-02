@@ -88,7 +88,7 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className={styles.scrollWrapper}>
         <table className={styles.slipTable}>
           <thead>
             <tr>
