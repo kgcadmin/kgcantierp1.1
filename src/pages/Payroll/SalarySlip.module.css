@@ -1,270 +1,105 @@
-/* Modern Payroll System Styles */
+/* Modernized but Format-Preserving Styles */
 
-/* Base Layout & Glassmorphism for UI */
-.reportContainer {
-  background: var(--surface, #ffffff);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  border: 1px solid var(--border-light, #eaebf0);
+@media print {
+  body * { visibility: hidden !important; }
+  .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
+  .salaryPrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; z-index: 99999; }
+  .noPrint { display: none !important; }
+  
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+}
+
+.salaryPrintArea {
+  background: white;
+  color: #334155;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: var(--text-main, #1e293b);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  padding: 1rem;
 }
 
-.reportHeader {
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, var(--bg-surface-hover, #f8fafc) 0%, var(--surface, #ffffff) 100%);
-  border-bottom: 1px solid var(--border-light, #e2e8f0);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.reportTitle {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--primary, #4f46e5);
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.5px;
-}
-
-.reportSubtitle {
-  font-size: 0.95rem;
-  color: var(--text-muted, #64748b);
-  font-weight: 500;
-  margin: 0;
-}
-
-/* Modern Data Grid */
-.tableWrapper {
-  flex-grow: 1;
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: calc(100vh - 250px);
-}
-
-.modernTable {
+.slipTable {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.85rem;
-  text-align: left;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-/* Sticky Headers & Columns */
-.modernTable th {
-  position: sticky;
-  top: 0;
-  background: var(--bg-surface-hover, #f1f5f9);
-  color: var(--text-main, #334155);
-  font-weight: 700;
-  padding: 0.75rem 1rem;
-  border-bottom: 2px solid var(--border-color, #cbd5e1);
-  border-right: 1px solid var(--border-light, #e2e8f0);
-  z-index: 10;
+.slipTable th, .slipTable td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  text-align: center;
   white-space: nowrap;
 }
 
-/* Make Name/S.NO columns sticky horizontally */
-.modernTable th:first-child, .modernTable td:first-child {
-  position: sticky;
-  left: 0;
-  background: inherit;
-  z-index: 11;
-  border-right: 2px solid var(--border-color, #cbd5e1);
-}
-.modernTable th:nth-child(2), .modernTable td:nth-child(2) {
-  position: sticky;
-  left: 50px; /* Adjust based on first column width */
-  background: inherit;
-  z-index: 11;
-  border-right: 1px solid var(--border-color, #cbd5e1);
-  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-}
-
-.modernTable th:first-child { z-index: 12; }
-.modernTable th:nth-child(2) { z-index: 12; }
-
-/* Table Body Cells */
-.modernTable td {
-  padding: 0.6rem 1rem;
-  border-bottom: 1px solid var(--border-light, #e2e8f0);
-  border-right: 1px solid var(--border-light, #e2e8f0);
-  background: var(--surface, #ffffff);
-  transition: background-color 0.15s ease;
-  vertical-align: middle;
-}
-
-.modernTable tr:hover td {
-  background-color: var(--bg-surface-hover, #f8fafc);
-}
-
-/* Highlighted Calculated Columns */
-.calcCell {
-  background-color: #f1f5f9 !important;
+.slipTable th {
+  background: #f8fafc;
   font-weight: 600;
-  color: #0f172a;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.netPayCell {
-  background-color: #e0e7ff !important;
-  color: #4338ca;
-  font-weight: 800;
-  font-size: 0.95rem;
+.slipTable tr:hover td {
+  background: #f1f5f9;
 }
 
-/* Inline Edit Inputs */
-.editInput {
-  width: 100%;
+.slipTable .nameCol { text-align: left; padding-left: 8px; }
+.slipTable .totalRow td { font-weight: 700; background: #f8fafc; border-top: 2px solid #cbd5e1; }
+
+.verticalHeader {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.attGrid th { font-size: 0.65rem; padding: 4px; }
+.attCell { width: 24px; min-width: 24px; max-width: 24px; font-weight: bold; cursor: pointer; text-align: center; transition: opacity 0.2s; }
+.attCell:hover { opacity: 0.8; }
+
+/* Exact colors from the image legend, but slightly modernized */
+.attP  { background: #ffffff; color: #334155; }
+.attA  { background: #ef4444; color: #fff; } /* Red for Absent */
+.attSUN { background: #f97316; color: #fff; } /* Orange for Sunday */
+.attCL { background: #10b981; color: #fff; } /* Green for CL */
+.attH  { background: #6366f1; color: #fff; } /* Indigo for Holiday */
+.attOT { background: #eab308; color: #fff; } /* Yellow for OT */
+.attEmpty { background: #ffffff; color: #000; }
+
+.headerTitle {
+  font-family: 'Georgia', serif;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.modernInput {
   border: 1px solid transparent;
   background: transparent;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  width: 100%;
   font-family: inherit;
   font-size: inherit;
   color: inherit;
+  text-align: inherit;
+  padding: 2px 4px;
+  border-radius: 4px;
   transition: all 0.2s;
 }
 
-.editInput:hover {
-  border-color: #cbd5e1;
+.modernInput:hover {
   background: #f8fafc;
+  border-color: #e2e8f0;
 }
 
-.editInput:focus {
+.modernInput:focus {
   outline: none;
-  border-color: #4f46e5;
-  background: #ffffff;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-}
-
-.editInput.currency {
-  text-align: right;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: 600;
-}
-
-/* Attendance Specific */
-.attCell {
-  text-align: center;
-  padding: 0.4rem 0.2rem !important;
-  cursor: pointer;
-  user-select: none;
-  font-weight: 700;
-  min-width: 35px;
-}
-
-.statusP { background-color: #dcfce7 !important; color: #166534; }
-.statusA { background-color: #fee2e2 !important; color: #991b1b; }
-.statusCL { background-color: #e0e7ff !important; color: #3730a3; }
-.statusSUN { background-color: #ffedd5 !important; color: #9a3412; }
-.statusH { background-color: #f3e8ff !important; color: #6b21a8; }
-.statusOT { background-color: #fef9c3 !important; color: #854d0e; }
-.statusEmpty { background-color: transparent; }
-
-.statusP:hover { background-color: #bbf7d0 !important; }
-.statusA:hover { background-color: #fecaca !important; }
-.statusCL:hover { background-color: #c7d2fe !important; }
-
-/* Totals Row */
-.totalRow td {
-  background-color: #1e293b !important;
-  color: #ffffff;
-  font-weight: 700;
-  border-top: 3px solid #0f172a;
-}
-.totalRow td.netPayCell {
-  background-color: #4f46e5 !important;
-  color: white;
-}
-
-/* Print CSS */
-@media print {
-  @page {
-    size: A4 landscape;
-    margin: 10mm;
-  }
-  
-  body * {
-    visibility: hidden;
-  }
-  
-  .reportContainer, .reportContainer * {
-    visibility: visible;
-  }
-  
-  .reportContainer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    box-shadow: none;
-    border: none;
-    max-height: none;
-    overflow: visible;
-  }
-  
-  .tableWrapper {
-    max-height: none;
-    overflow: visible;
-  }
-  
-  .modernTable {
-    font-size: 10pt;
-  }
-  
-  .modernTable th {
-    position: static;
-    background-color: #e2e8f0 !important;
-    color: #000 !important;
-    border-bottom: 2px solid #000;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  
-  .modernTable td {
-    border-bottom: 1px solid #ccc;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  
-  /* Reset sticky positioning for print so all columns show */
-  .modernTable th:first-child, .modernTable td:first-child,
-  .modernTable th:nth-child(2), .modernTable td:nth-child(2) {
-    position: static;
-    box-shadow: none;
-    border-right: 1px solid #ccc;
-  }
-
-  .noPrint {
-    display: none !important;
-  }
-
-  .editInput {
-    border: none;
-    background: transparent !important;
-    padding: 0;
-    -webkit-appearance: none;
-  }
-  
-  .totalRow td {
-    background-color: #e2e8f0 !important;
-    color: #000 !important;
-    border-top: 2px solid #000;
-  }
-  
-  .reportHeader {
-    background: transparent;
-    border-bottom: 2px solid #000;
-    padding: 10px 0;
-  }
-  
-  .reportTitle {
-    color: #000;
-    font-size: 20pt;
-  }
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }

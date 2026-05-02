@@ -74,31 +74,41 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
   };
 
   return (
-    <div className={styles.reportContainer}>
-      <div className={styles.reportHeader}>
-        <h2 className={styles.reportTitle}>Attendance Register</h2>
-        <p className={styles.reportSubtitle}>{monthName} {selectedYear} • Staff & Faculty Tracking</p>
+    <div className={styles.salaryPrintArea}>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem' }}>
+        <h1 className={styles.headerTitle} style={{ margin: 0, fontSize: '1.8rem', color: '#0f172a' }}>KASHIBAI GANPAT COLLEGE</h1>
+        <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.5px' }}>VILL - CHAKME, (THAKUR GAON) BURMU, RANCHI- 835205</p>
+        <h3 style={{ margin: '1rem 0 0 0', fontSize: '1.1rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase' }}>
+          ATTENDANCE SHEET {monthName.toUpperCase()} {selectedYear}
+        </h3>
       </div>
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.modernTable}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderBottom: 'none', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+        <div>MONTH :- {monthName.toUpperCase()}</div>
+        <div>01-{monthName.toUpperCase()} TO {daysInMonth}-{monthName.toUpperCase()}</div>
+        <div>STAFF ATTENDANCE REGISTER-{selectedYear}</div>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table className={styles.slipTable}>
           <thead>
             <tr>
-              <th style={{ minWidth: '200px' }}>Employee Details</th>
-              <th style={{ minWidth: '120px' }}>Role</th>
+              <th rowSpan="2" style={{ backgroundColor: '#f8fafc', width: '150px' }}>NAME</th>
+              <th rowSpan="2" style={{ backgroundColor: '#f8fafc', width: '100px' }}>DESIGNATION</th>
               {dates.map(d => (
-                <th key={d} style={{ textAlign: 'center', padding: '0.5rem 0' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>{getDayName(d).slice(0, 1)}</span>
-                    <span style={{ fontSize: '0.9rem' }}>{d}</span>
-                  </div>
-                </th>
+                <th key={d} style={{ backgroundColor: '#1e293b', color: '#fff', width: '24px' }}>{d}</th>
               ))}
-              <th className={styles.calcCell} style={{ textAlign: 'center' }}>Absent</th>
-              <th className={styles.calcCell} style={{ textAlign: 'center' }}>Sun/Hol</th>
-              <th className={styles.calcCell} style={{ textAlign: 'center' }}>C.L.</th>
-              <th className={styles.calcCell} style={{ textAlign: 'center' }}>Present</th>
-              <th className={styles.netPayCell} style={{ textAlign: 'center' }}>Total</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#f1f5f9' }}>Summer vacation</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>Absent</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#ffedd5', color: '#9a3412' }}>Sunday / HOLIDAY</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#dcfce7', color: '#166534' }}>CL</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#e0e7ff', color: '#3730a3' }}>Present</th>
+              <th rowSpan="2" className={styles.verticalHeader} style={{ backgroundColor: '#e0e7ff', color: '#3730a3' }}>Holiday / Present</th>
+            </tr>
+            <tr>
+              {dates.map(d => (
+                <th key={d} style={{ backgroundColor: '#475569', color: '#fff', fontSize: '0.55rem', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{getDayName(d)}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -106,45 +116,45 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
               const counts = calculateCounts(s.id);
               return (
                 <tr key={s.id}>
-                  <td>
+                  <td className={styles.nameCol}>
                     <input 
                       type="text" 
                       value={s.name} 
                       onChange={(e) => updateProfile(s.id, 'name', e.target.value)}
-                      className={styles.editInput}
-                      placeholder="Employee Name"
-                      style={{ fontWeight: 600 }}
+                      className={`${styles.noPrint} ${styles.modernInput}`}
+                      style={{ fontWeight: 'bold', width: '100%', fontSize: '0.75rem' }}
                     />
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{s.name}</span>
                   </td>
                   <td>
                     <input 
                       type="text" 
                       value={s.role || s.designation || 'Staff'} 
                       onChange={(e) => updateProfile(s.id, 'role', e.target.value)}
-                      className={styles.editInput}
-                      placeholder="Designation"
-                      style={{ fontSize: '0.85rem' }}
+                      className={`${styles.noPrint} ${styles.modernInput}`}
+                      style={{ width: '100%', textAlign: 'center', fontSize: '0.7rem', fontWeight: 'bold' }}
                     />
+                    <span className="print-only" style={{ fontWeight: 'bold' }}>{(s.role || s.designation || 'Staff').toUpperCase()}</span>
                   </td>
                   {dates.map(d => {
                     const status = getStatus(s.id, d);
-                    const statusClass = status ? styles[`status${status}`] : styles.statusEmpty;
+                    const statusClass = status ? styles[`att${status}`] : styles.attEmpty;
                     return (
                       <td 
                         key={d} 
                         onClick={() => handleCellClick(s, d)}
                         className={`${styles.attCell} ${statusClass}`}
-                        title={`Click to change status for ${s.name} on ${d} ${monthName}`}
                       >
-                        {status || '-'}
+                        {status}
                       </td>
                     );
                   })}
-                  <td className={styles.calcCell} style={{ textAlign: 'center' }}>{counts.A}</td>
-                  <td className={styles.calcCell} style={{ textAlign: 'center' }}>{counts.SUN + counts.H}</td>
-                  <td className={styles.calcCell} style={{ textAlign: 'center' }}>{counts.CL}</td>
-                  <td className={styles.calcCell} style={{ textAlign: 'center' }}>{counts.P}</td>
-                  <td className={styles.netPayCell} style={{ textAlign: 'center' }}>{counts.TotalPresent}</td>
+                  <td></td>
+                  <td style={{ fontWeight: 'bold' }}>{counts.A || ''}</td>
+                  <td style={{ fontWeight: 'bold' }}>{counts.SUN + counts.H || ''}</td>
+                  <td style={{ fontWeight: 'bold' }}>{counts.CL || ''}</td>
+                  <td style={{ fontWeight: 'bold' }}>{counts.P || ''}</td>
+                  <td style={{ fontWeight: 'bold' }}>{counts.TotalPresent || ''}</td>
                 </tr>
               );
             })}
@@ -152,14 +162,31 @@ const AttendanceSheetTab = ({ selectedMonth, selectedYear }) => {
         </table>
       </div>
 
-      <div className={styles.noPrint} style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Legend (Click cells to toggle):</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}><span style={{ display: 'inline-block', width: '20px', height: '20px', borderRadius: '4px' }} className={styles.statusP}></span> Present</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}><span style={{ display: 'inline-block', width: '20px', height: '20px', borderRadius: '4px' }} className={styles.statusA}></span> Absent</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}><span style={{ display: 'inline-block', width: '20px', height: '20px', borderRadius: '4px' }} className={styles.statusSUN}></span> Sunday</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}><span style={{ display: 'inline-block', width: '20px', height: '20px', borderRadius: '4px' }} className={styles.statusCL}></span> Casual Leave</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}><span style={{ display: 'inline-block', width: '20px', height: '20px', borderRadius: '4px' }} className={styles.statusH}></span> Holiday</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}><span style={{ display: 'inline-block', width: '20px', height: '20px', borderRadius: '4px' }} className={styles.statusOT}></span> Overtime</div>
+      <div style={{ marginTop: '1.5rem', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <table className={styles.slipTable} style={{ width: '200px' }}>
+          <thead>
+             <tr><th colSpan="2" style={{ backgroundColor: '#f1f5f9' }}>NOTE:-</th></tr>
+          </thead>
+          <tbody>
+             <tr><td className={styles.attP}>PRESENT</td><td className={styles.attP} style={{ fontWeight: 'bold' }}>P</td></tr>
+             <tr><td className={styles.attA}>ABSENT</td><td className={styles.attA} style={{ fontWeight: 'bold' }}>A</td></tr>
+             <tr><td className={styles.attSUN}>SUNDAY</td><td className={styles.attSUN} style={{ fontWeight: 'bold' }}>SUN</td></tr>
+             <tr><td className={styles.attCL}>CL</td><td className={styles.attCL} style={{ fontWeight: 'bold' }}>CL</td></tr>
+             <tr><td className={styles.attH}>HOLIDAY</td><td className={styles.attH} style={{ fontWeight: 'bold' }}>HOLIDAY</td></tr>
+             <tr><td className={styles.attOT}>OVER TIME</td><td className={styles.attOT} style={{ fontWeight: 'bold' }}>OT</td></tr>
+          </tbody>
+        </table>
+
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: '1rem' }}>
+           <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '40px' }}></div>
+              <p style={{ margin: 0, fontWeight: 'bold' }}>PRINCIPAL</p>
+           </div>
+           <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '150px', borderBottom: '1px solid #000', marginBottom: '0.5rem', height: '40px' }}></div>
+              <p style={{ margin: 0, fontWeight: 'bold' }}>MANAGING DIRECTOR</p>
+           </div>
+        </div>
       </div>
     </div>
   );
