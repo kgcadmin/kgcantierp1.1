@@ -4,28 +4,34 @@
 
 /* Modernized but Format-Preserving Styles */
 @media print {
-  body * { visibility: hidden !important; }
+  body { margin: 0; padding: 0; background: white; }
   .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
+  body * { visibility: hidden !important; }
+  
   .salaryPrintArea { 
-    position: absolute; 
-    left: 0; 
-    top: 0; 
+    visibility: visible !important;
+    position: relative !important; 
     width: 100% !important; 
     margin: 0 !important; 
-    padding: 10mm !important; /* Force consistent internal margin */
-    background: white; 
-    z-index: 99999; 
+    padding: 15mm !important; 
+    background: white !important; 
     box-sizing: border-box !important;
   }
   .noPrint, .no-print { display: none !important; }
   
   @page {
     size: A4 landscape;
-    margin: 0; /* Reset browser margins to avoid double-padding or variation */
+    margin: 0; 
+  }
+
+  .scrollWrapper {
+    overflow: visible !important;
+    width: 100% !important;
   }
 
   .slipTable {
     width: 100% !important;
+    min-width: 100% !important;
     table-layout: auto !important;
   }
 }
