@@ -6,12 +6,26 @@
 @media print {
   body * { visibility: hidden !important; }
   .salaryPrintArea, .salaryPrintArea * { visibility: visible !important; }
-  .salaryPrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; z-index: 99999; }
-  .noPrint { display: none !important; }
+  .salaryPrintArea { 
+    position: absolute; 
+    left: 0; 
+    top: 0; 
+    width: 100% !important; 
+    margin: 0 !important; 
+    padding: 0 !important;
+    background: white; 
+    z-index: 99999; 
+  }
+  .noPrint, .no-print { display: none !important; }
   
   @page {
-    size: landscape;
-    margin: 10mm;
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  .slipTable {
+    width: 100% !important;
+    table-layout: auto !important;
   }
 }
 
