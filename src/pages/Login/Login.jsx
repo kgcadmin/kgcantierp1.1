@@ -72,28 +72,24 @@ const Login = () => {
     }
   };
 
-  const handleVerifyOTP = (e) => {
+  const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError('');
-    const result = verifyOTP(otp);
+    const result = await verifyOTP(otp);
     if (result.status === 'ok') {
       navigate(from, { replace: true });
-    } else if (result.status === 'expired') {
-      setStep('credentials');
-      setError('OTP expired. Please login again.');
     } else {
-      setError('Incorrect code. Please try again.');
+      setError(result.message || 'Incorrect code. Please try again.');
     }
   };
 
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     // Re-trigger login to get a new OTP
-    const result = login(email, password);
+    const result = await login(email, password);
     if (result.status === '2fa') {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       setOtpTimer(300);
-      setError('');
     }
   };
 

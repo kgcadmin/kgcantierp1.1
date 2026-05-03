@@ -9,11 +9,14 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Simple in-memory storage for OTPs (In production with multiple instances, use Redis)
+const otpCache = new Map();
+
 // Initialize Nodemailer Transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.hostinger.com',
   port: parseInt(process.env.SMTP_PORT || '465'),
-  secure: parseInt(process.env.SMTP_PORT || '465') === 465, // true for 465, false for other ports
+  secure: parseInt(process.env.SMTP_PORT || '465') === 465, 
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -21,58 +24,69 @@ const transporter = nodemailer.createTransport({
 });
 
 // Verify SMTP connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ SMTP Connection Error:', error);
-  } else {
-    console.log('✅ SMTP Server is ready to take our messages');
-  }
+transporter.verify((error) => {
+  if (error) console.error('❌ SMTP Connection Error:', error);
+  else console.log('✅ SMTP Server is ready');
 });
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Basic health check route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Backend is running securely' });
-});
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Email dispatch route
-app.post('/api/email/send', async (req, res) => {
-  const { to, subject, body } = req.body;
+/**
+ * Generate and Send OTP
+ */
+app.post('/api/otp/generate', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
 
-  // Security check: ensure SMTP credentials exist
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error("Missing SMTP credentials. Please check your .env file.");
-    return res.status(500).json({ success: false, error: "Email service is not configured." });
-  }
-
-  if (!to || !subject || !body) {
-    return res.status(400).json({ success: false, error: "Missing required fields: to, subject, or body." });
-  }
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
 
   try {
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: process.env.FROM_EMAIL || process.env.SMTP_USER,
-      to: to,
-      subject: subject,
-      html: `<div style="font-family: sans-serif; padding: 20px; color: #333;">
-               <p>${body}</p>
+      to: email,
+      subject: 'Your Login Verification Code',
+      html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 500px;">
+               <h2 style="color: #4f46e5;">Verification Code</h2>
+               <p>Your OTP for KGC ERP is:</p>
+               <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b; margin: 20px 0;">${otp}</div>
+               <p style="color: #64748b; font-size: 14px;">This code will expire in 5 minutes. If you did not request this, please ignore this email.</p>
              </div>`
     });
 
-    console.log("Email sent successfully:", info.messageId);
-    res.status(200).json({ success: true, messageId: info.messageId });
+    otpCache.set(email, { otp, expiry });
+    console.log(`OTP generated for ${email}`);
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Nodemailer Error:", error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error("OTP Generation Error:", error);
+    res.status(500).json({ error: "Failed to send email" });
   }
 });
 
+/**
+ * Verify OTP
+ */
+app.post('/api/otp/verify', (req, res) => {
+  const { email, otp } = req.body;
+  const cached = otpCache.get(email);
+
+  if (!cached) return res.status(400).json({ error: "No OTP found. Please request a new one." });
+  if (Date.now() > cached.expiry) {
+    otpCache.delete(email);
+    return res.status(400).json({ error: "OTP has expired" });
+  }
+  if (cached.otp !== otp.trim()) return res.status(400).json({ error: "Incorrect verification code" });
+
+  // Success
+  otpCache.delete(email);
+  res.status(200).json({ success: true });
+});
+
 app.listen(port, () => {
-  console.log(`\n======================================================`);
   console.log(`🚀 KGC ERP Backend running on http://localhost:${port}`);
-  console.log(`📧 SMTP User: ${process.env.SMTP_USER || 'Not Configured'}`);
-  console.log(`======================================================\n`);
 });

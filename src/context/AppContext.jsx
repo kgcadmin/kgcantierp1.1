@@ -60,7 +60,7 @@ export const AppContextProvider = ({ children }) => {
   const PASSWORD_CHANGE_DAYS = 90;
   const MAX_SESSIONS = 3;
 
-  const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
 
   const registerSession = (userId) => {
     const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -100,19 +100,17 @@ export const AppContextProvider = ({ children }) => {
 
     // 2FA for privileged roles (not students)
     if (TWO_FA_ROLES.includes(user.role)) {
-      const otp = generateOTP();
-      const otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
-      setPendingTwoFAUser({ user, otp, otpExpiry });
-      
-      // LIVE MODE: Make actual API call to backend to dispatch email
-      api.sendEmail({
-        to: user.email,
-        subject: 'Your Login Verification Code',
-        body: `Your OTP for KGC ERP is: ${otp}. It will expire in 5 minutes.`
-      }).catch(err => console.error("Email dispatch failed:", err));
+      const res = await api.generateOTP(user.email);
+      if (res.success) {
+        setPendingTwoFAUser({ user });
+        return { status: '2fa', user };
+      } else {
+        console.error("Email dispatch failed:", res.error);
+        return { status: 'error', message: res.error };
+      }
+    }
 
-      // Fallback log for testing purposes while backend is unconnected
-      console.log(`[SIMULATED EMAIL DISPATCH] 2FA OTP for ${user.email} is: ${otp}`);
+
       return { status: '2fa', user }; 
     }
 
@@ -123,17 +121,18 @@ export const AppContextProvider = ({ children }) => {
     return { status: 'ok' };
   };
 
-  const verifyOTP = (enteredOTP) => {
+  const verifyOTP = async (enteredOTP) => {
     if (!pendingTwoFAUser) return { status: 'no_pending' };
-    const { user, otp, otpExpiry } = pendingTwoFAUser;
-    if (Date.now() > otpExpiry) {
-      setPendingTwoFAUser(null);
-      return { status: 'expired' };
+    const { user } = pendingTwoFAUser;
+
+    const res = await api.verifyOTP(user.email, enteredOTP);
+    
+    if (!res.success) {
+      console.warn("OTP Verification Failed:", res.error);
+      return { status: 'invalid', message: res.error };
     }
-    if (enteredOTP.trim() !== otp) {
-      console.warn("OTP Mismatch:", { entered: enteredOTP.trim(), expected: otp });
-      return { status: 'invalid' };
-    }
+
+    // OTP correct — complete login
     // OTP correct — complete login
     registerSession(user.id);
     setCurrentUser(user);

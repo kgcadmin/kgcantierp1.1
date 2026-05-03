@@ -100,17 +100,37 @@ export const api = {
       return null;
     }
   },
-  sendEmail: async (payload) => {
+  generateOTP: async (email) => {
     try {
-      const res = await fetch(`${API_URL}/api/email/send`, {
+      const res = await fetch(`${API_URL}/api/otp/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ email })
       });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to generate OTP');
+      }
       return await res.json();
     } catch (err) {
-      console.error(`API Send Email failed:`, err.message);
+      console.error(`API Generate OTP failed:`, err.message);
+      return { success: false, error: err.message };
+    }
+  },
+  verifyOTP: async (email, otp) => {
+    try {
+      const res = await fetch(`${API_URL}/api/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Invalid OTP');
+      }
+      return await res.json();
+    } catch (err) {
+      console.error(`API Verify OTP failed:`, err.message);
       return { success: false, error: err.message };
     }
   }
