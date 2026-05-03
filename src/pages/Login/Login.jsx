@@ -64,6 +64,8 @@ const Login = () => {
         setTimeout(() => setShowToast(false), 3000);
         setOtpTimer(300);
         setStep('2fa');
+      } else if (result.status === 'error') {
+        setError(result.message || 'Failed to send verification email. Please try again.');
       } else if (result.status === 'ok') {
         navigate(from, { replace: true });
       }
