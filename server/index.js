@@ -40,7 +40,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
  * Generate and Send OTP
  */
 app.post('/api/otp/generate', async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email?.toLowerCase();
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -60,7 +60,7 @@ app.post('/api/otp/generate', async (req, res) => {
     });
 
     otpCache.set(email, { otp, expiry });
-    console.log(`OTP generated for ${email}`);
+    console.log(`[DEBUG] Generated OTP for ${email}: ${otp}`);
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("OTP Generation Error:", error);
@@ -72,8 +72,11 @@ app.post('/api/otp/generate', async (req, res) => {
  * Verify OTP
  */
 app.post('/api/otp/verify', (req, res) => {
-  const { email, otp } = req.body;
+  const email = req.body.email?.toLowerCase();
+  const { otp } = req.body;
   const cached = otpCache.get(email);
+
+  console.log(`[DEBUG] Verifying OTP for ${email}. Entered: ${otp}, Expected: ${cached?.otp}`);
 
   if (!cached) return res.status(400).json({ error: "No OTP found. Please request a new one." });
   if (Date.now() > cached.expiry) {
