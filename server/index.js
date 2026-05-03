@@ -10,13 +10,16 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env file (check current dir and parent dir)
+// 1. LOAD CONFIG FIRST
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Connect to MongoDB
+console.log('--- SERVER STARTUP ---');
+console.log('SMTP_USER:', process.env.SMTP_USER || 'NOT FOUND');
+
+// 2. CONNECT TO MONGODB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/edusec')
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
