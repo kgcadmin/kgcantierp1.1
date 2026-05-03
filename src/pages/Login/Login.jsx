@@ -85,6 +85,7 @@ const Login = () => {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError('');
+    setSessionError('');
     const result = await verifyOTP(otp);
     if (result.status === 'ok') {
       navigate(from, { replace: true });
@@ -94,12 +95,23 @@ const Login = () => {
   };
 
   const handleResendOTP = async () => {
-    // Re-trigger login to get a new OTP
+    setError('');
+    setSessionError('');
     const result = await login(email, password);
     if (result.status === '2fa') {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       setOtpTimer(300);
+    } else if (result.status === 'invalid') {
+      setError('Invalid email or password. Please check your login details.');
+      setStep('credentials');
+    } else if (result.status === 'session_limit') {
+      setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
+      setSessionUserId(result.userId);
+      setStep('credentials');
+    } else if (result.status === 'error') {
+      setError(result.message || 'Unable to resend verification code. Please try again.');
+      setStep('credentials');
     }
   };
 

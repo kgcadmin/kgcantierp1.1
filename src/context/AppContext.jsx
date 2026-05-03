@@ -133,19 +133,18 @@ export const AppContextProvider = ({ children }) => {
   };
 
   const verifyOTP = async (enteredOTP) => {
-    if (!pendingTwoFAUser) return { status: 'no_pending' };
+    if (!pendingTwoFAUser) return { status: 'no_pending', message: 'Your verification session has expired. Please log in again.' };
     const { user } = pendingTwoFAUser;
 
     const res = await api.verifyOTP(user.email, enteredOTP);
     
     if (!res.success) {
       console.warn("OTP Verification Failed:", res.error);
-      return { status: 'invalid', message: res.error };
+      return { status: 'invalid', message: res.error || 'Incorrect verification code.' };
     }
 
     // OTP correct — complete login
-    // OTP correct — complete login
-    registerSession(user.id);
+    await registerSession(user.id);
     setCurrentUser(user);
     localStorage.setItem('nexus_user', JSON.stringify(user));
     setPendingTwoFAUser(null);
