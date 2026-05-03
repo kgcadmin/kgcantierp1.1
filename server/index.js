@@ -106,17 +106,33 @@ app.post('/api/otp/generate', async (req, res) => {
 });
 
 app.post('/api/otp/verify', (req, res) => {
-  const email = req.body.email?.toLowerCase();
-  const { otp } = req.body;
+  const email = req.body.email?.toLowerCase().trim();
+  const otp = req.body.otp?.toString().trim();
+  
+  console.log(`[AUTH] Verification attempt for: ${email}`);
+  console.log(`[AUTH] Code entered: "${otp}"`);
+
   const cached = otpCache.get(email);
 
-  if (!cached) return res.status(400).json({ error: "No code found. Please request a new one." });
+  if (!cached) {
+    console.warn(`[AUTH] No cached OTP found for ${email}. Current cache keys:`, [...otpCache.keys()]);
+    return res.status(400).json({ error: "No code found. Please request a new one." });
+  }
+
+  console.log(`[AUTH] Cached data found: code="${cached.otp}", expires=${new Date(cached.expiry).toLocaleTimeString()}`);
+
   if (Date.now() > cached.expiry) {
+    console.warn(`[AUTH] Code expired for ${email}`);
     otpCache.delete(email);
     return res.status(400).json({ error: "Verification code has expired" });
   }
-  if (cached.otp !== otp?.trim()) return res.status(400).json({ error: "Incorrect verification code" });
 
+  if (cached.otp !== otp) {
+    console.warn(`[AUTH] Mismatch! Expected "${cached.otp}", got "${otp}"`);
+    return res.status(400).json({ error: "Incorrect verification code" });
+  }
+
+  console.log(`[AUTH] Success! Verified ${email}`);
   otpCache.delete(email);
   res.status(200).json({ success: true });
 });
