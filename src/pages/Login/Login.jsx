@@ -1,7 +1,7 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react';
-import { AppContext } from '../../context/AppContext';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Navigate, useLocation, Link } from 'react-router-dom';
+import { GraduationCap, Mail, Lock, ShieldCheck, RefreshCw, AlertCircle, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import styles from './Login.module.css';
 
 const maskEmail = (email) => {
@@ -16,21 +16,17 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [step, setStep] = useState('credentials'); // 'credentials' | '2fa'
   const [otp, setOtp] = useState('');
-  const [displayedOTP, setDisplayedOTP] = useState('');
-  const [otpTimer, setOtpTimer] = useState(300); // 5 min countdown
-  const [sessionError, setSessionError] = useState('');
-  const [sessionUserId, setSessionUserId] = useState(null);
-  const [showToast, setShowToast] = useState(false);
+  const [step, setStep] = useState('credentials'); // 'credentials' | '2fa'
+  const [otpTimer, setOtpTimer] = useState(300);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const navigate = useNavigate();
-  const { login, currentUser, systemConfig, verifyOTP, pendingTwoFAUser, clearOtherSessions } = useContext(AppContext);
+  const { login, verifyOTP, user: currentUser, pendingTwoFA } = useAuth();
   const location = useLocation();
   const from = location.state?.from || '/dashboard';
+  const successMessage = location.state?.message;
 
-  // Countdown timer for OTP
   useEffect(() => {
     if (step !== '2fa') return;
     if (otpTimer <= 0) {
@@ -42,7 +38,6 @@ const Login = () => {
     return () => clearTimeout(t);
   }, [step, otpTimer]);
 
-  // Resend cooldown timer
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setTimeout(() => setResendCooldown(s => s - 1), 1000);
@@ -57,25 +52,17 @@ const Login = () => {
     
     setIsLoading(true);
     setError('');
-    setSessionError('');
     
     try {
       const result = await login(email, password);
 
-      if (result.status === 'invalid') {
-        setError('Invalid email or password');
-      } else if (result.status === 'session_limit') {
-        setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
-        setSessionUserId(result.userId);
-      } else if (result.status === '2fa') {
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+      if (result.status === '2fa') {
         setOtpTimer(300);
         setStep('2fa');
-      } else if (result.status === 'error') {
-        setError(result.message || 'Failed to send verification email. Please try again.');
       } else if (result.status === 'ok') {
         navigate(from, { replace: true });
+      } else {
+        setError(result.message || 'Invalid email or password');
       }
     } finally {
       setIsLoading(false);
@@ -84,35 +71,15 @@ const Login = () => {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     setError('');
-    setSessionError('');
     const result = await verifyOTP(otp);
     if (result.status === 'ok') {
       navigate(from, { replace: true });
     } else {
       setError(result.message || 'Incorrect code. Please try again.');
     }
-  };
-
-  const handleResendOTP = async () => {
-    setError('');
-    setSessionError('');
-    const result = await login(email, password);
-    if (result.status === '2fa') {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      setOtpTimer(300);
-    } else if (result.status === 'invalid') {
-      setError('Invalid email or password. Please check your login details.');
-      setStep('credentials');
-    } else if (result.status === 'session_limit') {
-      setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
-      setSessionUserId(result.userId);
-      setStep('credentials');
-    } else if (result.status === 'error') {
-      setError(result.message || 'Unable to resend verification code. Please try again.');
-      setStep('credentials');
-    }
+    setIsLoading(false);
   };
 
   if (currentUser) return <Navigate to={from} replace />;
@@ -123,17 +90,20 @@ const Login = () => {
     <div className={styles.loginContainer}>
       <div className={`glass-panel ${styles.loginCard}`}>
         <div className={styles.logo}>
-          {systemConfig?.collegeLogo ? (
-            <img src={systemConfig.collegeLogo} alt="Logo" style={{ width: '48px', height: '48px', marginBottom: '1rem', borderRadius: '8px' }} />
-          ) : (
-            <GraduationCap className={styles.logoIcon} />
-          )}
-          <h1 className={`${styles.logoText} gradient-text`}>{systemConfig?.collegeShortName || 'KGC'} ERP</h1>
+          <GraduationCap className={styles.logoIcon} />
+          <h1 className={`${styles.logoText} gradient-text`}>KGC ERP</h1>
         </div>
 
         {step === 'credentials' && (
           <>
             <p className={styles.subtitle}>Sign in to access your institutional portal</p>
+            
+            {successMessage && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1rem', color: '#059669', fontSize: '0.875rem', textAlign: 'center' }}>
+                {successMessage}
+              </div>
+            )}
+
             <form onSubmit={handleLogin}>
               <div className={styles.formGroup}>
                 <label>Email Address</label>
@@ -170,35 +140,19 @@ const Login = () => {
                   <AlertCircle size={16} /> {error}
                 </div>
               )}
-              {sessionError && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem', background: 'rgba(245,158,11,0.1)', padding: '1rem', borderRadius: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: '#f59e0b', fontSize: '0.875rem', lineHeight: 1.4 }}>
-                    <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} /> {sessionError}
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      clearOtherSessions(sessionUserId);
-                      setSessionError('');
-                      setSessionUserId(null);
-                      // Auto-login after clearing
-                      handleLogin({ preventDefault: () => {} });
-                    }}
-                    style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', alignSelf: 'flex-start' }}
-                  >
-                    Log out of all other devices
-                  </button>
-                </div>
-              )}
 
               <button 
-              type="submit" 
-              className={styles.submitBtn}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Verifying...' : 'Sign In'}
-            </button>
+                type="submit" 
+                className={styles.submitBtn}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Verifying...' : 'Sign In'} <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
+              </button>
             </form>
+            
+            <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+              Don't have an account? <Link to="/signup" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>Sign Up</Link>
+            </p>
           </>
         )}
 
@@ -210,15 +164,9 @@ const Login = () => {
               </div>
               <h2 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 700 }}>Two-Factor Verification</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-                A 6-digit code was sent to <strong>{maskEmail(email)}</strong>
+                A 6-digit code was sent to <strong>{maskEmail(pendingTwoFA?.email || email)}</strong>
               </p>
             </div>
-
-            {showToast && (
-              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.5rem', textAlign: 'center', color: '#059669', fontSize: '0.875rem', fontWeight: 500 }}>
-                Verification code sent successfully to your email.
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOTP}>
               <div className={styles.formGroup}>
@@ -245,34 +193,25 @@ const Login = () => {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
                 <span>Expires in <strong style={{ color: otpTimer < 60 ? '#ef4444' : 'var(--primary)' }}>{fmtTimer}</strong></span>
                 <button 
                   type="button" 
-                  onClick={async () => {
+                  onClick={() => {
                     if (resendCooldown > 0) return;
                     setResendCooldown(30);
-                    handleResendOTP();
+                    login(email, password);
                   }} 
                   disabled={resendCooldown > 0}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: resendCooldown > 0 ? 'var(--text-secondary)' : 'var(--primary)', 
-                    cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.25rem', 
-                    fontWeight: 600,
-                    opacity: resendCooldown > 0 ? 0.6 : 1
-                  }}
+                  style={{ background: 'none', border: 'none', color: resendCooldown > 0 ? 'var(--text-secondary)' : 'var(--primary)', cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer', fontWeight: 600 }}
                 >
-                  <RefreshCw size={13} className={resendCooldown > 0 ? styles.spin : ''} /> 
                   {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                 </button>
               </div>
 
-              <button type="submit" className={styles.submitBtn}>Verify & Sign In</button>
+              <button type="submit" className={styles.submitBtn} disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify & Sign In'}
+              </button>
               <button type="button" onClick={() => { setStep('credentials'); setError(''); setOtp(''); }} style={{ width: '100%', marginTop: '0.75rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.75rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
                 ← Back to Login
               </button>

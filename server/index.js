@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -35,7 +37,21 @@ const DataSchema = new mongoose.Schema({
 
 const DataModel = mongoose.model('Data', DataSchema);
 
-// 3. OTP STORAGE (MONGODB)
+// 3. AUTH & USER MODELS
+const UserSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true, index: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true },
+  role: { type: String, enum: ['Admin', 'Faculty', 'Office Staff', 'Management', 'Student'], default: 'Student' },
+  isVerified: { type: Boolean, default: false },
+  linkedId: String, // ID of student/faculty record
+  activeSessions: [{ token: String, createdAt: Date }],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const UserModel = mongoose.model('User', UserSchema);
+
+// OTP STORAGE (MONGODB)
 const OTPSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
   otp: { type: String, required: true },
@@ -81,8 +97,84 @@ transporter.verify((error) => {
 app.use(cors());
 app.use(express.json());
 
+// JWT Middleware
+const JWT_SECRET = process.env.JWT_SECRET || 'kgc-erp-super-secret-2026';
+
+const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (err) return res.sendStatus(403);
+      req.user = user;
+      next();
+    });
+  } else {
+    res.sendStatus(401);
+  }
+};
+
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+/**
+ * AUTH ROUTES
+ */
+
+// Signup
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, name, role } = req.body;
+    
+    const existing = await UserModel.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(400).json({ error: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new UserModel({
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      name,
+      role
+    });
+
+    await newUser.save();
+    res.status(201).json({ success: true, message: "User registered successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await UserModel.findOne({ email: email.toLowerCase() });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Check for 2FA requirement (all privileged roles)
+    const privilegedRoles = ['Admin', 'Faculty', 'Office Staff', 'Management'];
+    if (privilegedRoles.includes(user.role)) {
+      return res.status(200).json({ 
+        requiresTwoFA: true, 
+        email: user.email,
+        message: "2FA verification required"
+      });
+    }
+
+    // Direct login for students or non-privileged
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ 
+      success: true, 
+      token, 
+      user: { id: user._id, email: user.email, name: user.name, role: user.role } 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /**
  * OTP Routes
@@ -156,42 +248,40 @@ app.post('/api/otp/verify', async (req, res) => {
   const otp = req.body.otp?.toString().trim();
   
   console.log(`[AUTH] Verification attempt for: ${email}`);
-  console.log(`[AUTH] Code entered: "${otp}"`);
-
+  
   try {
     const cached = await OTPModel.findOne({ email });
 
-    if (!cached) {
-      console.warn(`[AUTH] No record found in DB for ${email}`);
-      return res.status(400).json({ error: "No code found. Please request a new one." });
-    }
-
-    console.log(`[AUTH] Record found in DB: code="${cached.otp}", expires=${cached.expiresAt.toLocaleTimeString()}`);
-
+    if (!cached) return res.status(400).json({ error: "No code found. Please request a new one." });
     if (Date.now() > cached.expiresAt.getTime()) {
-      console.warn(`[AUTH] Code expired for ${email}`);
       await OTPModel.deleteOne({ email });
       return res.status(400).json({ error: "Verification code has expired" });
     }
+    if (cached.otp !== otp) return res.status(400).json({ error: "Incorrect verification code" });
 
-    if (cached.otp !== otp) {
-      console.warn(`[AUTH] Mismatch! Expected "${cached.otp}", got "${otp}"`);
-      return res.status(400).json({ error: "Incorrect verification code" });
-    }
+    // Success! Generate JWT Token
+    const user = await UserModel.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    console.log(`[AUTH] Success! Verified ${email}`);
     await OTPModel.deleteOne({ email });
-    res.status(200).json({ success: true });
+    
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    
+    res.status(200).json({ 
+      success: true, 
+      token,
+      user: { id: user._id, email: user.email, name: user.name, role: user.role }
+    });
   } catch (error) {
-    console.error("OTP Verification DB Error:", error);
     res.status(500).json({ error: "Database error during verification." });
   }
 });
 
 /**
  * Data Persistence Routes (Generic CRUD)
+ * Now protected by JWT
  */
-app.get('/api/data/:collection', async (req, res) => {
+app.get('/api/data/:collection', authenticateJWT, async (req, res) => {
   try {
     const docs = await DataModel.find({ collectionName: req.params.collection });
     res.json(docs.map(d => d.content));
@@ -200,7 +290,7 @@ app.get('/api/data/:collection', async (req, res) => {
   }
 });
 
-app.post('/api/data/:collection', async (req, res) => {
+app.post('/api/data/:collection', authenticateJWT, async (req, res) => {
   try {
     const { id } = req.body;
     await DataModel.findOneAndUpdate(
@@ -214,7 +304,7 @@ app.post('/api/data/:collection', async (req, res) => {
   }
 });
 
-app.put('/api/data/:collection/:id', async (req, res) => {
+app.put('/api/data/:collection/:id', authenticateJWT, async (req, res) => {
   try {
     await DataModel.findOneAndUpdate(
       { collectionName: req.params.collection, dataId: req.params.id },
@@ -227,7 +317,7 @@ app.put('/api/data/:collection/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/data/:collection/:id', async (req, res) => {
+app.delete('/api/data/:collection/:id', authenticateJWT, async (req, res) => {
   try {
     await DataModel.deleteOne({ collectionName: req.params.collection, dataId: req.params.id });
     res.json({ success: true });

@@ -2,7 +2,9 @@ import React, { Suspense, lazy, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login/Login';
+import Signup from './pages/Signup/Signup';
 import { AppContext, AppContextProvider } from './context/AppContext';
+import { AuthProvider } from './context/AuthContext';
 import { ShieldAlert } from 'lucide-react';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -46,9 +48,11 @@ const MaintenanceMode = () => (
 
 function App() {
   return (
-    <AppContextProvider>
-      <AppContent />
-    </AppContextProvider>
+    <AuthProvider>
+      <AppContextProvider>
+        <AppContent />
+      </AppContextProvider>
+    </AuthProvider>
   );
 }
 
@@ -62,9 +66,9 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingFallback />}>
-
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
             
             {/* Protected Routes inside MainLayout */}
             <Route path="/" element={<MainLayout />}>
@@ -189,13 +193,13 @@ function AppContent() {
                   <Settings />
                 </ProtectedRoute>
               } />
-
+ 
               <Route path="user-credentials" element={
                 <ProtectedRoute allowedRoles={['Admin', 'Management']}>
                   <UserCredentials />
                 </ProtectedRoute>
               } />
-
+ 
               <Route path="data-archive" element={
                 <ProtectedRoute allowedRoles={['Admin', 'Management']}>
                   <DataArchive />
@@ -210,6 +214,5 @@ function AppContent() {
       </BrowserRouter>
   );
 }
-
 
 export default App;

@@ -31,6 +31,7 @@ import {
 } from '../data/mockData';
 import { api } from '../utils/api';
 
+import { useAuth } from './AuthContext';
 
 export const AppContext = createContext();
 
@@ -38,164 +39,14 @@ export const AppContext = createContext();
 export const fileStore = new Map();
 
 export const AppContextProvider = ({ children }) => {
+  const { user: currentUser, logout: authLogout } = useAuth();
   const [users, setUsers] = useState(() => {
     const savedUsers = localStorage.getItem('edusec_users');
     return savedUsers ? JSON.parse(savedUsers) : usersData;
   });
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('nexus_user');
-    if (savedUser) return JSON.parse(savedUser);
-    return null; // Fixed: Prevent auto-login as Admin upon refresh
-  });
-  
-  // Session tracking now moved to global user state instead of isolated local storage
-  // to enforce the 3-device limit across different environments.
-
-  // Two-factor auth pending state
-  const [pendingTwoFAUser, setPendingTwoFAUser] = useState(null);
-
-  const SUPER_ADMIN_EMAIL = 'axto@kashibaiganpatcollege.com';
-  const TWO_FA_ROLES = ['Admin', 'Faculty', 'Office Staff', 'Management'];
-  const PASSWORD_CHANGE_DAYS = 90;
-  const MAX_SESSIONS = 3;
-
-
-
-  const registerSession = async (userId) => {
-    const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const newSession = { token, createdAt: new Date().toISOString() };
-    
-    let updatedUser = null;
-    setUsers(prevUsers => prevUsers.map(u => {
-      if (u.id === userId) {
-        const existing = u.activeSessions || [];
-        updatedUser = { ...u, activeSessions: [...existing, newSession] };
-        return updatedUser;
-      }
-      return u;
-    }));
-    
-    if (updatedUser) {
-      await syncToVPS('users', updatedUser, userId, 'PUT');
-    }
-    return token;
-  };
-
-  const getActiveSessionCount = (userId) => {
-    const user = users.find(u => u.id === userId);
-    return (user?.activeSessions || []).length;
-  };
-
-  const clearOtherSessions = async (userId) => {
-    let updatedUser = null;
-    setUsers(prevUsers => prevUsers.map(u => {
-      if (u.id === userId) {
-        updatedUser = { ...u, activeSessions: [] };
-        return updatedUser;
-      }
-      return u;
-    }));
-    
-    if (updatedUser) {
-      await syncToVPS('users', updatedUser, userId, 'PUT');
-    }
-    addActivity(`User ${userId} forcefully logged out of all other devices due to limit.`, ['Admin']);
-  };
-
-  const login = async (email, password) => {
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) return { status: 'invalid' };
-
-    // Check session limit
-    const sessionCount = getActiveSessionCount(user.id);
-    if (sessionCount >= MAX_SESSIONS) {
-      return { status: 'session_limit', count: sessionCount, userId: user.id };
-    }
-
-    // 2FA for privileged roles (not students)
-    if (TWO_FA_ROLES.includes(user.role)) {
-      const res = await api.generateOTP(user.email);
-      if (res.success) {
-        setPendingTwoFAUser({ user });
-        return { status: '2fa', user };
-      } else {
-        console.error("Email dispatch failed:", res.error);
-        return { status: 'error', message: res.error };
-      }
-    }
-
-    // Direct login for Students
-    registerSession(user.id);
-    setCurrentUser(user);
-    localStorage.setItem('nexus_user', JSON.stringify(user));
-    return { status: 'ok' };
-  };
-
-  const verifyOTP = async (enteredOTP) => {
-    if (!pendingTwoFAUser) return { status: 'no_pending', message: 'Your verification session has expired. Please log in again.' };
-    const { user } = pendingTwoFAUser;
-
-    const res = await api.verifyOTP(user.email, enteredOTP);
-    
-    if (!res.success) {
-      console.warn("OTP Verification Failed:", res.error);
-      return { status: 'invalid', message: res.error || 'Incorrect verification code.' };
-    }
-
-    // OTP correct — complete login
-    await registerSession(user.id);
-    setCurrentUser(user);
-    localStorage.setItem('nexus_user', JSON.stringify(user));
-    setPendingTwoFAUser(null);
-    return { status: 'ok' };
-  };
-
   const logout = async () => {
-    if (currentUser) {
-       // Free up a session slot by removing the oldest active session
-       let updatedUser = null;
-       setUsers(prevUsers => prevUsers.map(u => {
-         if(u.id === currentUser.id && u.activeSessions?.length > 0) {
-           updatedUser = { ...u, activeSessions: u.activeSessions.slice(1) };
-           return updatedUser;
-         }
-         return u;
-       }));
-       
-       if (updatedUser) {
-         await syncToVPS('users', updatedUser, currentUser.id, 'PUT');
-       }
-    }
-    setCurrentUser(null);
-    setPendingTwoFAUser(null);
-    localStorage.removeItem('nexus_user');
-  };
-
-  const changePassword = (currentPassword, newPassword) => {
-    if (!currentUser) return { ok: false, message: 'Not logged in.' };
-    if (currentUser.password !== currentPassword) return { ok: false, message: 'Current password is incorrect.' };
-
-    const isSuperAdmin = currentUser.email === SUPER_ADMIN_EMAIL || currentUser.isSuperAdmin;
-
-    if (!isSuperAdmin) {
-      const lastChange = currentUser.lastPasswordChange;
-      if (lastChange) {
-        const daysSince = (Date.now() - new Date(lastChange).getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSince < PASSWORD_CHANGE_DAYS) {
-          const nextAllowed = new Date(new Date(lastChange).getTime() + PASSWORD_CHANGE_DAYS * 24 * 60 * 60 * 1000);
-          return { ok: false, message: `Password can only be changed once every ${PASSWORD_CHANGE_DAYS} days. Next allowed: ${nextAllowed.toDateString()}.` };
-        }
-      }
-    }
-
-    const now = new Date().toISOString();
-    const updatedUser = { ...currentUser, password: newPassword, lastPasswordChange: now };
-    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
-    setUsers(updatedUsers);
-    setCurrentUser(updatedUser);
-    localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
-    return { ok: true, message: 'Password updated successfully.' };
+    authLogout();
   };
 
   // Helper to load from localStorage or fallback to initial
