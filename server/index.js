@@ -131,16 +131,30 @@ app.post('/api/auth/signup', async (req, res) => {
     if (existing) return res.status(400).json({ error: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Check if user exists in institutional records (Pre-onboarded)
+    const institutionalRecord = await DataModel.findOne({
+      collectionName: { $in: ['students', 'faculty', 'staff'] },
+      'content.email': email.toLowerCase()
+    });
+
+    const isPreOnboarded = !!institutionalRecord;
+    const status = isPreOnboarded ? 'Active' : 'Pending';
+    const message = isPreOnboarded 
+      ? "Institutional record found! Your account is active. Please log in." 
+      : "Account created! Awaiting admin approval.";
+
     const newUser = new UserModel({
       email: email.toLowerCase(),
       password: hashedPassword,
       name,
       role: role || 'Student',
-      status: 'Pending'
+      status: status,
+      linkedId: institutionalRecord?.dataId
     });
 
     await newUser.save();
-    res.status(201).json({ success: true, message: "Account created! Awaiting admin approval." });
+    res.status(201).json({ success: true, message });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
