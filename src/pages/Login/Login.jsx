@@ -41,24 +41,34 @@ const Login = () => {
     return () => clearTimeout(t);
   }, [step, otpTimer]);
 
-  const handleLogin = (e) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
+    
+    setIsLoading(true);
     setError('');
     setSessionError('');
-    const result = login(email, password);
+    
+    try {
+      const result = await login(email, password);
 
-    if (result.status === 'invalid') {
-      setError('Invalid email or password');
-    } else if (result.status === 'session_limit') {
-      setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
-      setSessionUserId(result.userId);
-    } else if (result.status === '2fa') {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      setOtpTimer(300);
-      setStep('2fa');
-    } else if (result.status === 'ok') {
-      navigate(from, { replace: true });
+      if (result.status === 'invalid') {
+        setError('Invalid email or password');
+      } else if (result.status === 'session_limit') {
+        setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
+        setSessionUserId(result.userId);
+      } else if (result.status === '2fa') {
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+        setOtpTimer(300);
+        setStep('2fa');
+      } else if (result.status === 'ok') {
+        navigate(from, { replace: true });
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -163,7 +173,13 @@ const Login = () => {
                 </div>
               )}
 
-              <button type="submit" className={styles.submitBtn}>Sign In</button>
+              <button 
+              type="submit" 
+              className={styles.submitBtn}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Verifying...' : 'Sign In'}
+            </button>
             </form>
           </>
         )}

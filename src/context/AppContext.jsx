@@ -130,7 +130,10 @@ export const AppContextProvider = ({ children }) => {
       setPendingTwoFAUser(null);
       return { status: 'expired' };
     }
-    if (enteredOTP.trim() !== otp) return { status: 'invalid' };
+    if (enteredOTP.trim() !== otp) {
+      console.warn("OTP Mismatch:", { entered: enteredOTP.trim(), expected: otp });
+      return { status: 'invalid' };
+    }
     // OTP correct — complete login
     registerSession(user.id);
     setCurrentUser(user);
