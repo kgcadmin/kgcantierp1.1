@@ -65,6 +65,17 @@ const UserCredentials = () => {
     setIsLoading(false);
   };
 
+  const handleToggleStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 'Pending' || currentStatus === 'Blocked' ? 'Active' : 'Blocked';
+    try {
+      await api.put('users', userId, { status: newStatus });
+      setUsers(prev => prev.map(u => (u._id === userId || u.id === userId) ? { ...u, status: newStatus } : u));
+      showToast(`User marked as ${newStatus}`);
+    } catch (error) {
+      alert('Failed to update status');
+    }
+  };
+
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user? This will revoke their access immediately.')) return;
     
@@ -93,7 +104,7 @@ const UserCredentials = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.25rem' }}>User Credentials</h1>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Manage login accounts and roles for the institutional portal.</p>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Manage login accounts, approvals, and roles.</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -107,7 +118,7 @@ const UserCredentials = () => {
       <div style={{ padding: '0.875rem 1.25rem', borderRadius: '0.75rem', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.875rem', color: 'var(--primary)' }}>
         <KeyRound size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
         <div>
-          <strong>Secure Authentication Active.</strong> All user passwords are now encrypted (hashed) and cannot be viewed by administrators. If a user loses their password, they should use the password reset flow or have their account recreated.
+          <strong>User Approval System Active.</strong> New signups are set to "Pending" and cannot log in until approved. Use the "Approve" button in the table below to grant access.
         </div>
       </div>
 
@@ -144,13 +155,14 @@ const UserCredentials = () => {
                 <th style={{ padding: '0.875rem 1rem' }}>User</th>
                 <th style={{ padding: '0.875rem 1rem' }}>Email</th>
                 <th style={{ padding: '0.875rem 1rem' }}>Role</th>
-                <th style={{ padding: '0.875rem 1rem' }}>Security</th>
+                <th style={{ padding: '0.875rem 1rem' }}>Status</th>
                 <th style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((u, idx) => {
                 const rc = ROLE_COLORS[u.role] || ROLE_COLORS.Student;
+                const statusColor = u.status === 'Active' ? '#10b981' : u.status === 'Pending' ? '#f59e0b' : '#ef4444';
                 return (
                   <tr key={u._id || u.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
                     <td style={{ padding: '1rem' }}>
@@ -172,19 +184,44 @@ const UserCredentials = () => {
                       <span style={{ padding: '0.25rem 0.65rem', borderRadius: '2rem', fontSize: '0.75rem', fontWeight: 600, background: rc.bg, color: rc.color }}>{u.role}</span>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8125rem', fontWeight: 500 }}>
-                        <ShieldCheck size={14} /> Hashed
-                      </div>
+                      <span style={{ 
+                        padding: '0.25rem 0.5rem', 
+                        borderRadius: '0.375rem', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 700, 
+                        background: `${statusColor}15`, 
+                        color: statusColor,
+                        border: `1px solid ${statusColor}30`
+                      }}>
+                        {u.status || 'Active'}
+                      </span>
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleDeleteUser(u._id || u.id)}
-                        disabled={u.email === currentUser?.email}
-                        title="Delete User"
-                        style={{ padding: '0.5rem', borderRadius: '0.375rem', background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444', cursor: u.email === currentUser?.email ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: u.email === currentUser?.email ? 0.5 : 1 }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        {u.status !== 'Active' ? (
+                          <button
+                            onClick={() => handleToggleStatus(u._id || u.id, u.status)}
+                            style={{ padding: '0.4rem 0.75rem', borderRadius: '0.375rem', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                          >
+                            Approve
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleStatus(u._id || u.id, u.status)}
+                            disabled={u.email === currentUser?.email}
+                            style={{ padding: '0.4rem 0.75rem', borderRadius: '0.375rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid #ef444430', cursor: u.email === currentUser?.email ? 'not-allowed' : 'pointer', fontSize: '0.75rem', fontWeight: 600, opacity: u.email === currentUser?.email ? 0.5 : 1 }}
+                          >
+                            Block
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteUser(u._id || u.id)}
+                          disabled={u.email === currentUser?.email}
+                          style={{ padding: '0.4rem', borderRadius: '0.375rem', background: 'var(--bg-base)', border: '1px solid var(--border-light)', color: '#ef4444', cursor: u.email === currentUser?.email ? 'not-allowed' : 'pointer', opacity: u.email === currentUser?.email ? 0.5 : 1 }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
