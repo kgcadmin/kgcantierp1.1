@@ -117,6 +117,17 @@ app.post('/api/otp/generate', async (req, res) => {
       console.log(`[DEBUG] Generated NEW OTP for ${email}: ${otp}`);
     }
 
+    // 1. Save or update in DB FIRST
+    // This ensures validation works even if email delivery fails intermittently
+    await OTPModel.findOneAndUpdate(
+      { email },
+      { otp, expiresAt: expiry, lastSent: new Date(now) },
+      { upsert: true, new: true }
+    );
+
+    console.log(`[DEBUG] OTP saved to DB for ${email}. Attempting to send email...`);
+
+    // 2. Then try to send the email
     await transporter.sendMail({
       from: process.env.FROM_EMAIL || process.env.SMTP_USER,
       to: email,
@@ -131,17 +142,12 @@ app.post('/api/otp/generate', async (req, res) => {
              </div>`
     });
 
-    // Save or update in DB
-    await OTPModel.findOneAndUpdate(
-      { email },
-      { otp, expiresAt: expiry, lastSent: new Date(now) },
-      { upsert: true, new: true }
-    );
-
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("OTP Generation/Email Error:", error);
-    res.status(500).json({ error: "Failed to process OTP request. Please check SMTP settings." });
+    // Even if email fails, we return 200 if it's already in DB for debugging purposes
+    // Or we can return 500 but the OTP remains in DB for the next attempt
+    res.status(500).json({ error: "Failed to send email. Please check SMTP settings." });
   }
 });
 
