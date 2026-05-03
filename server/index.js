@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -9,8 +9,25 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+  port: parseInt(process.env.SMTP_PORT || '465'),
+  secure: parseInt(process.env.SMTP_PORT || '465') === 465, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// Verify SMTP connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ SMTP Connection Error:', error);
+  } else {
+    console.log('✅ SMTP Server is ready to take our messages');
+  }
+});
 
 // Middleware
 app.use(cors());
@@ -25,9 +42,9 @@ app.get('/api/health', (req, res) => {
 app.post('/api/email/send', async (req, res) => {
   const { to, subject, body } = req.body;
 
-  // Security check: ensure API key exists
-  if (!process.env.RESEND_API_KEY) {
-    console.error("Missing RESEND_API_KEY. Please check your .env file.");
+  // Security check: ensure SMTP credentials exist
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error("Missing SMTP credentials. Please check your .env file.");
     return res.status(500).json({ success: false, error: "Email service is not configured." });
   }
 
@@ -36,8 +53,8 @@ app.post('/api/email/send', async (req, res) => {
   }
 
   try {
-    const data = await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'Acme <onboarding@resend.dev>', // Default resend testing email
+    const info = await transporter.sendMail({
+      from: process.env.FROM_EMAIL || process.env.SMTP_USER,
       to: to,
       subject: subject,
       html: `<div style="font-family: sans-serif; padding: 20px; color: #333;">
@@ -45,16 +62,17 @@ app.post('/api/email/send', async (req, res) => {
              </div>`
     });
 
-    res.status(200).json({ success: true, data });
+    console.log("Email sent successfully:", info.messageId);
+    res.status(200).json({ success: true, messageId: info.messageId });
   } catch (error) {
-    console.error("Resend API Error:", error);
+    console.error("Nodemailer Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 app.listen(port, () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 Secure Backend Server running on http://localhost:${port}`);
-  console.log(`🔒 Resend API Key Configured: ${process.env.RESEND_API_KEY ? 'Yes ✅' : 'No ❌'}`);
+  console.log(`🚀 KGC ERP Backend running on http://localhost:${port}`);
+  console.log(`📧 SMTP User: ${process.env.SMTP_USER || 'Not Configured'}`);
   console.log(`======================================================\n`);
 });
