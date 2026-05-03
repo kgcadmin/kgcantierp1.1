@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import mongoose from 'mongoose';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -9,7 +10,22 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Simple in-memory storage for OTPs (In production with multiple instances, use Redis)
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/edusec')
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+// Define a generic schema for data collections
+const DataSchema = new mongoose.Schema({
+  collectionName: String,
+  dataId: { type: String, unique: true },
+  content: mongoose.Schema.Types.Mixed,
+  updatedAt: { type: Date, default: Date.now }
+}, { strict: false });
+
+const DataModel = mongoose.model('Data', DataSchema);
+
+// Simple in-memory storage for OTPs
 const otpCache = new Map();
 
 // Initialize Nodemailer Transporter
@@ -37,7 +53,7 @@ app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 /**
- * Generate and Send OTP
+ * OTP Routes
  */
 app.post('/api/otp/generate', async (req, res) => {
   const email = req.body.email?.toLowerCase();
@@ -46,66 +62,119 @@ app.post('/api/otp/generate', async (req, res) => {
   const now = Date.now();
   const cached = otpCache.get(email);
 
-  // If an OTP exists and was generated less than 60 seconds ago, reuse it
-  // This prevents "Double OTP" issues where 2 requests fire and overwrite each other
-  if (cached && (cached.expiry - now) > (4 * 60 * 1000)) { 
-    console.log(`[DEBUG] Reusing existing OTP for ${email} (Rate limit protection)`);
-    return res.status(200).json({ success: true });
+  // Cooldown protection: 30 seconds
+  if (cached && (now - cached.lastSent) < 30000) {
+    const wait = Math.ceil((30000 - (now - cached.lastSent)) / 1000);
+    return res.status(429).json({ error: `Please wait ${wait} seconds before requesting another code.` });
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiry = now + 5 * 60 * 1000; // 5 minutes
+  let otp;
+  let expiry;
+
+  if (cached && now < cached.expiry) {
+    // Reuse existing OTP but re-send the email
+    otp = cached.otp;
+    expiry = cached.expiry;
+    console.log(`[DEBUG] Reusing existing OTP for ${email}`);
+  } else {
+    // Generate new OTP
+    otp = Math.floor(100000 + Math.random() * 900000).toString();
+    expiry = now + 5 * 60 * 1000; // 5 minutes
+  }
 
   try {
     await transporter.sendMail({
       from: process.env.FROM_EMAIL || process.env.SMTP_USER,
       to: email,
-      subject: 'Your Login Verification Code',
-      html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 500px;">
-               <h2 style="color: #4f46e5;">Verification Code</h2>
-               <p>Your OTP for KGC ERP is:</p>
-               <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b; margin: 20px 0;">${otp}</div>
-               <p style="color: #64748b; font-size: 14px;">This code will expire in 5 minutes. If you did not request this, please ignore this email.</p>
+      subject: 'Verification Code - KGC ERP',
+      html: `<div style="font-family: 'Inter', sans-serif; padding: 40px; background-color: #f8fafc; color: #1e293b;">
+               <div style="max-width: 500px; margin: 0 auto; background: white; padding: 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+                 <h2 style="color: #4f46e5; margin-top: 0; font-size: 24px;">Login Verification</h2>
+                 <p style="font-size: 16px; color: #64748b;">Your verification code for KGC ERP is:</p>
+                 <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1e293b; margin: 32px 0; text-align: center; font-family: monospace;">${otp}</div>
+                 <p style="color: #94a3b8; font-size: 14px; margin-bottom: 0;">This code will expire in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
+               </div>
              </div>`
     });
 
-    otpCache.set(email, { otp, expiry });
-    console.log(`[DEBUG] Generated OTP for ${email}: ${otp}`);
+    otpCache.set(email, { otp, expiry, lastSent: now });
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("OTP Generation Error:", error);
-    res.status(500).json({ error: "Failed to send email" });
+    console.error("OTP Error:", error);
+    res.status(500).json({ error: "Failed to send email. Please check SMTP settings." });
   }
 });
 
-/**
- * Verify OTP
- */
 app.post('/api/otp/verify', (req, res) => {
   const email = req.body.email?.toLowerCase();
   const { otp } = req.body;
   const cached = otpCache.get(email);
 
-  console.log(`[DEBUG] Verifying OTP for ${email}. Entered: ${otp}, Expected: ${cached?.otp}`);
-
-  if (!cached) return res.status(400).json({ error: "No OTP found. Please request a new one." });
+  if (!cached) return res.status(400).json({ error: "No code found. Please request a new one." });
   if (Date.now() > cached.expiry) {
     otpCache.delete(email);
-    return res.status(400).json({ error: "OTP has expired" });
+    return res.status(400).json({ error: "Verification code has expired" });
   }
-  if (cached.otp !== otp.trim()) return res.status(400).json({ error: "Incorrect verification code" });
+  if (cached.otp !== otp?.trim()) return res.status(400).json({ error: "Incorrect verification code" });
 
-  // Success
   otpCache.delete(email);
   res.status(200).json({ success: true });
 });
 
-// Catch-all 404 handler (Returns JSON instead of HTML)
+/**
+ * Data Persistence Routes (Generic CRUD)
+ */
+app.get('/api/data/:collection', async (req, res) => {
+  try {
+    const docs = await DataModel.find({ collectionName: req.params.collection });
+    res.json(docs.map(d => d.content));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/data/:collection', async (req, res) => {
+  try {
+    const { id } = req.body;
+    await DataModel.findOneAndUpdate(
+      { collectionName: req.params.collection, dataId: id },
+      { content: req.body, updatedAt: Date.now() },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/data/:collection/:id', async (req, res) => {
+  try {
+    await DataModel.findOneAndUpdate(
+      { collectionName: req.params.collection, dataId: req.params.id },
+      { content: req.body, updatedAt: Date.now() },
+      { upsert: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/data/:collection/:id', async (req, res) => {
+  try {
+    await DataModel.deleteOne({ collectionName: req.params.collection, dataId: req.params.id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Catch-all 404
 app.use((req, res) => {
-  console.warn(`404 Not Found: ${req.method} ${req.url}`);
-  res.status(404).json({ error: `Route ${req.url} not found on this server` });
+  res.status(404).json({ error: `Route ${req.url} not found` });
 });
 
 app.listen(port, () => {
-  console.log(`🚀 KGC ERP Backend running on http://localhost:${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
+

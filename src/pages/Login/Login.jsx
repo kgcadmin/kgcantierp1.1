@@ -23,6 +23,7 @@ const Login = () => {
   const [sessionError, setSessionError] = useState('');
   const [sessionUserId, setSessionUserId] = useState(null);
   const [showToast, setShowToast] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const navigate = useNavigate();
   const { login, currentUser, systemConfig, verifyOTP, pendingTwoFAUser, clearOtherSessions } = useContext(AppContext);
@@ -40,6 +41,13 @@ const Login = () => {
     const t = setTimeout(() => setOtpTimer(s => s - 1), 1000);
     return () => clearTimeout(t);
   }, [step, otpTimer]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -227,8 +235,28 @@ const Login = () => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
                 <span>Expires in <strong style={{ color: otpTimer < 60 ? '#ef4444' : 'var(--primary)' }}>{fmtTimer}</strong></span>
-                <button type="button" onClick={handleResendOTP} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
-                  <RefreshCw size={13} /> Resend Code
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    if (resendCooldown > 0) return;
+                    setResendCooldown(30);
+                    handleResendOTP();
+                  }} 
+                  disabled={resendCooldown > 0}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: resendCooldown > 0 ? 'var(--text-secondary)' : 'var(--primary)', 
+                    cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.25rem', 
+                    fontWeight: 600,
+                    opacity: resendCooldown > 0 ? 0.6 : 1
+                  }}
+                >
+                  <RefreshCw size={13} className={resendCooldown > 0 ? styles.spin : ''} /> 
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                 </button>
               </div>
 

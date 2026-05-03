@@ -62,17 +62,23 @@ export const AppContextProvider = ({ children }) => {
 
 
 
-  const registerSession = (userId) => {
+  const registerSession = async (userId) => {
     const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const newSession = { token, createdAt: new Date().toISOString() };
     
+    let updatedUser = null;
     setUsers(prevUsers => prevUsers.map(u => {
       if (u.id === userId) {
         const existing = u.activeSessions || [];
-        return { ...u, activeSessions: [...existing, newSession] };
+        updatedUser = { ...u, activeSessions: [...existing, newSession] };
+        return updatedUser;
       }
       return u;
     }));
+    
+    if (updatedUser) {
+      await syncToVPS('users', updatedUser, userId, 'PUT');
+    }
     return token;
   };
 
@@ -81,10 +87,19 @@ export const AppContextProvider = ({ children }) => {
     return (user?.activeSessions || []).length;
   };
 
-  const clearOtherSessions = (userId) => {
-    setUsers(prevUsers => prevUsers.map(u => 
-      u.id === userId ? { ...u, activeSessions: [] } : u
-    ));
+  const clearOtherSessions = async (userId) => {
+    let updatedUser = null;
+    setUsers(prevUsers => prevUsers.map(u => {
+      if (u.id === userId) {
+        updatedUser = { ...u, activeSessions: [] };
+        return updatedUser;
+      }
+      return u;
+    }));
+    
+    if (updatedUser) {
+      await syncToVPS('users', updatedUser, userId, 'PUT');
+    }
     addActivity(`User ${userId} forcefully logged out of all other devices due to limit.`, ['Admin']);
   };
 
@@ -137,15 +152,21 @@ export const AppContextProvider = ({ children }) => {
     return { status: 'ok' };
   };
 
-  const logout = () => {
+  const logout = async () => {
     if (currentUser) {
        // Free up a session slot by removing the oldest active session
+       let updatedUser = null;
        setUsers(prevUsers => prevUsers.map(u => {
          if(u.id === currentUser.id && u.activeSessions?.length > 0) {
-           return { ...u, activeSessions: u.activeSessions.slice(1) };
+           updatedUser = { ...u, activeSessions: u.activeSessions.slice(1) };
+           return updatedUser;
          }
          return u;
        }));
+       
+       if (updatedUser) {
+         await syncToVPS('users', updatedUser, currentUser.id, 'PUT');
+       }
     }
     setCurrentUser(null);
     setPendingTwoFAUser(null);
