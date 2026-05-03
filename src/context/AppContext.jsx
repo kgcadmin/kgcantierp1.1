@@ -88,7 +88,7 @@ export const AppContextProvider = ({ children }) => {
     addActivity(`User ${userId} forcefully logged out of all other devices due to limit.`, ['Admin']);
   };
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     const user = users.find(u => u.email === email && u.password === password);
     if (!user) return { status: 'invalid' };
 
@@ -108,10 +108,6 @@ export const AppContextProvider = ({ children }) => {
         console.error("Email dispatch failed:", res.error);
         return { status: 'error', message: res.error };
       }
-    }
-
-
-      return { status: '2fa', user }; 
     }
 
     // Direct login for Students
