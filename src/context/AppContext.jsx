@@ -49,11 +49,8 @@ export const AppContextProvider = ({ children }) => {
     return users[0]; // Default to Admin
   });
   
-  // Session tracking (max 3 devices)
-  const [sessions, setSessions] = useState(() => {
-    const saved = localStorage.getItem('edusec_sessions');
-    return saved ? JSON.parse(saved) : {};
-  });
+  // Session tracking now moved to global user state instead of isolated local storage
+  // to enforce the 3-device limit across different environments.
 
   // Two-factor auth pending state
   const [pendingTwoFAUser, setPendingTwoFAUser] = useState(null);
@@ -65,23 +62,30 @@ export const AppContextProvider = ({ children }) => {
 
   const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-  const getSessionKey = (userId) => `sessions_${userId}`;
-
   const registerSession = (userId) => {
-    const key = getSessionKey(userId);
-    const existing = JSON.parse(localStorage.getItem(key) || '[]');
     const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const newSessions = [...existing, { token, createdAt: new Date().toISOString() }];
-    // Keep only latest MAX_SESSIONS
-    const trimmed = newSessions.slice(-MAX_SESSIONS);
-    localStorage.setItem(key, JSON.stringify(trimmed));
+    const newSession = { token, createdAt: new Date().toISOString() };
+    
+    setUsers(prevUsers => prevUsers.map(u => {
+      if (u.id === userId) {
+        const existing = u.activeSessions || [];
+        return { ...u, activeSessions: [...existing, newSession] };
+      }
+      return u;
+    }));
     return token;
   };
 
   const getActiveSessionCount = (userId) => {
-    const key = getSessionKey(userId);
-    const existing = JSON.parse(localStorage.getItem(key) || '[]');
-    return existing.length;
+    const user = users.find(u => u.id === userId);
+    return (user?.activeSessions || []).length;
+  };
+
+  const clearOtherSessions = (userId) => {
+    setUsers(prevUsers => prevUsers.map(u => 
+      u.id === userId ? { ...u, activeSessions: [] } : u
+    ));
+    addActivity(`User ${userId} forcefully logged out of all other devices due to limit.`, ['Admin']);
   };
 
   const login = (email, password) => {
@@ -91,7 +95,7 @@ export const AppContextProvider = ({ children }) => {
     // Check session limit
     const sessionCount = getActiveSessionCount(user.id);
     if (sessionCount >= MAX_SESSIONS) {
-      return { status: 'session_limit', count: sessionCount };
+      return { status: 'session_limit', count: sessionCount, userId: user.id };
     }
 
     // 2FA for privileged roles (not students)
@@ -99,7 +103,10 @@ export const AppContextProvider = ({ children }) => {
       const otp = generateOTP();
       const otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
       setPendingTwoFAUser({ user, otp, otpExpiry });
-      return { status: '2fa', user, otp }; // otp returned so Login page can display it
+      // LIVE MODE: Simulate sending OTP via email/SMS. 
+      // Do not return it to the UI directly.
+      console.log(`[SIMULATED EMAIL DISPATCH] 2FA OTP for ${user.email} is: ${otp}`);
+      return { status: '2fa', user }; 
     }
 
     // Direct login for Students
@@ -126,6 +133,15 @@ export const AppContextProvider = ({ children }) => {
   };
 
   const logout = () => {
+    if (currentUser) {
+       // Free up a session slot by removing the oldest active session
+       setUsers(prevUsers => prevUsers.map(u => {
+         if(u.id === currentUser.id && u.activeSessions?.length > 0) {
+           return { ...u, activeSessions: u.activeSessions.slice(1) };
+         }
+         return u;
+       }));
+    }
     setCurrentUser(null);
     setPendingTwoFAUser(null);
     localStorage.removeItem('nexus_user');
@@ -1034,8 +1050,8 @@ export const AppContextProvider = ({ children }) => {
     deleteDepartment, deleteCategory, deleteDegree, deleteSubject, deleteBatch,
     deleteExam, deleteTask, deleteNotice, deleteFee, deletePayroll, deleteLeave,
     // Security
-    pendingTwoFAUser, verifyOTP, changePassword,
-    sessions, SUPER_ADMIN_EMAIL, MAX_SESSIONS, PASSWORD_CHANGE_DAYS
+    pendingTwoFAUser, verifyOTP, changePassword, clearOtherSessions,
+    SUPER_ADMIN_EMAIL, MAX_SESSIONS, PASSWORD_CHANGE_DAYS
   }), [
     currentUser, students, faculty, staff, courses, departments, categories, degrees, subjects, 
     batches, enrollments, systemConfig, feeStructures, fees, payroll, leaves, finance, exams, 

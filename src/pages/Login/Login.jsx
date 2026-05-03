@@ -21,9 +21,11 @@ const Login = () => {
   const [displayedOTP, setDisplayedOTP] = useState('');
   const [otpTimer, setOtpTimer] = useState(300); // 5 min countdown
   const [sessionError, setSessionError] = useState('');
+  const [sessionUserId, setSessionUserId] = useState(null);
+  const [showToast, setShowToast] = useState(false);
 
   const navigate = useNavigate();
-  const { login, currentUser, systemConfig, verifyOTP, pendingTwoFAUser } = useContext(AppContext);
+  const { login, currentUser, systemConfig, verifyOTP, pendingTwoFAUser, clearOtherSessions } = useContext(AppContext);
   const location = useLocation();
   const from = location.state?.from || '/dashboard';
 
@@ -49,8 +51,10 @@ const Login = () => {
       setError('Invalid email or password');
     } else if (result.status === 'session_limit') {
       setSessionError(`This account is already logged in on ${result.count} device(s). Maximum allowed is 3. Please log out from another device first.`);
+      setSessionUserId(result.userId);
     } else if (result.status === '2fa') {
-      setDisplayedOTP(result.otp);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
       setOtpTimer(300);
       setStep('2fa');
     } else if (result.status === 'ok') {
@@ -76,7 +80,8 @@ const Login = () => {
     // Re-trigger login to get a new OTP
     const result = login(email, password);
     if (result.status === '2fa') {
-      setDisplayedOTP(result.otp);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
       setOtpTimer(300);
       setError('');
     }
@@ -138,8 +143,23 @@ const Login = () => {
                 </div>
               )}
               {sessionError && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: '#f59e0b', marginBottom: '1rem', fontSize: '0.875rem', background: 'rgba(245,158,11,0.1)', padding: '0.75rem', borderRadius: '0.5rem', lineHeight: 1.4 }}>
-                  <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} /> {sessionError}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem', background: 'rgba(245,158,11,0.1)', padding: '1rem', borderRadius: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: '#f59e0b', fontSize: '0.875rem', lineHeight: 1.4 }}>
+                    <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} /> {sessionError}
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      clearOtherSessions(sessionUserId);
+                      setSessionError('');
+                      setSessionUserId(null);
+                      // Auto-login after clearing
+                      handleLogin({ preventDefault: () => {} });
+                    }}
+                    style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', alignSelf: 'flex-start' }}
+                  >
+                    Log out of all other devices
+                  </button>
                 </div>
               )}
 
@@ -160,11 +180,11 @@ const Login = () => {
               </p>
             </div>
 
-            {/* Debug/Demo box — remove in production when real email is connected */}
-            <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '0.75rem', padding: '0.875rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 0.25rem', fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Demo Mode — Code (sent via email in production)</p>
-              <p style={{ margin: 0, fontSize: '2rem', fontWeight: 700, letterSpacing: '0.5rem', color: 'var(--primary)' }}>{displayedOTP}</p>
-            </div>
+            {showToast && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.5rem', textAlign: 'center', color: '#059669', fontSize: '0.875rem', fontWeight: 500 }}>
+                Verification code sent successfully to your email.
+              </div>
+            )}
 
             <form onSubmit={handleVerifyOTP}>
               <div className={styles.formGroup}>
