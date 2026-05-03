@@ -87,6 +87,12 @@ app.post('/api/otp/verify', (req, res) => {
   res.status(200).json({ success: true });
 });
 
+// Catch-all 404 handler (Returns JSON instead of HTML)
+app.use((req, res) => {
+  console.warn(`404 Not Found: ${req.method} ${req.url}`);
+  res.status(404).json({ error: `Route ${req.url} not found on this server` });
+});
+
 app.listen(port, () => {
   console.log(`🚀 KGC ERP Backend running on http://localhost:${port}`);
 });
