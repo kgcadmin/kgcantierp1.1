@@ -1,6 +1,6 @@
-# Nexus EduSec ERP System
+# KGC ERP System
 
-Nexus EduSec is a comprehensive, highly modular, and lightweight React-based Educational ERP (Enterprise Resource Planning) System. It is designed to manage the entire life-cycle of a modern educational institution.
+KGC ERP is a comprehensive, highly modular, and lightweight React-based Educational ERP (Enterprise Resource Planning) System. It is designed to manage the entire life-cycle of a modern educational institution.
 
 ![Nexus ERP](/absolute/path/to/screenshot/if/you/have/one.png) <!-- Update with an actual screenshot path if desired -->
 

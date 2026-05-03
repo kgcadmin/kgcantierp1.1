@@ -1,4 +1,4 @@
-# VPS Setup Instructions for EduSec ERP
+# VPS Setup Instructions for KGC ERP
 
 Follow these steps to set up the production backend on your Ubuntu VPS.
 

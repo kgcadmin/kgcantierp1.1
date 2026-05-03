@@ -40,7 +40,7 @@ const MaintenanceMode = () => (
   <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: 'white', textAlign: 'center', padding: '2rem' }}>
     <ShieldAlert size={64} color="#f59e0b" style={{ marginBottom: '1.5rem' }} />
     <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>System Under Maintenance</h1>
-    <p style={{ color: '#94a3b8', maxWidth: '500px', fontSize: '1.125rem' }}>We are currently performing scheduled updates to improve your experience. The EduSec ERP will be back online shortly. Thank you for your patience.</p>
+    <p style={{ color: '#94a3b8', maxWidth: '500px', fontSize: '1.125rem' }}>We are currently performing scheduled updates to improve your experience. The KGC ERP will be back online shortly. Thank you for your patience.</p>
   </div>
 );
 
