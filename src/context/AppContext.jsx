@@ -889,7 +889,7 @@ export const AppContextProvider = ({ children }) => {
   };
 
   const contextValue = useMemo(() => ({
-    currentUser, login, logout,
+    currentUser, logout,
     students, addStudent, editStudent, deleteStudent,
     faculty, addFaculty, editFaculty, deleteFaculty,
     staff, addStaff, editStaff, deleteStaff,
@@ -924,10 +924,7 @@ export const AppContextProvider = ({ children }) => {
     recoveredItems, refreshRecoveryData, restoreItem, permanentDeleteItem,
     academicYear, setAcademicYear,
     deleteDepartment, deleteCategory, deleteDegree, deleteSubject, deleteBatch,
-    deleteExam, deleteTask, deleteNotice, deleteFee, deletePayroll, deleteLeave,
-    // Security
-    pendingTwoFAUser, verifyOTP, changePassword, clearOtherSessions,
-    SUPER_ADMIN_EMAIL, MAX_SESSIONS, PASSWORD_CHANGE_DAYS
+    deleteExam, deleteTask, deleteNotice, deleteFee, deletePayroll, deleteLeave
   }), [
     currentUser, students, faculty, staff, courses, departments, categories, degrees, subjects, 
     batches, enrollments, systemConfig, feeStructures, fees, payroll, leaves, finance, exams, 
