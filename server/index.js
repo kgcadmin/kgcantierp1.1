@@ -43,8 +43,18 @@ app.post('/api/otp/generate', async (req, res) => {
   const email = req.body.email?.toLowerCase();
   if (!email) return res.status(400).json({ error: "Email is required" });
 
+  const now = Date.now();
+  const cached = otpCache.get(email);
+
+  // If an OTP exists and was generated less than 60 seconds ago, reuse it
+  // This prevents "Double OTP" issues where 2 requests fire and overwrite each other
+  if (cached && (cached.expiry - now) > (4 * 60 * 1000)) { 
+    console.log(`[DEBUG] Reusing existing OTP for ${email} (Rate limit protection)`);
+    return res.status(200).json({ success: true });
+  }
+
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+  const expiry = now + 5 * 60 * 1000; // 5 minutes
 
   try {
     await transporter.sendMail({
