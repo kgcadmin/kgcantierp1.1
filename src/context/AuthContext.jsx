@@ -74,8 +74,21 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const resetPassword = async (email, otp, newPassword) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '')}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, newPassword })
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: err.message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, verifyOTP, logout, pendingTwoFA }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, verifyOTP, logout, resetPassword, pendingTwoFA }}>
       {children}
     </AuthContext.Provider>
   );

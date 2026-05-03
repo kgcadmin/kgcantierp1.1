@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login/Login';
 import Signup from './pages/Signup/Signup';
+import ForgotPassword from './pages/Login/ForgotPassword';
 import { AppContext, AppContextProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { ShieldAlert } from 'lucide-react';
@@ -69,6 +70,7 @@ function AppContent() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             {/* Protected Routes inside MainLayout */}
             <Route path="/" element={<MainLayout />}>

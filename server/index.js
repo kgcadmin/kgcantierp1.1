@@ -311,6 +311,24 @@ app.post('/api/otp/verify', async (req, res) => {
   }
 });
 
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  try {
+    const cached = await OTPModel.findOne({ email: email.toLowerCase() });
+    if (!cached || cached.otp !== otp || Date.now() > cached.expiresAt.getTime()) {
+      return res.status(400).json({ error: "Invalid or expired verification code" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await UserModel.findOneAndUpdate({ email: email.toLowerCase() }, { password: hashedPassword });
+    await OTPModel.deleteOne({ email: email.toLowerCase() });
+
+    res.json({ success: true, message: "Password reset successful! You can now log in." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // User Management Routes (Admin Only)
 app.get('/api/users', authenticateJWT, async (req, res) => {
   try {
