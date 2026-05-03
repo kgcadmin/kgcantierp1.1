@@ -48,21 +48,33 @@ OTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const OTPModel = mongoose.model('OTP', OTPSchema);
 
-// Initialize Nodemailer Transporter
+// 4. NODEMAILER SETUP
+const smtpPort = parseInt(process.env.SMTP_PORT || '587');
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-  port: parseInt(process.env.SMTP_PORT || '465'),
-  secure: parseInt(process.env.SMTP_PORT || '465') === 465, 
+  port: smtpPort,
+  secure: smtpPort === 465, 
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false // Helps with some VPS/Provider certificate issues
+  }
 });
 
 // Verify SMTP connection on startup
 transporter.verify((error) => {
-  if (error) console.error('❌ SMTP Connection Error:', error);
-  else console.log('✅ SMTP Server is ready');
+  if (error) {
+    console.error('❌ SMTP Connection Error Details:', {
+      code: error.code,
+      message: error.message,
+      user: process.env.SMTP_USER,
+      port: smtpPort
+    });
+  } else {
+    console.log('✅ SMTP Server is ready to take messages');
+  }
 });
 
 // Middleware
