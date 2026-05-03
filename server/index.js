@@ -18,6 +18,7 @@ const port = process.env.PORT || 5000;
 
 console.log('--- SERVER STARTUP ---');
 console.log('SMTP_USER:', process.env.SMTP_USER || 'NOT FOUND');
+console.log('SMTP_PASS:', process.env.SMTP_PASS ? '********' : 'NOT FOUND');
 
 // 2. CONNECT TO MONGODB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/edusec')
@@ -34,8 +35,18 @@ const DataSchema = new mongoose.Schema({
 
 const DataModel = mongoose.model('Data', DataSchema);
 
-// Simple in-memory storage for OTPs
-const otpCache = new Map();
+// 3. OTP STORAGE (MONGODB)
+const OTPSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  otp: { type: String, required: true },
+  expiresAt: { type: Date, required: true },
+  lastSent: { type: Date, default: Date.now }
+});
+
+// TTL Index: Automatically delete document when current time > expiresAt
+OTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+const OTPModel = mongoose.model('OTP', OTPSchema);
 
 // Initialize Nodemailer Transporter
 const transporter = nodemailer.createTransport({
@@ -69,29 +80,31 @@ app.post('/api/otp/generate', async (req, res) => {
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   const now = Date.now();
-  const cached = otpCache.get(email);
-
-  // Cooldown protection: 30 seconds
-  if (cached && (now - cached.lastSent) < 30000) {
-    const wait = Math.ceil((30000 - (now - cached.lastSent)) / 1000);
-    return res.status(429).json({ error: `Please wait ${wait} seconds before requesting another code.` });
-  }
-
-  let otp;
-  let expiry;
-
-  if (cached && now < cached.expiry) {
-    // Reuse existing OTP but re-send the email
-    otp = cached.otp;
-    expiry = cached.expiry;
-    console.log(`[DEBUG] Reusing existing OTP for ${email}`);
-  } else {
-    // Generate new OTP
-    otp = Math.floor(100000 + Math.random() * 900000).toString();
-    expiry = now + 5 * 60 * 1000; // 5 minutes
-  }
-
+  
   try {
+    const cached = await OTPModel.findOne({ email });
+
+    // Cooldown protection: 30 seconds
+    if (cached && (now - cached.lastSent.getTime()) < 30000) {
+      const wait = Math.ceil((30000 - (now - cached.lastSent.getTime())) / 1000);
+      return res.status(429).json({ error: `Please wait ${wait} seconds before requesting another code.` });
+    }
+
+    let otp;
+    let expiry;
+
+    if (cached && now < cached.expiresAt.getTime()) {
+      // Reuse existing OTP but re-send the email
+      otp = cached.otp;
+      expiry = cached.expiresAt;
+      console.log(`[DEBUG] Reusing existing OTP for ${email}: ${otp}`);
+    } else {
+      // Generate new OTP
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      expiry = new Date(now + 5 * 60 * 1000); // 5 minutes
+      console.log(`[DEBUG] Generated NEW OTP for ${email}: ${otp}`);
+    }
+
     await transporter.sendMail({
       from: process.env.FROM_EMAIL || process.env.SMTP_USER,
       to: email,
@@ -106,44 +119,55 @@ app.post('/api/otp/generate', async (req, res) => {
              </div>`
     });
 
-    otpCache.set(email, { otp, expiry, lastSent: now });
+    // Save or update in DB
+    await OTPModel.findOneAndUpdate(
+      { email },
+      { otp, expiresAt: expiry, lastSent: new Date(now) },
+      { upsert: true, new: true }
+    );
+
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("OTP Error:", error);
-    res.status(500).json({ error: "Failed to send email. Please check SMTP settings." });
+    console.error("OTP Generation/Email Error:", error);
+    res.status(500).json({ error: "Failed to process OTP request. Please check SMTP settings." });
   }
 });
 
-app.post('/api/otp/verify', (req, res) => {
+app.post('/api/otp/verify', async (req, res) => {
   const email = req.body.email?.toLowerCase().trim();
   const otp = req.body.otp?.toString().trim();
   
   console.log(`[AUTH] Verification attempt for: ${email}`);
   console.log(`[AUTH] Code entered: "${otp}"`);
 
-  const cached = otpCache.get(email);
+  try {
+    const cached = await OTPModel.findOne({ email });
 
-  if (!cached) {
-    console.warn(`[AUTH] No cached OTP found for ${email}. Current cache keys:`, [...otpCache.keys()]);
-    return res.status(400).json({ error: "No code found. Please request a new one." });
+    if (!cached) {
+      console.warn(`[AUTH] No record found in DB for ${email}`);
+      return res.status(400).json({ error: "No code found. Please request a new one." });
+    }
+
+    console.log(`[AUTH] Record found in DB: code="${cached.otp}", expires=${cached.expiresAt.toLocaleTimeString()}`);
+
+    if (Date.now() > cached.expiresAt.getTime()) {
+      console.warn(`[AUTH] Code expired for ${email}`);
+      await OTPModel.deleteOne({ email });
+      return res.status(400).json({ error: "Verification code has expired" });
+    }
+
+    if (cached.otp !== otp) {
+      console.warn(`[AUTH] Mismatch! Expected "${cached.otp}", got "${otp}"`);
+      return res.status(400).json({ error: "Incorrect verification code" });
+    }
+
+    console.log(`[AUTH] Success! Verified ${email}`);
+    await OTPModel.deleteOne({ email });
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("OTP Verification DB Error:", error);
+    res.status(500).json({ error: "Database error during verification." });
   }
-
-  console.log(`[AUTH] Cached data found: code="${cached.otp}", expires=${new Date(cached.expiry).toLocaleTimeString()}`);
-
-  if (Date.now() > cached.expiry) {
-    console.warn(`[AUTH] Code expired for ${email}`);
-    otpCache.delete(email);
-    return res.status(400).json({ error: "Verification code has expired" });
-  }
-
-  if (cached.otp !== otp) {
-    console.warn(`[AUTH] Mismatch! Expected "${cached.otp}", got "${otp}"`);
-    return res.status(400).json({ error: "Incorrect verification code" });
-  }
-
-  console.log(`[AUTH] Success! Verified ${email}`);
-  otpCache.delete(email);
-  res.status(200).json({ success: true });
 });
 
 /**
