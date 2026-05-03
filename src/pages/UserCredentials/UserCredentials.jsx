@@ -1,7 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/Card/Card';
-import { Eye, EyeOff, Plus, Search, KeyRound, ShieldCheck, Copy, Check, Filter } from 'lucide-react';
+import { Eye, EyeOff, Plus, Search, KeyRound, ShieldCheck, Copy, Check, Filter, Trash2, AlertCircle } from 'lucide-react';
+import { api } from '../../utils/api';
 
 const ROLE_COLORS = {
   Admin: { bg: 'rgba(99,102,241,0.12)', color: '#6366f1' },
@@ -12,36 +14,27 @@ const ROLE_COLORS = {
 };
 
 const UserCredentials = () => {
-  const { users, setUsers, currentUser, SUPER_ADMIN_EMAIL } = useContext(AppContext);
+  const { users, setUsers, currentUser } = useContext(AppContext);
+  const { signup } = useAuth();
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
-  const [revealedIds, setRevealedIds] = useState(new Set());
   const [copied, setCopied] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState(null);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'Faculty' });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const isSuperAdmin = currentUser?.email === SUPER_ADMIN_EMAIL || currentUser?.isSuperAdmin;
-  const isAuthorized = ['Admin', 'Management'].includes(currentUser?.role) || isSuperAdmin;
-
+  const isAuthorized = ['Admin', 'Management'].includes(currentUser?.role);
   const roles = ['All', 'Admin', 'Management', 'Faculty', 'Office Staff', 'Student'];
 
   const filtered = users.filter(u => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      u.id.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.id || u._id || '').toLowerCase().includes(search.toLowerCase());
     const matchRole = roleFilter === 'All' || u.role === roleFilter;
     return matchSearch && matchRole;
   });
-
-  const toggleReveal = (id) => {
-    setRevealedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -52,15 +45,36 @@ const UserCredentials = () => {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
     if (!newUser.name || !newUser.email || !newUser.password) return;
-    const id = `USR${Date.now().toString().slice(-5)}`;
-    const user = { id, ...newUser, lastPasswordChange: null };
-    setUsers(prev => [...prev, user]);
-    showToast(`User ${newUser.name} created successfully!`);
-    setShowAddModal(false);
-    setNewUser({ name: '', email: '', password: '', role: 'Faculty' });
+    
+    setIsLoading(true);
+    const result = await signup(newUser);
+    
+    if (result.status === 'ok') {
+      showToast(`User ${newUser.name} created successfully!`);
+      setShowAddModal(false);
+      setNewUser({ name: '', email: '', password: '', role: 'Faculty' });
+      // Refresh user list
+      const updatedUsers = await api.get('users');
+      if (updatedUsers) setUsers(updatedUsers);
+    } else {
+      alert(result.message || 'Failed to create user');
+    }
+    setIsLoading(false);
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This will revoke their access immediately.')) return;
+    
+    try {
+      await api.delete('users', userId);
+      setUsers(prev => prev.filter(u => u._id !== userId && u.id !== userId));
+      showToast('User deleted successfully');
+    } catch (error) {
+      alert('Failed to delete user');
+    }
   };
 
   if (!isAuthorized) {
@@ -79,7 +93,7 @@ const UserCredentials = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.25rem' }}>User Credentials</h1>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Manage login IDs and initial passwords assigned to all system users.</p>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Manage login accounts and roles for the institutional portal.</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -90,10 +104,10 @@ const UserCredentials = () => {
       </div>
 
       {/* Info Banner */}
-      <div style={{ padding: '0.875rem 1.25rem', borderRadius: '0.75rem', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.875rem', color: '#d97706' }}>
+      <div style={{ padding: '0.875rem 1.25rem', borderRadius: '0.75rem', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.875rem', color: 'var(--primary)' }}>
         <KeyRound size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
         <div>
-          <strong>Sensitive Data — Authorized Access Only.</strong> Passwords shown here are the <em>initial</em> system-assigned credentials. Users should be prompted to change them on first login. Do not share this screen. Access is logged.
+          <strong>Secure Authentication Active.</strong> All user passwords are now encrypted (hashed) and cannot be viewed by administrators. If a user loses their password, they should use the password reset flow or have their account recreated.
         </div>
       </div>
 
@@ -104,7 +118,7 @@ const UserCredentials = () => {
             <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
             <input
               type="text"
-              placeholder="Search by name, email or ID…"
+              placeholder="Search users..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ width: '100%', padding: '0.625rem 0.75rem 0.625rem 2.25rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.875rem' }}
@@ -118,9 +132,6 @@ const UserCredentials = () => {
               >{r}</button>
             ))}
           </div>
-          <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
-            {filtered.length} of {users.length} users
-          </span>
         </div>
       </Card>
 
@@ -130,70 +141,56 @@ const UserCredentials = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
-                <th style={{ padding: '0.875rem 1rem' }}>#</th>
-                <th style={{ padding: '0.875rem 1rem' }}>User ID</th>
-                <th style={{ padding: '0.875rem 1rem' }}>Name</th>
+                <th style={{ padding: '0.875rem 1rem' }}>User</th>
                 <th style={{ padding: '0.875rem 1rem' }}>Email</th>
                 <th style={{ padding: '0.875rem 1rem' }}>Role</th>
-                <th style={{ padding: '0.875rem 1rem' }}>Initial Password</th>
-                <th style={{ padding: '0.875rem 1rem' }}>Last Changed</th>
+                <th style={{ padding: '0.875rem 1rem' }}>Security</th>
                 <th style={{ padding: '0.875rem 1rem', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((u, idx) => {
-                const revealed = revealedIds.has(u.id);
                 const rc = ROLE_COLORS[u.role] || ROLE_COLORS.Student;
-                const lastChange = u.lastPasswordChange ? new Date(u.lastPasswordChange).toLocaleDateString() : null;
                 return (
-                  <tr key={u.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-                    <td style={{ padding: '1rem', color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>{idx + 1}</td>
+                  <tr key={u._id || u.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <code style={{ background: 'var(--bg-base)', padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, border: '1px solid var(--border-light)' }}>{u.id}</code>
-                        {u.isSuperAdmin && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '2rem', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white' }}>
-                            <ShieldCheck size={8} /> SUPER
-                          </span>
-                        )}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>ID: {u.id || u._id}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</td>
-                    <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{u.email}</td>
+                    <td style={{ padding: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{u.email}</span>
+                        <button onClick={() => copyToClipboard(u.email, u.id + '_email')}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied === u.id + '_email' ? '#10b981' : 'var(--text-tertiary)', padding: '2px' }}>
+                          {copied === u.id + '_email' ? <Check size={13} /> : <Copy size={13} />}
+                        </button>
+                      </div>
+                    </td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ padding: '0.25rem 0.65rem', borderRadius: '2rem', fontSize: '0.75rem', fontWeight: 600, background: rc.bg, color: rc.color }}>{u.role}</span>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <code style={{ fontFamily: 'monospace', fontSize: '0.875rem', color: revealed ? 'var(--text-primary)' : 'transparent', textShadow: revealed ? 'none' : '0 0 8px var(--text-primary)', userSelect: revealed ? 'text' : 'none', transition: 'all 0.3s' }}>
-                          {u.password}
-                        </code>
-                        {revealed && (
-                          <button onClick={() => copyToClipboard(u.password, u.id + '_pw')}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied === u.id + '_pw' ? '#10b981' : 'var(--text-tertiary)', padding: '2px' }}>
-                            {copied === u.id + '_pw' ? <Check size={13} /> : <Copy size={13} />}
-                          </button>
-                        )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10b981', fontSize: '0.8125rem', fontWeight: 500 }}>
+                        <ShieldCheck size={14} /> Hashed
                       </div>
-                    </td>
-                    <td style={{ padding: '1rem', fontSize: '0.8125rem', color: lastChange ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}>
-                      {lastChange ? lastChange : <span style={{ fontStyle: 'italic' }}>Never changed</span>}
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                       <button
-                        onClick={() => toggleReveal(u.id)}
-                        title={revealed ? 'Hide password' : 'Reveal password'}
-                        style={{ padding: '0.4rem 0.75rem', borderRadius: '0.375rem', background: revealed ? 'rgba(239,68,68,0.1)' : 'var(--bg-base)', border: '1px solid var(--border-light)', color: revealed ? '#ef4444' : 'var(--text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8125rem', transition: 'all 0.2s' }}
+                        onClick={() => handleDeleteUser(u._id || u.id)}
+                        disabled={u.email === currentUser?.email}
+                        title="Delete User"
+                        style={{ padding: '0.5rem', borderRadius: '0.375rem', background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444', cursor: u.email === currentUser?.email ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: u.email === currentUser?.email ? 0.5 : 1 }}
                       >
-                        {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
-                        {revealed ? 'Hide' : 'Reveal'}
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>No users match the current filter.</td></tr>
+                <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>No users found.</td></tr>
               )}
             </tbody>
           </table>
@@ -229,16 +226,16 @@ const UserCredentials = () => {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Initial Password *</label>
-                  <input type="text" required value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} placeholder="e.g. Pass@2026" style={{ width: '100%', padding: '0.7rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Password *</label>
+                  <input type="password" required value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" style={{ width: '100%', padding: '0.7rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '0.9rem' }} />
                 </div>
               </div>
-              <div style={{ padding: '0.75rem', background: 'rgba(99,102,241,0.08)', borderRadius: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                💡 <strong>Tip:</strong> Share these credentials securely with the user. They can change their password from Settings after logging in.
-              </div>
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+              
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ flex: 2, padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}>Create Account</button>
+                <button type="submit" disabled={isLoading} style={{ flex: 2, padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', opacity: isLoading ? 0.7 : 1 }}>
+                  {isLoading ? 'Creating...' : 'Create Account'}
+                </button>
               </div>
             </form>
           </Card>
@@ -247,8 +244,8 @@ const UserCredentials = () => {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#1e293b', color: 'white', padding: '1rem 1.5rem', borderRadius: '0.75rem', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', zIndex: 3000, fontSize: '0.9rem', fontWeight: 500 }}>
-          ✓ {toast}
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#10b981', color: 'white', padding: '1rem 1.5rem', borderRadius: '0.75rem', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', zIndex: 3000, fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Check size={18} /> {toast}
         </div>
       )}
     </div>
