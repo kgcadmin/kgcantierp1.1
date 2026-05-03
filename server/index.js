@@ -247,32 +247,48 @@ app.post('/api/otp/verify', async (req, res) => {
   const email = req.body.email?.toLowerCase().trim();
   const otp = req.body.otp?.toString().trim();
   
-  console.log(`[AUTH] Verification attempt for: ${email}`);
+  console.log(`[AUTH] Verification attempt for: "${email}" with code: "${otp}"`);
   
   try {
     const cached = await OTPModel.findOne({ email });
 
-    if (!cached) return res.status(400).json({ error: "No code found. Please request a new one." });
+    if (!cached) {
+      console.log(`[AUTH] FAILED: No record found in MongoDB for email "${email}"`);
+      return res.status(400).json({ error: "No code found. Please request a new one." });
+    }
+
+    console.log(`[AUTH] Found in DB: code="${cached.otp}", email="${cached.email}"`);
+
     if (Date.now() > cached.expiresAt.getTime()) {
+      console.log(`[AUTH] FAILED: Code expired for "${email}"`);
       await OTPModel.deleteOne({ email });
       return res.status(400).json({ error: "Verification code has expired" });
     }
-    if (cached.otp !== otp) return res.status(400).json({ error: "Incorrect verification code" });
+
+    if (cached.otp !== otp) {
+      console.log(`[AUTH] MISMATCH: Expected "${cached.otp}", user entered "${otp}"`);
+      return res.status(400).json({ error: "Incorrect verification code" });
+    }
 
     // Success! Generate JWT Token
     const user = await UserModel.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      console.log(`[AUTH] FAILED: User "${email}" not found in UserModel`);
+      return res.status(404).json({ error: "User not found" });
+    }
 
     await OTPModel.deleteOne({ email });
     
     const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
     
+    console.log(`[AUTH] SUCCESS: JWT Token issued for "${email}"`);
     res.status(200).json({ 
       success: true, 
       token,
       user: { id: user._id, email: user.email, name: user.name, role: user.role }
     });
   } catch (error) {
+    console.error(`[AUTH] ERROR during verification:`, error);
     res.status(500).json({ error: "Database error during verification." });
   }
 });
