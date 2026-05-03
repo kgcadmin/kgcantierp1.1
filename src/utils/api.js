@@ -47,7 +47,8 @@ export const api = {
   // Data Persistence
   get: async (collection) => {
     try {
-      const res = await fetch(`${API_URL}/api/data/${collection}`, { headers: getHeaders() });
+      const url = collection === 'users' ? `${API_URL}/api/users` : `${API_URL}/api/data/${collection}`;
+      const res = await fetch(url, { headers: getHeaders() });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       return await res.json();
     } catch (err) {
@@ -71,7 +72,8 @@ export const api = {
   },
   put: async (collection, id, data) => {
     try {
-      const res = await fetch(`${API_URL}/api/data/${collection}/${id}`, {
+      const url = collection === 'users' ? `${API_URL}/api/users/${id}` : `${API_URL}/api/data/${collection}/${id}`;
+      const res = await fetch(url, {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -85,7 +87,8 @@ export const api = {
   },
   delete: async (collection, id) => {
     try {
-      const res = await fetch(`${API_URL}/api/data/${collection}/${id}`, {
+      const url = collection === 'users' ? `${API_URL}/api/users/${id}` : `${API_URL}/api/data/${collection}/${id}`;
+      const res = await fetch(url, {
         method: 'DELETE',
         headers: getHeaders()
       });

@@ -43,6 +43,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   name: { type: String, required: true },
   role: { type: String, enum: ['Admin', 'Faculty', 'Office Staff', 'Management', 'Student'], default: 'Student' },
+  status: { type: String, enum: ['Pending', 'Active', 'Blocked'], default: 'Pending' },
   isVerified: { type: Boolean, default: false },
   linkedId: String, // ID of student/faculty record
   activeSessions: [{ token: String, createdAt: Date }],
@@ -134,11 +135,12 @@ app.post('/api/auth/signup', async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       name,
-      role
+      role: role || 'Student',
+      status: 'Pending'
     });
 
     await newUser.save();
-    res.status(201).json({ success: true, message: "User registered successfully" });
+    res.status(201).json({ success: true, message: "Account created! Awaiting admin approval." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -149,6 +151,8 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await UserModel.findOne({ email: email.toLowerCase() });
+    if (user && user.status === 'Pending') return res.status(403).json({ error: "Awaiting approval" });
+    if (user && user.status === 'Blocked') return res.status(403).json({ error: "Account blocked" });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -290,6 +294,38 @@ app.post('/api/otp/verify', async (req, res) => {
   } catch (error) {
     console.error(`[AUTH] ERROR during verification:`, error);
     res.status(500).json({ error: "Database error during verification." });
+  }
+});
+
+// User Management Routes (Admin Only)
+app.get('/api/users', authenticateJWT, async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ error: "Unauthorized" });
+    const users = await UserModel.find({}, '-password'); // Don't send hashed passwords
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/users/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ error: "Unauthorized" });
+    const { status, role } = req.body;
+    await UserModel.findByIdAndUpdate(req.params.id, { status, role });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/users/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ error: "Unauthorized" });
+    await UserModel.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
