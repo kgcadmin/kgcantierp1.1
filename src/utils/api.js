@@ -99,5 +99,19 @@ export const api = {
       console.error(`API Permanent Delete failed for ${collection}/${id}:`, err.message);
       return null;
     }
+  },
+  sendEmail: async (payload) => {
+    try {
+      const res = await fetch(`${API_URL}/api/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error(`API Send Email failed:`, err.message);
+      return { success: false, error: err.message };
+    }
   }
 };

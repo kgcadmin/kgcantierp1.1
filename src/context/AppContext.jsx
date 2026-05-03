@@ -46,7 +46,7 @@ export const AppContextProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('nexus_user');
     if (savedUser) return JSON.parse(savedUser);
-    return users[0]; // Default to Admin
+    return null; // Fixed: Prevent auto-login as Admin upon refresh
   });
   
   // Session tracking now moved to global user state instead of isolated local storage
@@ -103,8 +103,15 @@ export const AppContextProvider = ({ children }) => {
       const otp = generateOTP();
       const otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
       setPendingTwoFAUser({ user, otp, otpExpiry });
-      // LIVE MODE: Simulate sending OTP via email/SMS. 
-      // Do not return it to the UI directly.
+      
+      // LIVE MODE: Make actual API call to backend to dispatch email
+      api.sendEmail({
+        to: user.email,
+        subject: 'Your Login Verification Code',
+        body: `Your OTP for KGC ERP is: ${otp}. It will expire in 5 minutes.`
+      }).catch(err => console.error("Email dispatch failed:", err));
+
+      // Fallback log for testing purposes while backend is unconnected
       console.log(`[SIMULATED EMAIL DISPATCH] 2FA OTP for ${user.email} is: ${otp}`);
       return { status: '2fa', user }; 
     }
